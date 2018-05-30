@@ -1,0 +1,25 @@
+from os.path import *
+from glob import glob
+
+# snakemake configuration
+configfile: 'config.yaml'
+
+# a pseudo-rule that collects the target files
+rule all:
+    input:
+
+rule impact:
+	input:
+		# adduct folder
+	output:
+		# impact output file
+	shell:
+		# run impact exe on adduct folder
+
+rule process:
+	input:
+		rules.impact.output
+	output:
+		# CCS values
+	run:
+		# resources/IMPACT/process_impact.py

@@ -1,0 +1,10 @@
+INCHILIST_FILEDIR, ..
+INCHILIST_FILENAME, inchis.csv
+INCHI2MOL_DIR,	../molfiles_fromInChI
+INCHI2XYZ_DIR,	../xyzfiles_fromInChI
+ADDUCTXYZ_DIR,	./adducts/adduct_xyzfiles	
+ADDUCTMOL_DIR,	./adducts/adduct_molfiles
+ADDUCTMOLTWO_DIR, ./adducts/adduct_mol2files
+FF_GEOMETRY_OPTIMIZATION, gaff
+PKA_COMMAND_LINE, C:\Program Files\ChemAxon\MarvinSuite\bin\cxcalc,pka,-i,-40,-x,40,-d,large
+PKA_OUTPUT_FILE, pka_values.csv

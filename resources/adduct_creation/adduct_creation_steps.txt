@@ -1,0 +1,102 @@
+			Steps to create adducts from InChIs
+
+Note: All scripts are executed on windows cmd prompt. 
+
+
+Step 1: Create working directory
+
+	Example:  mkdir ToxCast4000_redo
+
+Step 2: Copy the following python scripts to this directory:
+	
+	geometry.py , ccs.py, nwchem.py, pka.py
+
+Step 3: Create sub-directories for each run
+
+	for example, I created a run directory for each adduct type
+		- protonated (/ToxCast4000_redo/6_7_2017_H)
+		- deprotonated (/ToxCast4000_redo/6_7_2017_De)
+		- sodiated (/ToxCast4000_redo/6_7_2017_Na)
+
+Step 4: Copy the following scripts and input file to each sub-directory
+	
+	convert_inch2xyzmol.py, calculate_pka.py, create_adducts.py, readio.py
+	parameters.in
+
+Step 5 :  Create two sub-directories in each run directory: 
+	
+	Example:
+	mkdir ToxCast4000_redo/6_7_2017_H/adduct_inputfiles_setup
+	mkdir ToxCast4000_redo/6_7_2017_H/protonated_adducts
+
+Step 6: Create input .csv file containing all the InChIs. They need to be in a particular format
+	See the .csv files in the dduct_inputfiles_setup folders
+	- ToxCast4000_inchis_H.csv
+	- ToxCast4000_inchis_De.csv
+	- ToxCast4000_inchis_Na.csv
+
+	
+Step 7: Edit parameters.in file
+	
+	Example: See file in folder  "/ToxCast4000_redo/6_7_2017_H"
+	
+Step 8: Run python script, "convert_inchi2xyzmol.py"
+	This script will convert inchi to .mol, mol2, and .xyz files
+
+Step 9: Run python script, "calculate_pka.py"
+
+	This script will call chemaxon to calculate pka values, and create pka_values.csv
+
+Note: Steps 8 and 9 have to be done only once. 
+	For example, Run them once in the folder, /ToxCast4000_redo/6_7_2017_H
+
+	Then copy the required output files to the other run directories 
+	copy ToxCast4000_redo/6_7_2017_H/protonated_adducts/molfiles_fromInChI/*3D.mol to
+	
+	ToxCast4000_redo/6_7_2017_De/deprotonated_adducts/molfiles_fromInChI/*3D.mol
+	ToxCast4000_redo/6_7_2017_Na/sodiated_adducts/molfiles_fromInChI/*3D.mol
+	
+	The .mol files need not be copied if you put in the correct path in the pka_values.csv and parameters.in
+
+	In the folders I shared, I did not put the *3D.mol files in the deprotonated and sodiated adduct folders to save space.
+
+
+ Also copy the /ToxCast4000_redo/6_7_2017_H/pka_values.csv to the other run folders,
+		
+	/ToxCast4000_redo/6_7_2017_De/
+	/ToxCast4000_redo/6_7_2017_Na/ 
+
+	Edit the pka_values in the above two folders, set the correct path and adduct type 
+	
+	See examples
+
+	Finally, go to step 10 to create the adducts
+
+Step 10: Run python script, "create_adducts.py"
+
+	Note: Currently, the lines that calculate charges and create the adduct
+	.mol and .mol2 files have been commented out in the create_adducts.py
+
+	Only the adduct .xyz files will be created (because IMPACT requires only .xyz files)
+
+	To create the .mol and .mol2 of the adducts, just uncomment those lines in the script
+
+		
+Step 11: Go to adduct_xyzfiles folder and run IMPACT
+	
+	Example,
+
+	in folder, ToxCast4000_redo/6_7_2017_H/protonated_adducts/adduct_xyzfiles, run 
+
+		impact –o ToxCast4000_H_CCS.txt –H –shotsPerRot 64 –convergence 0.0025 –nRuns 64 –nThreads 4 *.xyz
+	
+	In folder, ToxCast4000_redo/6_7_2017_De/deprotonated_adducts/adduct_xyzfiles, run 
+
+		impact –o ToxCast4000_De_CCS.txt –H –shotsPerRot 64 –convergence 0.0025 –nRuns 64 –nThreads 4 *.xyz
+	
+	In folder, ToxCast4000_redo/6_7_2017_Na/sodiated_adducts/adduct_xyzfiles, run 
+
+		impact –o ToxCast4000_Na_CCS.txt –H –shotsPerRot 64 –convergence 0.0025 –nRuns 64 –nThreads 4 *.xyz
+
+
+

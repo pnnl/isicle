@@ -1,0 +1,18 @@
+__default__:
+  account: isicle
+  time: "24:00:00"
+  name: ISiCLE
+  nodes: 1
+  ntasks: 24
+
+NWChem:
+  name: NWChem
+  nodes: 4
+
+mobcalCharge:
+  name: MOBCAL
+  time: "1:00:00"
+
+mobcalGeomCharge:
+  name: MOBCAL
+  time: "1:00:00"
