@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 22 15:35:38 2015
-
-@author: Dennis Thomas
-"""
-
 import csv
 import pybel
 import sys

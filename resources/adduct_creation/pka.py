@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jan 19 21:04:52 2016
-
-@author: Dennis Thomas
-"""
 import subprocess
 import glob
 import logging

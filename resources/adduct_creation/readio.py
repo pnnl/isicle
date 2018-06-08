@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 18 19:25:19 2016
-
-@author: Dennis Thomas
-"""
-
 import logging
 import os
 
