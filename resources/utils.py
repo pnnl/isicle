@@ -3,18 +3,36 @@ from os.path import *
 import pybel
 
 
-def inchi2smi(inchi):
+def inchi2smi(inchi, verbose=False):
     '''Converts InChI string to SMILES string.'''
 
-    return subprocess.check_output('echo "%s" | obabel -iinchi -ocan' % inchi,
-                                   stderr=subprocess.STDOUT, shell=True).decode('ascii').split('\n')[0].strip()
+    res = subprocess.check_output('echo "%s" | obabel -iinchi -ocan' % inchi,
+                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    if verbose:
+        print(res)
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+
+    if 'molecule converted' in res[-1]:
+        return res[-2]
+
+    return None
 
 
-def smi2inchi(smi):
+def smi2inchi(smi, verbose=False):
     '''Converts SMILES string to InChI string.'''
 
-    return subprocess.check_output('obabel -:"%s" -oinchi' % smi,
-                                   stderr=subprocess.STDOUT, shell=True).decode('ascii').split('\n')[0].strip()
+    res = subprocess.check_output('obabel -:"%s" -oinchi' % smi,
+                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    if verbose:
+        print(res)
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+
+    if 'molecule converted' in res[-1]:
+        return res[-2]
+
+    return None
 
 
 def read_string(path):
@@ -28,20 +46,20 @@ def write_string(string, path):
     '''Writes a string to file.'''
 
     with open(path, 'w') as f:
-        f.write(string + '\n')
+        f.write(string.strip() + '\n')
 
 
-def desalt(inchi):
+def desalt(inchi, verbose=False):
     '''Desalts an InChI string.'''
 
-    smi = inchi2smi(inchi)
+    smi = inchi2smi(inchi, verbose=verbose)
 
     if smi is None:
         return None
 
     smi = smi.replace('\"', '')
 
-    return smi2inchi(smi)
+    return smi2inchi(smi, verbose=verbose)
 
 
 def neutralize(inchi):
@@ -57,18 +75,31 @@ def neutralize(inchi):
     return inchi
 
 
-def major_tautomer(inchi):
+def major_tautomer(inchi, verbose=False):
     '''Determines major tautomer of InChI string.'''
 
-    return subprocess.check_output('cxcalc majortautomer -f inchi "%s"' % inchi,
-                                   stderr=subprocess.STDOUT, shell=True).decode('ascii').split('\n')[0].strip()
+    res = subprocess.check_output('cxcalc majortautomer -f inchi "%s"' % inchi,
+                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    if verbose:
+        print(res)
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+    for line in res:
+        if line.startswith('InChI='):
+            return line
+    return None
 
 
-def inchi2formula(inchi):
+def inchi2formula(inchi, verbose=False):
     '''Determines formula from InChI string.'''
 
-    return subprocess.check_output('cxcalc formula "%s"' % inchi,
-                                   stderr=subprocess.STDOUT, shell=True).decode('ascii').split('\n')[1].split()[-1].strip()
+    res = subprocess.check_output('cxcalc formula "%s"' % inchi,
+                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    if verbose:
+        print(res)
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+    return res[-1].split()[-1].strip()
 
 
 def inchi2geom(inchi, outfile, pngfile, ffield='gaff'):
@@ -87,6 +118,14 @@ def inchi2geom(inchi, outfile, pngfile, ffield='gaff'):
     mol.write('mol', outfile, True)
 
 
+def calculatepKa(mol):
+    '''Calculate pKa from .mol file.'''
+
+    res = subprocess.check_output('cxcalc pka -i -40 -x 40 -d large %s' % mol,
+                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    return res
+
+
 def read_mass(path):
     '''Reads mass from molmass.py output file.'''
 
@@ -95,3 +134,16 @@ def read_mass(path):
         for x in lines:
             if 'Monoisotopic mass' in x:
                 return float(x.split()[-1])
+
+
+def read_pka(path):
+    '''Reads pKa from cxcalc output'''
+
+    with open(path, 'r') as f:
+        vals = f.readlines()[1].split('\t')
+
+    pk = [float(x) for x in vals[1:5]]
+    atoms = [int(x) for x in vals[-1].split(',')]
+    label = ['pka', 'pka', 'pkb', 'pkb']
+
+    return [[a, p, x] for a, p, x in zip(atoms, pk, label)]

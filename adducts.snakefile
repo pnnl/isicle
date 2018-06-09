@@ -24,10 +24,9 @@ rule desalt:
     run:
         inchi = read_string(input[0])
         inchi = desalt(inchi)
-        if inchi.startswith('InChI='):
+        if inchi is not None:
             write_string(inchi, output[0])
         else:
-            # raise IOError('OpenBabel', inchi)
             sys.exit(1)
 
 rule neutralize:
@@ -38,10 +37,9 @@ rule neutralize:
     run:
         inchi = read_string(input[0])
         inchi = neutralize(inchi)
-        if inchi.startswith('InChI='):
+        if inchi is not None:
             write_string(inchi, output[0])
         else:
-            # raise IOError('neutralize', inchi)
             sys.exit(1)
 
 rule majorTautomer:
@@ -52,10 +50,9 @@ rule majorTautomer:
     run:
         inchi = read_string(input[0])
         inchi = major_tautomer(inchi)
-        if inchi.startswith('InChI='):
+        if inchi is not None:
             write_string(inchi, output[0])
         else:
-            # raise IOError('cxcalc', inchi)
             sys.exit(1)
 
 rule calculateFormula:
