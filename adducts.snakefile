@@ -13,7 +13,7 @@ ADDUCTS = ['+Na', '+H', '-H']
 # pseudo-rule that collects the target files
 rule all:
     input:
-        expand(join(config['path'], 'output', 'pKa', '{id}.pka'), id=IDS)
+        expand(join(config['path'], 'output', '3a_pKa', '{id}.pka'), id=IDS)
         # expand(join(config['path'], 'output', 'pKa', '{id}_{adduct}.xyz'), id=IDS, adduct=ADDUCTS)
 
 # TODO: rule inchisToKeys:
@@ -22,10 +22,12 @@ rule desalt:
     input:
         join(config['path'], 'input', '{id}.inchi')
     output:
-        join(config['path'], 'output', 'desalted', '{id}.inchi')
+        join(config['path'], 'output', '0_desalted', '{id}.inchi')
+    log:
+        join(config['path'], 'output', '0_desalted', 'logs', '{id}.log')
     run:
         inchi = read_string(input[0])
-        inchi = desalt(inchi)
+        inchi = desalt(inchi, log[0])
         if inchi is not None:
             write_string(inchi, output[0])
         else:
@@ -35,7 +37,7 @@ rule neutralize:
     input:
         rules.desalt.output
     output:
-        join(config['path'], 'output', 'neutralized', '{id}.inchi')
+        join(config['path'], 'output', '1_neutralized', '{id}.inchi')
     run:
         inchi = read_string(input[0])
         inchi = neutralize(inchi)
@@ -44,14 +46,16 @@ rule neutralize:
         else:
             sys.exit(1)
 
-rule majorTautomer:
+rule tautomerize:
     input:
         rules.neutralize.output
     output:
-        join(config['path'], 'output', 'tautomer', '{id}.inchi')
+        join(config['path'], 'output', '2_tautomer', '{id}.inchi')
+    log:
+        join(config['path'], 'output', '2_tautomer', 'logs', '{id}.log')
     run:
         inchi = read_string(input[0])
-        inchi = major_tautomer(inchi)
+        inchi = tautomerize(inchi, log=log[0])
         if inchi is not None:
             write_string(inchi, output[0])
         else:
@@ -59,30 +63,32 @@ rule majorTautomer:
 
 rule calculateFormula:
     input:
-        rules.majorTautomer.output
+        rules.tautomerize.output
     output:
-        join(config['path'], 'output', 'formula', '{id}.formula')
+        join(config['path'], 'output', '2a_formula', '{id}.formula')
+    log:
+        join(config['path'], 'output', '2a_formula', 'logs', '{id}.log')
     run:
         inchi = read_string(input[0])
-        formula = inchi2formula(inchi)
+        formula = inchi2formula(inchi, log=log[0])
         write_string(formula, output[0])
 
 rule calculateMass:
     input:
         rules.calculateFormula.output
     output:
-        join(config['path'], 'output', 'mass', '{id}.mass')
+        join(config['path'], 'output', '2b_mass', '{id}.mass')
     shell:
         'python resources/molmass.py `cat {input}` > {output}'
 
 rule inchi2geom:
     input:
-        inchi = rules.majorTautomer.output,
+        inchi = rules.tautomerize.output,
         formula = rules.calculateFormula.output,
         mass = rules.calculateMass.output
     output:
-        mol = join(config['path'], 'output', 'parent_structures', 'mol', '{id}.mol'),
-        png = join(config['path'], 'output', 'parent_structures', 'png', '{id}.png')
+        mol = join(config['path'], 'output', '3_parent_structures', 'mol', '{id}.mol'),
+        png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
     run:
         inchi2geom(read_string(input[0]), output[0], output[1], ffield='gaff')
 
@@ -90,7 +96,7 @@ rule calculatepKa:
     input:
         rules.inchi2geom.output.mol
     output:
-        join(config['path'], 'output', 'pKa', '{id}.pka')
+        join(config['path'], 'output', '3a_pKa', '{id}.pka')
     shell:
         'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
 

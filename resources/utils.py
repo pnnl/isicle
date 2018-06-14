@@ -3,13 +3,24 @@ from os.path import *
 import pybel
 
 
-def inchi2smi(inchi, verbose=False):
+def inchi2smi(inchi, desalt=False, log=None):
     '''Converts InChI string to SMILES string.'''
 
-    res = subprocess.check_output('echo "%s" | obabel -iinchi -ocan' % inchi,
+    if desalt is True:
+        ds = '-r'
+        sep = '\n'
+    else:
+        ds = ''
+        sep = ''
+
+    cmd = 'echo "%s" | obabel -iinchi %s -ocan' % (inchi, ds)
+    res = subprocess.check_output(cmd,
                                   stderr=subprocess.STDOUT, shell=True).decode('ascii')
-    if verbose:
-        print(res)
+    if log is not None:
+        with open(log, 'a') as f:
+            f.write('inchi2smi:\n')
+            f.write(cmd + '\n\n')
+            f.write(res + sep)
 
     res = [x.strip() for x in res.split('\n') if x is not '']
 
@@ -19,13 +30,17 @@ def inchi2smi(inchi, verbose=False):
     return None
 
 
-def smi2inchi(smi, verbose=False):
+def smi2inchi(smi, log=None):
     '''Converts SMILES string to InChI string.'''
 
-    res = subprocess.check_output('obabel -:"%s" -oinchi' % smi,
+    cmd = 'obabel -:"%s" -oinchi' % smi
+    res = subprocess.check_output(cmd,
                                   stderr=subprocess.STDOUT, shell=True).decode('ascii')
-    if verbose:
-        print(res)
+    if log is not None:
+        with open(log, 'a') as f:
+            f.write('smi2inchi:\n')
+            f.write(cmd + '\n\n')
+            f.write(res)
 
     res = [x.strip() for x in res.split('\n') if x is not '']
 
@@ -39,7 +54,7 @@ def read_string(path):
     '''Reads first line from a file.'''
 
     with open(path, 'r') as f:
-        return f.readlines()[0]
+        return f.readlines()[0].strip()
 
 
 def write_string(string, path):
@@ -49,18 +64,20 @@ def write_string(string, path):
         f.write(string.strip() + '\n')
 
 
-def desalt(inchi, verbose=False):
+def desalt(inchi, log=None):
     '''Desalts an InChI string.'''
+    if log is not None:
+        with open(log, 'w') as f:
+            f.write('desalt:\n\n')
 
-    # modify to desalt ('-r')
-    smi = inchi2smi(inchi, verbose=verbose)
+    smi = inchi2smi(inchi, desalt=True, log=log)
 
     if smi is None:
         return None
 
     smi = smi[:-3].replace('\"', '')
 
-    return smi2inchi(smi, verbose=verbose)
+    return smi2inchi(smi, log=log)
 
 
 def neutralize(inchi):
@@ -76,13 +93,17 @@ def neutralize(inchi):
     return inchi
 
 
-def major_tautomer(inchi, verbose=False):
+def tautomerize(inchi, log=None):
     '''Determines major tautomer of InChI string.'''
 
-    res = subprocess.check_output('cxcalc majortautomer -f inchi "%s"' % inchi,
+    cmd = 'cxcalc majortautomer -f inchi "%s"' % inchi
+    res = subprocess.check_output(cmd,
                                   stderr=subprocess.STDOUT, shell=True).decode('ascii')
-    if verbose:
-        print(res)
+    if log is not None:
+        with open(log, 'w') as f:
+            f.write('tautomerize:\n')
+            f.write(cmd + '\n\n')
+            f.write(res)
 
     res = [x.strip() for x in res.split('\n') if x is not '']
     for line in res:
@@ -91,13 +112,17 @@ def major_tautomer(inchi, verbose=False):
     return None
 
 
-def inchi2formula(inchi, verbose=False):
+def inchi2formula(inchi, log=None):
     '''Determines formula from InChI string.'''
 
-    res = subprocess.check_output('cxcalc formula "%s"' % inchi,
+    cmd = 'cxcalc formula "%s"' % inchi
+    res = subprocess.check_output(cmd,
                                   stderr=subprocess.STDOUT, shell=True).decode('ascii')
-    if verbose:
-        print(res)
+    if log is not None:
+        with open(log, 'w') as f:
+            f.write('inchi2formula:\n')
+            f.write(cmd + '\n\n')
+            f.write(res)
 
     res = [x.strip() for x in res.split('\n') if x is not '']
     return res[-1].split()[-1].strip()
@@ -117,14 +142,6 @@ def inchi2geom(inchi, outfile, pngfile, ffield='gaff'):
     mol.localopt(forcefield=ffield, steps=500)
 
     mol.write('mol', outfile, True)
-
-
-def calculatepKa(mol):
-    '''Calculate pKa from .mol file.'''
-
-    res = subprocess.check_output('cxcalc pka -i -40 -x 40 -d large %s' % mol,
-                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
-    return res
 
 
 def read_mass(path):
