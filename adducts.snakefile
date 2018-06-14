@@ -16,6 +16,8 @@ rule all:
         expand(join(config['path'], 'output', 'pKa', '{id}.pka'), id=IDS)
         # expand(join(config['path'], 'output', 'pKa', '{id}_{adduct}.xyz'), id=IDS, adduct=ADDUCTS)
 
+# TODO: rule inchisToKeys:
+
 rule desalt:
     input:
         join(config['path'], 'input', '{id}.inchi')
@@ -92,13 +94,13 @@ rule calculatepKa:
     shell:
         'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
 
-# rule generateSodiated:
+# rule generateAdducts:
 #     input:
 #         geometry = rules.inchi2geom.output.mol,
 #         pKa_values = rules.calculatepKa.output
 #     output:
-#         join(config['path'], 'output', 'adduct_structures', 'xyz', '{id}_+Na.xyz')
-#         join(config['path'], 'output', 'adduct_structures', 'mol2', '{id}_+Na.mol2')
+#         xyz = expand(join(config['path'], 'output', 'adduct_structures', 'xyz', {id}_{adduct}.xyz'), id=IDS, adduct=ADDUCTS),
+#         mol2 = expand(join(config['path'], 'output', 'adduct_structures', 'mol2', {id}_{adduct}.mol2'), id=IDS, adduct=ADDUCTS)
 #     run:
 #         # resources/adduct_creation/create_adducts.py
 

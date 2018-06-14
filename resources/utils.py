@@ -52,12 +52,13 @@ def write_string(string, path):
 def desalt(inchi, verbose=False):
     '''Desalts an InChI string.'''
 
+    # modify to desalt ('-r')
     smi = inchi2smi(inchi, verbose=verbose)
 
     if smi is None:
         return None
 
-    smi = smi.replace('\"', '')
+    smi = smi[:-3].replace('\"', '')
 
     return smi2inchi(smi, verbose=verbose)
 
