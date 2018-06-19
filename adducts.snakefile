@@ -8,13 +8,13 @@ localrules: all, desalt, neutralize, calculateMass
 
 # infer wildcards from inputs, select adducts
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
-ADDUCTS = ['+Na', '+H', '-H']
 
 # pseudo-rule that collects the target files
 rule all:
     input:
         expand(join(config['path'], 'output', '3a_pKa', '{id}.pka'), id=IDS)
-        # expand(join(config['path'], 'output', 'pKa', '{id}_{adduct}.xyz'), id=IDS, adduct=ADDUCTS)
+        expand(join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
+               id=IDS, adduct=ADDUCTS)
 
 # TODO: rule inchisToKeys:
 
@@ -105,8 +105,10 @@ rule calculatepKa:
 #         geometry = rules.inchi2geom.output.mol,
 #         pKa_values = rules.calculatepKa.output
 #     output:
-#         xyz = expand(join(config['path'], 'output', 'adduct_structures', 'xyz', {id}_{adduct}.xyz'), id=IDS, adduct=ADDUCTS),
-#         mol2 = expand(join(config['path'], 'output', 'adduct_structures', 'mol2', {id}_{adduct}.mol2'), id=IDS, adduct=ADDUCTS)
+#         xyz = expand(join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
+#                      id=IDS, adduct=config['adducts']),
+#         mol2 = expand(join(config['path'], 'output', '4_adduct_structures', 'mol2', '{id}_{adduct}.mol2'),
+#                       id=IDS, adduct=config['adducts'])
 #     run:
 #         # resources/adduct_creation/create_adducts.py
 

@@ -8,7 +8,6 @@ include: 'adducts.snakefile'
 
 # infer wildcards from inputs, select adducts
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
-ADDUCTS = ['+Na', '+H', '-H']
 
 # a pseudo-rule that collects the target files
 rule all:
@@ -17,7 +16,8 @@ rule all:
 
 rule impact:
     input:
-        expand(join(config['path'], 'output', 'adduct_structures', 'xyz', '{id}_{adduct}.xyz'), id=IDS, adduct=ADDUCTS)
+        expand(join(config['path'], 'output', 'adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
+               id=IDS, adduct=config['adducts'])
     output:
         join(config['path'], 'impact.txt')
     shell:
