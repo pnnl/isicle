@@ -13,8 +13,8 @@ IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
 rule all:
     input:
         expand(join(config['path'], 'output', '3a_pKa', '{id}.pka'), id=IDS)
-        expand(join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
-               id=IDS, adduct=ADDUCTS)
+        # expand(join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
+        #        id=IDS, adduct=ADDUCTS)
 
 # TODO: rule inchisToKeys:
 
