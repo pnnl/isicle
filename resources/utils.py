@@ -75,8 +75,6 @@ def desalt(inchi, log=None):
     if smi is None:
         return None
 
-    smi = smi[:-3].replace('\"', '')
-
     return smi2inchi(smi, log=log)
 
 
