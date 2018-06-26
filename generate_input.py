@@ -36,7 +36,7 @@ def unique_inchis():
         key = inchi_to_inchikey(row[0])
         filename = os.path.normpath(input("Write filepath including .inchi for %s \n" % key))
         checkingfile(i,filename)
-    i+=1
+        i+=1
 
 def checkingfile(i,filename):
     try:
