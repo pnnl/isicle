@@ -1,6 +1,9 @@
 import subprocess
 from os.path import *
 import pybel
+from . import geometry
+import pandas as pd
+import numpy as np
 
 
 def inchi2smi(inchi, desalt=False, log=None):
@@ -126,20 +129,17 @@ def inchi2formula(inchi, log=None):
     return res[-1].split()[-1].strip()
 
 
-def inchi2geom(inchi, outfile, pngfile, ffield='gaff'):
+def inchi2geom(inchi, ffield='gaff'):
     '''Converts InChI string to .mol geometry and saves a 2D visualization.'''
 
     mol = pybel.readstring("inchi", inchi)
     mol.addh()  # not necessary, because pybel make3D will add hydrogen
 
-    mol.draw(show=False, filename=pngfile,
-             usecoords=False, update=False)
-
     # Optimize 3D geometry of the molecule using pybel's make3D()
     mol.make3D(forcefield=ffield, steps=50)
     mol.localopt(forcefield=ffield, steps=500)
 
-    mol.write('mol', outfile, True)
+    return mol
 
 
 def read_mass(path):
@@ -152,14 +152,33 @@ def read_mass(path):
                 return float(x.split()[-1])
 
 
+def create_adduct(mol, adduct, idx):
+    if '-' in adduct:
+        adduct = geometry.removeAtomFromMol(mol, idx)
+    elif '+' in adduct:
+        atom = adduct.split('+')[-1]
+        if atom.lower() == 'na':
+            adduct = geometry.addAtomToMol(mol, atom, idx, covalent=False)
+        else:
+            adduct = geometry.addAtomToMol(mol, atom, idx, covalent=True)
+
+    adduct.localopt(forcefield='gaff', steps=1000)
+    return adduct
+    
+
 def read_pka(path):
     '''Reads pKa from cxcalc output'''
 
-    with open(path, 'r') as f:
-        vals = f.readlines()[1].split('\t')
+    df = pd.read_csv(path, sep='\t')
+    idx = [int(x) for x in df['atoms'].values[0].split(',')]
+    pk = df.values[0][1:5]
+    label = ['a1', 'a2', 'b1', 'b2']
 
-    pk = [float(x) for x in vals[1:5]]
-    atoms = [int(x) for x in vals[-1].split(',')]
-    label = ['pka', 'pka', 'pkb', 'pkb']
+    res = {}
+    i = 0
+    for x, p in zip(label, pk):
+        if not np.isnan(p):
+            res[x] = idx[i]
+            i += 1
 
-    return [[a, p, x] for a, p, x in zip(atoms, pk, label)]
+    return res

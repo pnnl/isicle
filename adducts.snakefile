@@ -1,6 +1,7 @@
 from os.path import *
 from resources.utils import *
 import sys
+import logging
 
 # snakemake configuration
 configfile: 'config.yaml'
@@ -12,11 +13,8 @@ IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
 # pseudo-rule that collects the target files
 rule all:
     input:
-        expand(join(config['path'], 'output', '3a_pKa', '{id}.pka'), id=IDS)
-        # expand(join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
-        #        id=IDS, adduct=ADDUCTS)
-
-# TODO: rule inchisToKeys:
+        expand(join(config['path'], 'output', '4_adduct_structures', '{filetype}', '{id}_{adduct}.{filetype}'),
+               id=IDS, adduct=config['adducts'], filetype=['xyz', 'mol2'])
 
 rule desalt:
     input:
@@ -90,7 +88,11 @@ rule inchi2geom:
         mol = join(config['path'], 'output', '3_parent_structures', 'mol', '{id}.mol'),
         png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
     run:
-        inchi2geom(read_string(input[0]), output[0], output[1], ffield='gaff')
+        inchi = read_string(input[0])
+        mol = inchi2geom(inchi, ffield='gaff')
+        mol.draw(show=False, filename=output[1],
+                 usecoords=False, update=False)
+        mol.write('mol', output[0], overwrite=True)
 
 rule calculatepKa:
     input:
@@ -100,17 +102,32 @@ rule calculatepKa:
     shell:
         'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
 
-# rule generateAdducts:
-#     input:
-#         geometry = rules.inchi2geom.output.mol,
-#         pKa_values = rules.calculatepKa.output
-#     output:
-#         xyz = expand(join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
-#                      id=IDS, adduct=config['adducts']),
-#         mol2 = expand(join(config['path'], 'output', '4_adduct_structures', 'mol2', '{id}_{adduct}.mol2'),
-#                       id=IDS, adduct=config['adducts'])
-#     run:
-#         # resources/adduct_creation/create_adducts.py
+rule generateAdducts:
+    input:
+        molfile = rules.inchi2geom.output.mol,
+        pkafile = rules.calculatepKa.output
+    output:
+        xyz = join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
+        mol2 = join(config['path'], 'output', '4_adduct_structures', 'mol2', '{id}_{adduct}.mol2')
+    log:
+        join(config['path'], 'output', '4_adduct_structures', 'log', '{id}_{adduct}.log')
+    run:
+        # log
+        logging.basicConfig(filename=log[0], level=logging.DEBUG)
 
-#         # Final output once we have CCS
-#         # InChI, Processed InChI, Formula, Mass, CCS
+        # read inputs
+        mol = next(pybel.readfile("mol", input[0]))
+        pka = read_pka(input[1])
+
+        # generate adducts
+        for a in config['adducts']:
+            if '+' in a:
+                adduct = create_adduct(mol, a, pka['b1'])
+            elif '-' in a:
+                adduct = create_adduct(mol, a, pka['a1'])
+            print(join(config['path'], 'output', '4_adduct_structures', 'mol2', '{id}_{adduct}.mol2'.format(wildcards.id, a)))
+            adduct.write('xyz', output[0], overwrite=True)
+            adduct.write('mol2', output[1], overwrite=True)
+
+# Final output once we have CCS
+# InChI, Processed InChI, Formula, Mass, CCS

@@ -16,8 +16,7 @@ rule all:
 
 rule impact:
     input:
-        expand(join(config['path'], 'output', 'adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
-               id=IDS, adduct=config['adducts'])
+        rules.generateAdducts.output
     output:
         join(config['path'], 'impact.txt')
     shell:
