@@ -81,9 +81,9 @@ rule inchi2geom:
         mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
                          steps=config['forcefield']['steps'])
 
-        mol.draw(show=False, filename=output['png'],
+        mol.draw(show=False, filename=output.png,
                  usecoords=False, update=False)
-        mol.write('mol', output['mol'], overwrite=True)
+        mol.write('mol', output.mol, overwrite=True)
 
 rule calculatepKa:
     input:
@@ -107,8 +107,8 @@ rule generateAdducts:
         logging.basicConfig(filename=log[0], level=logging.DEBUG)
 
         # read inputs
-        mol = next(pybel.readfile("mol", input['molfile']))
-        pka = read_pka(input['pkafile'])
+        mol = next(pybel.readfile("mol", input[0]))
+        pka = read_pka(input[1])
 
         # generate adduct
         a = wildcards.adduct
@@ -121,5 +121,5 @@ rule generateAdducts:
                                    forcefield=config['forcefield']['type'],
                                    steps=config['forcefield']['steps'])
 
-        adduct.write('xyz', output['xyz'], overwrite=True)
-        adduct.write('mol2', output['mol2'], overwrite=True)
+        adduct.write('xyz', output.xyz, overwrite=True)
+        adduct.write('mol2', output.mol2, overwrite=True)

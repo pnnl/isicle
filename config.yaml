@@ -3,5 +3,5 @@ path: ''
 adducts: ['+Na', '+H', '-H']
 
 forcefield:
-  type: 'mmff94'
+  type: 'gaff'
   steps: 500

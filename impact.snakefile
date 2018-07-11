@@ -29,8 +29,8 @@ rule postprocess:
         join(config['path'], 'output', 'impact_results.tsv')
     run:
         dfs = []
-        for ccs, mass, formula, inchi, ID in zip(input['ccs'], input['mass'],
-                                                 input['formula'], input['inchi'], IDS):
+        for ccs, mass, formula, inchi, ID in zip(input.ccs, input.mass,
+                                                 input.formula, input.inchi, IDS):
             # read ccs
             df = read_impact(ccs)
 
