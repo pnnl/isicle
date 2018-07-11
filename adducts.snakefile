@@ -81,8 +81,7 @@ rule inchi2geom:
         mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
                          steps=config['forcefield']['steps'])
 
-        mol.draw(show=False, filename=output.png,
-                 usecoords=False, update=False)
+        mol.draw(show=False, filename=output.png, usecoords=False, update=False)
         mol.write('mol', output.mol, overwrite=True)
 
 rule calculatepKa:
