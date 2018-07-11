@@ -11,8 +11,7 @@ def getOS():
     system = platform.system().lower()
     if system == 'darwin':
         return 'osx'
-    else:
-        return system
+    return system
 
 
 def inchi2smi(inchi, desalt=False, log=None):
