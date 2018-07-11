@@ -7,15 +7,6 @@ import logging
 configfile: 'config.yaml'
 localrules: all, desalt, neutralize, calculateMass
 
-# infer wildcards from inputs, select adducts
-IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
-
-# pseudo-rule that collects the target files
-rule all:
-    input:
-        expand(join(config['path'], 'output', '4_adduct_structures', '{filetype}', '{id}_{adduct}.{filetype}'),
-               id=IDS, adduct=config['adducts'], filetype=['xyz', 'mol2'])
-
 rule desalt:
     input:
         join(config['path'], 'input', '{id}.inchi')
@@ -89,7 +80,9 @@ rule inchi2geom:
         png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
     run:
         inchi = read_string(input[0])
-        mol = inchi2geom(inchi, ffield='gaff')
+        mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
+                         steps=config['forcefield']['steps'])
+
         mol.draw(show=False, filename=output[1],
                  usecoords=False, update=False)
         mol.write('mol', output[0], overwrite=True)
@@ -119,15 +112,16 @@ rule generateAdducts:
         mol = next(pybel.readfile("mol", input[0]))
         pka = read_pka(input[1])
 
-        # generate adducts
-        for a in config['adducts']:
-            if '+' in a:
-                adduct = create_adduct(mol, a, pka['b1'])
-            elif '-' in a:
-                adduct = create_adduct(mol, a, pka['a1'])
-            print(join(config['path'], 'output', '4_adduct_structures', 'mol2', '{id}_{adduct}.mol2'.format(wildcards.id, a)))
-            adduct.write('xyz', output[0], overwrite=True)
-            adduct.write('mol2', output[1], overwrite=True)
+        # generate adduct
+        a = wildcards.adduct
+        if '+' in a:
+            adduct = create_adduct(mol, a, pka['b1'],
+                                   forcefield=config['forcefield']['type'],
+                                   steps=config['forcefield']['steps'])
+        elif '-' in a:
+            adduct = create_adduct(mol, a, pka['a1'],
+                                   forcefield=config['forcefield']['type'],
+                                   steps=config['forcefield']['steps'])
 
-# Final output once we have CCS
-# InChI, Processed InChI, Formula, Mass, CCS
+        adduct.write('xyz', output[0], overwrite=True)
+        adduct.write('mol2', output[1], overwrite=True)

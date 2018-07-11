@@ -1,2 +1,7 @@
 path: ''
+
 adducts: ['+Na', '+H', '-H']
+
+forcefield:
+  type: 'mmff94'
+  steps: 500

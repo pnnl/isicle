@@ -129,15 +129,15 @@ def inchi2formula(inchi, log=None):
     return res[-1].split()[-1].strip()
 
 
-def inchi2geom(inchi, ffield='gaff'):
+def inchi2geom(inchi, forcefield='mmff94', steps=500):
     '''Converts InChI string to .mol geometry and saves a 2D visualization.'''
 
     mol = pybel.readstring("inchi", inchi)
     mol.addh()  # not necessary, because pybel make3D will add hydrogen
 
     # Optimize 3D geometry of the molecule using pybel's make3D()
-    mol.make3D(forcefield=ffield, steps=50)
-    mol.localopt(forcefield=ffield, steps=500)
+    mol.make3D(forcefield=forcefield, steps=50)
+    mol.localopt(forcefield=forcefield, steps=steps)
 
     return mol
 
@@ -152,7 +152,7 @@ def read_mass(path):
                 return float(x.split()[-1])
 
 
-def create_adduct(mol, adduct, idx):
+def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
     if '-' in adduct:
         adduct = geometry.removeAtomFromMol(mol, idx)
     elif '+' in adduct:
@@ -162,7 +162,8 @@ def create_adduct(mol, adduct, idx):
         else:
             adduct = geometry.addAtomToMol(mol, atom, idx, covalent=True)
 
-    adduct.localopt(forcefield='gaff', steps=1000)
+    # talk to Jamie about this:
+    adduct.localopt(forcefield=forcefield, steps=steps)
     return adduct
     
 

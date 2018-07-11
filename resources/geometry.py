@@ -109,7 +109,7 @@ class Box:
     
     
     # create atom accessibility map
-    def createAtomAccessibiltyMap(self,prob_rad):
+    def createAtomAccessibiltyMap(self, prob_rad):
         """
         This function creates the molecule surface accessibility map of the new 
         atom to be added in the molecule.
