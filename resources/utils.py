@@ -183,3 +183,14 @@ def read_pka(path):
             i += 1
 
     return res
+
+def read_impact(path):
+    # read ccs file
+    df = pd.read_csv(path, delim_whitespace=True, index_col=False)
+
+    # clean up
+    df.drop(['#Str', 'nr', 'filename', '(SEM_rel)'], axis=1, inplace=True)
+    df.columns = ['CCS_PA', 'SEM_rel', 'CCS_TJM']
+    df['SEM_rel'] = float(df['SEM_rel'].str[:-1])
+
+    return df

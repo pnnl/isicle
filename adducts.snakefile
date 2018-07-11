@@ -5,7 +5,7 @@ import logging
 
 # snakemake configuration
 configfile: 'config.yaml'
-localrules: all, desalt, neutralize, calculateMass
+localrules: desalt, neutralize, calculateMass
 
 rule desalt:
     input:
@@ -72,9 +72,7 @@ rule calculateMass:
 
 rule inchi2geom:
     input:
-        inchi = rules.tautomerize.output,
-        formula = rules.calculateFormula.output,
-        mass = rules.calculateMass.output
+        rules.tautomerize.output
     output:
         mol = join(config['path'], 'output', '3_parent_structures', 'mol', '{id}.mol'),
         png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
@@ -83,9 +81,9 @@ rule inchi2geom:
         mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
                          steps=config['forcefield']['steps'])
 
-        mol.draw(show=False, filename=output[1],
+        mol.draw(show=False, filename=output['png'],
                  usecoords=False, update=False)
-        mol.write('mol', output[0], overwrite=True)
+        mol.write('mol', output['mol'], overwrite=True)
 
 rule calculatepKa:
     input:
@@ -109,8 +107,8 @@ rule generateAdducts:
         logging.basicConfig(filename=log[0], level=logging.DEBUG)
 
         # read inputs
-        mol = next(pybel.readfile("mol", input[0]))
-        pka = read_pka(input[1])
+        mol = next(pybel.readfile("mol", input['molfile']))
+        pka = read_pka(input['pkafile'])
 
         # generate adduct
         a = wildcards.adduct
@@ -123,5 +121,5 @@ rule generateAdducts:
                                    forcefield=config['forcefield']['type'],
                                    steps=config['forcefield']['steps'])
 
-        adduct.write('xyz', output[0], overwrite=True)
-        adduct.write('mol2', output[1], overwrite=True)
+        adduct.write('xyz', output['xyz'], overwrite=True)
+        adduct.write('mol2', output['mol2'], overwrite=True)
