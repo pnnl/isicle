@@ -9,6 +9,7 @@ include: 'adducts.snakefile'
 
 # infer wildcards from inputs, select adducts
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+OS = getOS()
 
 rule impact:
     input:
@@ -17,7 +18,7 @@ rule impact:
         join(config['path'], 'output', '5_impact', '{id}_{adduct}.txt')
     shell:
         # run impact on adducts
-        'resources/IMPACT/impact {input} -o {output} -H -shotsPerRot 64 -convergence .001 -nRuns 64 -nocite'
+        'resources/IMPACT/{OS}/impact {input} -o {output} -H -shotsPerRot 64 -convergence .001 -nRuns 64 -nocite'
 
 rule postprocess:
     input:

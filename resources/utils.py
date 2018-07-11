@@ -4,6 +4,15 @@ import pybel
 from . import geometry
 import pandas as pd
 import numpy as np
+import platform
+
+
+def getOS():
+    system = platform.system().lower()
+    if system == 'darwin':
+        return 'osx'
+    else:
+        return system
 
 
 def inchi2smi(inchi, desalt=False, log=None):
