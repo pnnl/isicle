@@ -16,6 +16,8 @@ rule impact:
         rules.generateAdducts.output.xyz
     output:
         join(config['path'], 'output', '5_impact', '{id}_{adduct}.txt')
+    benchmark:
+        join(config['path'], 'output', '5_impact', 'benchmarks', '{id}_{adduct}.benchmark')
     shell:
         # run impact on adducts
         'resources/IMPACT/{OS}/impact {input} -o {output} -H -shotsPerRot 64 -convergence .001 -nRuns 64 -nocite'
@@ -47,4 +49,6 @@ rule postprocess:
             dfs.append(df)
 
         master = pd.concat(dfs)
-        master.to_csv(output[0], sep='\t', index=False)
+        newf = open(output[0], 'w')
+        newf.write(master.to_string(col_space=5, justify='left'))
+        newf.close()
