@@ -162,7 +162,8 @@ def read_mass(path):
 
 def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
     if '-' in adduct:
-        adduct = geometry.removeAtomFromMol(mol, idx)
+        hidx = geometry.nearestHydrogen(mol, idx)
+        adduct = geometry.removeAtomFromMol(mol, hidx)
     elif '+' in adduct:
         atom = adduct.split('+')[-1]
         if atom.lower() == 'na':
@@ -173,7 +174,7 @@ def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
     # talk to Jamie about this:
     adduct.localopt(forcefield=forcefield, steps=steps)
     return adduct
-    
+
 
 def read_pka(path):
     '''Reads pKa from cxcalc output'''
@@ -191,6 +192,7 @@ def read_pka(path):
             i += 1
 
     return res
+
 
 def read_impact(path):
     # read ccs file
