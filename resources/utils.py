@@ -5,7 +5,6 @@ from . import geometry
 import pandas as pd
 import numpy as np
 import platform
-import sys
 
 
 def getOS():

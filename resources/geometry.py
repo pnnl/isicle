@@ -174,7 +174,7 @@ def addAtomToMol(mol, atom, idx, covalent=True):
     INPUT:
         mol - pybel molecule object
         atom - element symbol (string) of the atom to be added
-        idx - atom number of the atom near which the new atom is 
+        idx - atom number of the atom near which the new atom is
               placed
         covalent - True for covalent; otherwise non-covalent (van der Waal)
     OUTPUT:
