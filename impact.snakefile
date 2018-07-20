@@ -30,33 +30,28 @@ rule postprocess:
         ccs = expand(rules.impact.output, id=IDS, adduct=config['adducts']),
         mass = expand(rules.calculateMass.output, id=IDS),
         formula = expand(rules.calculateFormula.output, id=IDS),
-        inchi = expand(rules.desalt.input, id=IDS)
+        inchi = expand(rules.desalt.input, id=IDS),
+        p_inchi = expand(rules.tautomerize.output, id=IDS)
     output:
         join(config['path'], 'output', 'impact_results.tsv')
     run:
         dfs = []
-        for ccs in input.ccs:
+        for f in input.ccs:
             # read ccs
-            df = read_impact(ccs)
-
-            # ID, adduct
-            ID, adduct = splitext(basename(ccs))[0].rsplit('_', 1)
-
-            # extract
-            mass = [x for x in input.mass if ID in x][0]
-            formula = [x for x in input.formula if ID in x][0]
-            inchi = [x for x in input.inchi if ID in x][0]
+            ccs = read_impact(f)
 
             # additional info
-            df['ID'] = ID
-            df['Adduct'] = adduct
-            df['Parent Mass'] = read_mass(mass)
-            df['Parent Formula'] = read_string(formula)
-            df['Parent InChI'] = read_string(inchi)
+            ID, adduct = splitext(basename(f))[0].rsplit('_', 1)
+            mass = read_mass([x for x in input.mass if ID in x][0])
+            formula = read_string([x for x in input.formula if ID in x][0])
+            inchi = read_string([x for x in input.inchi if ID in x][0])
+            p_inchi = read_string([x for x in input.p_inchi if ID in x][0])
+
+            df = pd.DataFrame(data=[[ID, adduct, inchi, formula, mass, p_inchi, ccs]],
+                              columns=['ID', 'Adduct', 'Parent InChI', 'Parent Formula',
+                                       'Parent Mass', 'Processed InChI', 'CCS_He'])
 
             # reorder/rename
-            df = df[['ID', 'Adduct', 'Parent InChI', 'Parent Formula', 'Parent Mass', 'CCS_TJM']]
-            df.columns = ['ID', 'Adduct', 'Parent InChI', 'Parent Formula', 'Parent Mass', 'CCS_He']
             df['CCS_N2'] = df['CCS_He'] + config['ccs']['alpha'] * df['Parent Mass'] ** config['ccs']['beta']
             dfs.append(df)
 

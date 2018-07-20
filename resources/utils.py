@@ -205,4 +205,4 @@ def read_impact(path):
     df.columns = ['CCS_PA', 'SEM_rel', 'CCS_TJM']
     df['SEM_rel'] = float(df['SEM_rel'].str[:-1])
 
-    return df
+    return df['CCS_TJM'].values[0]
