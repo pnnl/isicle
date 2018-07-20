@@ -109,7 +109,7 @@ class Box:
     # create atom accessibility map
     def createAtomAccessibiltyMap(self, prob_rad):
         """
-        This function creates the molecule surface accessibility map of the new 
+        This function creates the molecule surface accessibility map of the new
         atom to be added in the molecule.
         INPUT:
             prob_rad: radius of the atom to be added
@@ -125,9 +125,9 @@ class Box:
 
         natoms = len(self.xyzr)
 
-       # Create the  accessibility map by
-       # rolling a spherical particle of radius (= probe radius) on the surface of each atom
-       # to determine the domain accessible/in-accessible to the particle.
+        # Create the  accessibility map by
+        # rolling a spherical particle of radius (= probe radius) on the surface of each atom
+        # to determine the domain accessible/in-accessible to the particle.
         for i in range(0, natoms):
             atom_radius = self.xyzr[i][3]
             atom_x = self.xyzr[i][0]
