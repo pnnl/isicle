@@ -5,3 +5,7 @@ adducts: ['+Na', '+H', '-H']
 forcefield:
   type: 'gaff'
   steps: 500
+
+ccs:
+  alpha: 27.9
+  beta: 0.14

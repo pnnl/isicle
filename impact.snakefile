@@ -44,11 +44,14 @@ rule postprocess:
             df['Parent Formula'] = read_string(formula)
             df['Parent InChI'] = read_string(inchi)
 
-            # reorder
-            df = df[['ID', 'Adduct', 'Parent InChI', 'Parent Formula', 'Parent Mass', 'CCS_PA', 'SEM_rel', 'CCS_TJM']]
+            # reorder/rename
+            df = df[['ID', 'Adduct', 'Parent InChI', 'Parent Formula', 'Parent Mass', 'CCS_TJM']]
+            df.columns = ['ID', 'Adduct', 'Parent InChI', 'Parent Formula', 'Parent Mass', 'CCS_He']
+            df['CCS_N2'] = df['CCS_He'] + config['ccs']['alpha'] * df['Parent Mass'] ** config['ccs']['beta']
             dfs.append(df)
 
         master = pd.concat(dfs)
-        newf = open(output[0], 'w')
-        newf.write(master.to_string(col_space=5, justify='left'))
-        newf.close()
+        master.to_csv(output[0], sep='\t', index=False)
+        # newf = open(output[0], 'w')
+        # newf.write(master.to_string(col_space=5, justify='left'))
+        # newf.close()

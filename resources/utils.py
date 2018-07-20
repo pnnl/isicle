@@ -5,6 +5,7 @@ from . import geometry
 import pandas as pd
 import numpy as np
 import platform
+import sys
 
 
 def getOS():
@@ -180,7 +181,9 @@ def read_pka(path):
     '''Reads pKa from cxcalc output'''
 
     df = pd.read_csv(path, sep='\t')
-    idx = [int(x) for x in df['atoms'].values[0].split(',')]
+
+    # offset indices because cxcalc is 1-based
+    idx = [int(x) - 1 for x in df['atoms'].values[0].split(',')]
     pk = df.values[0][1:5]
     label = ['a1', 'a2', 'b1', 'b2']
 

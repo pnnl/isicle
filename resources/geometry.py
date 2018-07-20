@@ -35,7 +35,7 @@ class Box:
                          which the molecule geometry is mapped.
             xyzr: array of x,y,z, and radius values for each atom in the molecule
             ext:  distance of the box edge from the atom closest to the edge.
-     
+
         OUTPUT:
             pybelmol: the new pybel molecule object
             total_chg: total charge on the new molecule
@@ -326,23 +326,21 @@ def removeAtomFromMol(mol, idx):
     # delete the atom
     mol.OBMol.DeleteAtom(atom)
 
-    # # calculate total charge on the molecule based on mmff94 forcefield
-    # chgs = pybelmol.calccharges(model="mmff94")
-    # total_chg = 0
-    # for chg in chgs:
-    #   total_chg  = total_chg + chg
-    # total_charge = "NA"
-
     return mol
 
 
 def nearestHydrogen(mol, idx):
+    logger = logging.getLogger(__name__)
+
     iatom = mol.atoms[idx]
+    logger.debug('Starting atom: %s, type %s', idx, iatom.atomicnum)
 
     # get the neighboring atoms of the selected atom
     nbatoms = openbabel.OBAtomAtomIter(iatom.OBAtom)
     for nb in nbatoms:
+        logger.debug('Connected to: %s, type %s', nb.GetId(), nb.GetAtomicNum())
         # if the neighboring atom is hydrogen
         if nb.GetAtomicNum() == 1:
             return nb.GetId()
-    return None
+
+    raise Exception('Hydrogen not found.')
