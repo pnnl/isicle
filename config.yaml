@@ -6,6 +6,11 @@ forcefield:
   type: 'gaff'
   steps: 500
 
+impact:
+  shotsPerRot: 64
+  convergence: 0.001
+  nRuns: 64
+
 ccs:
   alpha: 27.9
   beta: 0.14
