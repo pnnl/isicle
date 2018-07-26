@@ -1,0 +1,46 @@
+title "MMM"
+start MMM
+
+memory global 1600 mb heap 100 mb stack 600 mb
+
+permanent_dir sSource
+scratch_dir /scratch
+
+echo
+
+charge 0
+geometry units angstroms
+ load sSource/XXX.xyz
+end
+
+basis 
+ * library YYY1
+end
+
+dft
+ direct
+ xc ZZZ1
+end
+
+driver
+ maxiter 1000
+ xyz XXX_GGG1_GGG2
+end
+
+task dft optimize
+
+basis 
+ * library YYY2
+end
+
+dft
+ direct
+ xc ZZZ2
+ grid lebedev 75 11
+end
+
+property
+ SHIELDING PPP
+end
+
+task dft property
