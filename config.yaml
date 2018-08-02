@@ -14,3 +14,9 @@ impact:
 ccs:
   alpha: 27.9
   beta: 0.14
+
+# md
+cycles: 10
+nframes: 10
+low: 1.25e+06
+high: 1.45e+06

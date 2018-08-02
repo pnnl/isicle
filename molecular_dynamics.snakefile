@@ -202,7 +202,7 @@ rule extract_frames:
         join(config['path'], 'output', 'sander', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     run:
         frame = select_frames(input.out,
-                              nsamples=config['nframes'],
+                              frames=config['nframes'],
                               low=config['low'],
                               high=config['high'])[int(wildcards.frame)]
 

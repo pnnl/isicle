@@ -5,6 +5,7 @@ from . import geometry
 import pandas as pd
 import numpy as np
 import platform
+import openbabel
 
 
 def getOS():
@@ -206,3 +207,108 @@ def read_impact(path):
     df['SEM_rel'] = float(df['SEM_rel'].str[:-1])
 
     return df['CCS_TJM'].values[0]
+
+
+def read_mol(path, fmt='mol2'):
+    return Mol(next(pybel.readfile(fmt, path)))
+
+
+class Mol(pybel.Molecule):
+    def __init__(self, mol):
+        super().__init__(mol)
+
+    def total_partial_charge(self):
+        return np.array([a.partialcharge for a in self.atoms]).sum()
+
+    def natoms(self):
+        return len(self.atoms)
+
+
+def pop_atom(path, output, atom='Na'):
+    to_remove = []
+    to_save = []
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        for i, line in enumerate(lines):
+            if i == 2:
+                info = [int(x) for x in line.split()]
+            elif atom.upper() in line:
+                to_remove.append(i)
+                to_save.append(line)
+
+    change = len(to_remove)
+    with open(output, 'w') as f:
+        for i, line in enumerate(lines):
+            if i == 2:
+                info[0] -= change
+                f.write(' %s %s %s %s %s\n' % tuple(info))
+            elif i in to_remove:
+                pass
+            else:
+                f.write(line)
+
+    return to_remove, to_save
+
+
+def push_atom(path, output, idx, content):
+    with open(path, 'r') as f:
+        lines = f.readlines()
+
+    info = [int(x) for x in lines[2].split()]
+
+    for i, line in zip(idx, content):
+        lines.insert(i, line)
+
+    change = len(idx)
+    with open(output, 'w') as f:
+        for i, line in enumerate(lines):
+            if i == 2:
+                info[0] += change
+                f.write(' %s %s %s %s %s\n' % tuple(info))
+            else:
+                f.write(line)
+
+
+def select_frames(path, frames=10, low=1.25E6, high=1.45E6):
+    tmp = []
+    with open(path, 'r') as f:
+        for line in f:
+            if 'NSTEP' in line:
+                props = [x for x in line.split() if x is not '=']
+                d = {'step': int(props[1]),
+                     'time': float(props[3]),
+                     'temp': float(props[5])}
+                tmp.append(d)
+    df = pd.DataFrame(tmp)
+    stepsize = df['step'][1] - df['step'][0]
+    df['frame'] = df['step'] // stepsize
+
+    ss = df[(df['step'] >= low) & (df['step'] <= high)]
+
+    return ss['frame'].values[-frames:]
+
+
+def standardizeMol2(path, reference, output):
+    traj = next(pybel.readfile("mol2", path))
+    ref = next(pybel.readfile("mol2", reference))
+    for iatom in traj.atoms:
+        ob = iatom.OBAtom
+        idx = ob.GetIndex()
+
+        jatom = ref.OBMol.GetAtomById(idx)
+        ob.SetType(jatom.GetType())
+        ob.SetAtomicNum(jatom.GetAtomicNum())
+
+    traj.write("xyz", output, True)
+
+
+def rmsd(mol1, mol2):
+    a = next(pybel.readfile("xyz", mol1))
+    b = next(pybel.readfile("xyz", mol2))
+
+    align = openbabel.OBAlign(False, True)
+
+    align.SetRefMol(a.OBMol)
+    align.SetTargetMol(b.OBMol)
+    align.Align()
+    return align.GetRMSD()
