@@ -34,11 +34,5 @@
  &wt type='TEMP0', istep1=1100001, istep2=1600000,
    value1=300.0, value2=300.0
  /
-# &wt type='TEMP0', istep1=1600001, istep2=250000,
-#   value1=500.0, value2=300.0
-# /
-# &wt type='TEMP0', istep1=250001, istep2=300000,
-#   value1=300.0, value2=300.0
-# /
  &wt type='END'
  /
