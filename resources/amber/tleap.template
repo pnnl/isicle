@@ -1,0 +1,7 @@
+source leaprc.gaff
+source oldff/leaprc.ff14SB
+loadAmberParams ${frcmod}
+loadAmberParams frcmod.ionsjc_spce
+TP = loadMol2 ${mol2}
+saveAmberParm TP ${prmtop} ${inpcrd}
+quit
