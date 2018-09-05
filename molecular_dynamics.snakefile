@@ -38,6 +38,10 @@ rule antechamber:
         ac = join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log'),
         parmchk = join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
     run:
+        # if charges come from DFT, use them (don't override with +1/-1/0)
+        # also adjust antechamber flag if using DFT partial charges so it does not
+        # assign
+ 
         mol = read_mol(input.mol2)
 
         # this doesn't always work
