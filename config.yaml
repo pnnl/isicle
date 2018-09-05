@@ -10,6 +10,7 @@ impact:
   shotsPerRot: 64
   convergence: 0.001
   nRuns: 64
+  seed: 0
 
 ccs:
   alpha: 27.9

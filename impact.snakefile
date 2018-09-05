@@ -20,7 +20,7 @@ rule impact:
         join(config['path'], 'output', '5_impact', 'benchmarks', '{id}_{adduct}.benchmark')
     shell:
         # run impact on adducts
-        'resources/IMPACT/{OS}/impact {input} -o {output} -H \
+        'IMPACT_RANDSEED={config[impact][seed]} resources/IMPACT/{OS}/impact {input} -o {output} -H \
         -shotsPerRot {config[impact][shotsPerRot]} \
         -convergence {config[impact][convergence]} \
         -nRuns {config[impact][nRuns]} -nocite'
