@@ -8,27 +8,13 @@ import glob
 
 # snakemake configuration
 configfile: 'config.yaml'
+include: 'adducts.snakefile'
+localrules: convert, calculate_rmsd, downselect
 
-IDS, ADDUCTS = glob_wildcards(join(config['path'], 'input', '{id}_{adduct}.mol2'))
-
-
-def cycles():
-    return ['%03d' % x for x in range(config['cycles'] + 1)]
-
-
-def frames():
-    return ['%03d' % x for x in range(config['nframes'])]
-
-
-# a pseudo-rule that collects the target files
-rule all:
-    input:
-        expand(join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_s.xyz'),
-               id=IDS, adduct=ADDUCTS, cycle=cycles()[1:])
 
 rule antechamber:
     input:
-        mol2 = join(config['path'], 'input', '{id}_{adduct}.mol2')
+        mol2 = rules.generateAdducts.output.mol2
     output:
         tmp = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
         ac = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
@@ -41,12 +27,11 @@ rule antechamber:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
         # assign
- 
         mol = read_mol(input.mol2)
 
         # this doesn't always work
         ###################################
-        charge = mol.total_partial_charge() - 1
+        charge = config['charges'][wildcards.adduct]
         ###################################
 
         natoms = mol.natoms()
