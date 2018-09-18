@@ -12,6 +12,14 @@ include: 'adducts.snakefile'
 localrules: convert, calculate_rmsd, downselect
 
 
+def cycles():
+    return ['%03d' % x for x in range(config['cycles'] + 1)]
+
+
+def frames():
+    return ['%03d' % x for x in range(config['nframes'])]
+
+
 rule antechamber:
     input:
         mol2 = rules.generateAdducts.output.mol2

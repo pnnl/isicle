@@ -1,5 +1,4 @@
 from os.path import *
-from resources.utils import cycles, frames
 
 # snakemake configuration
 configfile: 'config.yaml'
@@ -18,6 +17,15 @@ include: 'molecular_dynamics.snakefile'
 
 # through md
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+
+
+def cycles():
+    return ['%03d' % x for x in range(config['cycles'] + 1)]
+
+
+def frames():
+    return ['%03d' % x for x in range(config['nframes'])]
+
 
 rule all:
     input:
