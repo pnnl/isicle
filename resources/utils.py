@@ -1,8 +1,8 @@
 import subprocess
+import pandas as pd
 from os.path import *
 import pybel
 from . import geometry
-import pandas as pd
 import numpy as np
 import platform
 import openbabel
