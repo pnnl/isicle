@@ -312,3 +312,11 @@ def rmsd(mol1, mol2):
     align.SetTargetMol(b.OBMol)
     align.Align()
     return align.GetRMSD()
+
+
+def cycles(n):
+    return ['%03d' % x for x in range(n + 1)]
+
+
+def frames(n):
+    return ['%03d' % x for x in range(n)]

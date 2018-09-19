@@ -12,14 +12,6 @@ include: 'adducts.snakefile'
 localrules: convert, calculate_rmsd, downselect
 
 
-def cycles():
-    return ['%03d' % x for x in range(config['cycles'] + 1)]
-
-
-def frames():
-    return ['%03d' % x for x in range(config['nframes'])]
-
-
 rule antechamber:
     input:
         mol2 = rules.generateAdducts.output.mol2
@@ -129,13 +121,13 @@ rule sander:
         rst = rules.sander_em.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
-        config = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.mdin'), cycle=cycles()),
-        rst = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.rst'), cycle=cycles()),
-        crd = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.crd'), cycle=cycles()),
-        out = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.out'), cycle=cycles())
+        config = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.mdin'), cycle=cycles(config['amber']['cycles'])),
+        rst = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.rst'), cycle=cycles(config['amber']['cycles'])),
+        crd = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.crd'), cycle=cycles(config['amber']['cycles'])),
+        out = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.out'), cycle=cycles(config['amber']['cycles']))
     run:
         # iterate SA steps
-        for i in range(config['cycles'] + 1):
+        for i in range(config['amber']['cycles'] + 1):
 
             # explicit output definitions
             cfg = join(config['path'], 'output', 'sander', 'anneal', '%03d' % i, '%s_%s.mdin' % (wildcards.id, wildcards.adduct))
@@ -199,9 +191,9 @@ rule extract_frames:
         join(config['path'], 'output', 'sander', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     run:
         frame = select_frames(input.out,
-                              frames=config['nframes'],
-                              low=config['low'],
-                              high=config['high'])[int(wildcards.frame)]
+                              frames=config['amber']['nframes'],
+                              low=config['amber']['low'],
+                              high=config['amber']['high'])[int(wildcards.frame)]
 
         shell('echo "trajin {input.crd} %s %s" > {output.trajin}' % (frame, frame))
         shell('echo "trajout {output.mol2} mol2" >> {output.trajin}')
@@ -233,12 +225,13 @@ rule calculate_rmsd:
 
 rule downselect:
     input:
-        xyz = expand(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'), frame=frames()),
-        rmsd = expand(join(config['path'], 'output', 'selected', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'), frame=frames())
+        xyz = expand(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'), frame=frames(config['amber']['nframes'])),
+        rmsd = expand(join(config['path'], 'output', 'selected', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'), frame=frames(config['amber']['nframes']))
     output:
-        s = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_s.xyz'),
-        d1 = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_d1.xyz'),
-        d2 = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_d2.xyz')
+        # s = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_s.xyz'),
+        # d1 = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_d1.xyz'),
+        # d2 = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_d2.xyz')
+        selected = expand(join(config['path'], 'output', 'selected', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'), selected=['s', 'd1', 'd2'])
     run:
         vals = []
         for f in input.rmsd:
@@ -251,6 +244,11 @@ rule downselect:
         d1 = input.xyz[idx[-1]]
         d2 = input.xyz[idx[-2]]
 
-        shell('cp %s {output.s}' % s)
-        shell('cp %s {output.d1}' % d1)
-        shell('cp %s {output.d2}' % d2)
+        # explicit output definitions
+        sout = join(config['path'], 'output', 'selected', 'xyz', '%s_%s_%s_s.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
+        d1out = join(config['path'], 'output', 'selected', 'xyz', '%s_%s_%s_d1.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
+        d2out = join(config['path'], 'output', 'selected', 'xyz', '%s_%s_%s_d2.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
+
+        shell('cp %s %s' % (s, sout))
+        shell('cp %s %s' % (d1, d1out))
+        shell('cp %s %s' % (d2, d2out))

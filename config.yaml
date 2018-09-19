@@ -1,4 +1,4 @@
-path: '/Users/colb804/workspace/data/benchmark_set/'
+path: ''
 
 adducts: ['+Na', '+H', '-H']
 charges: {'+Na': 1, '+H', 1, '-H': -1, 'Ne': 0}
@@ -17,8 +17,17 @@ ccs:
   alpha: 27.9
   beta: 0.14
 
-# md
-cycles: 10
-nframes: 10
-low: 1.25e+06
-high: 1.45e+06
+amber:
+  cycles: 10
+  nframes: 10
+  low: 1.25e+06
+  high: 1.45e+06
+
+nwchem:
+  runscript: resources/nwchem/cascade.sh
+  template: resources/nwchem/template.nw
+
+mobcal:
+  params: resources/mobcal/mobcal.params
+  atomtypes: resources/mobcal/atomtype_parameters.in
+  runscript: resources/mobcal/cascade.sh
