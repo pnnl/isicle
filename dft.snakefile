@@ -13,7 +13,7 @@ rule createNW:
     output:
         join(config['path'], 'output', 'nwchem', '{id}_{adduct}_{cycle}_{selected}.nw')
     group:
-        'density_functional_theory'
+        'dft'
     shell:
         'python resources/nwchem/generateNW.py {input} --template {config[nwchem][template]}'
 
@@ -25,7 +25,7 @@ rule NWChem:
     output:
         join(config['path'], 'output', 'nwchem', '{id}_{adduct}_{cycle}_{selected}.out')
     group:
-        'density_functional_theory'
+        'dft'
     shell:
         '{config[nwchem][runscript]} {input.nw}'
 
@@ -39,6 +39,6 @@ rule parseNWChem:
         charge1 = join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
         charge2 = join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
     group:
-        'density_functional_theory'
+        'dft'
     run:
         XYZtoMFJ(input[0], join(config['path'], 'output', 'mobcal'))

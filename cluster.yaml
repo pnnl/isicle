@@ -5,14 +5,15 @@ __default__:
   nodes: 1
   ntasks: 24
 
-NWChem:
-  name: NWChem
+adducts:
+  name: ISiCLE_adducts
   nodes: 1
 
-mobcalCharge:
-  name: MOBCAL
-  time: "1:00:00"
+md:
+  name: ISiCLE_md
 
-mobcalGeomCharge:
-  name: MOBCAL
-  time: "1:00:00"
+dft:
+  name: ISiCLE_dft
+
+mobility:
+  name: ISiCLE_mobility

@@ -17,7 +17,7 @@ rule desaltInChI:
     benchmark:
         join(config['path'], 'output', '0_desalted', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     run:
         inchi = read_string(input[0])
         inchi = desalt(inchi, log[0])
@@ -34,7 +34,7 @@ rule neutralizeInChI:
     benchmark:
         join(config['path'], 'output', '1_neutralized', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     run:
         inchi = read_string(input[0])
         inchi = neutralize(inchi)
@@ -53,7 +53,7 @@ rule tautomerizeInChI:
     benchmark:
         join(config['path'], 'output', '2_tautomer', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     run:
         inchi = read_string(input[0])
         inchi = tautomerize(inchi, log=log[0])
@@ -72,7 +72,7 @@ rule calculateFormula:
     benchmark:
         join(config['path'], 'output', '2a_formula', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     run:
         inchi = read_string(input[0])
         formula = inchi2formula(inchi, log=log[0])
@@ -86,7 +86,7 @@ rule calculateMass:
     benchmark:
         join(config['path'], 'output', '2b_mass', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     shell:
         'python resources/molmass.py `cat {input}` > {output}'
 
@@ -99,7 +99,7 @@ rule generateGeometry:
     benchmark:
         join(config['path'], 'output', '3_parent_structures', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     run:
         inchi = read_string(input[0])
         mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
@@ -116,7 +116,7 @@ rule calculatepKa:
     benchmark:
         join(config['path'], 'output', '3a_pKa', 'benchmarks', '{id}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     shell:
         'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
 
@@ -132,7 +132,7 @@ rule generateAdducts:
     benchmark:
         join(config['path'], 'output', '4_adduct_structures', 'benchmarks', '{id}_{adduct}.benchmark')
     group:
-        'create_adducts'
+        'adducts'
     run:
         # log
         logging.basicConfig(filename=log[0], level=logging.DEBUG)

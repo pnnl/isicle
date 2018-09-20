@@ -90,7 +90,7 @@ rule tleap:
 
         shell('tleap -s -f {output.config} &> {log}')
 
-rule sander_em:
+rule sanderEM:
     input:
         mol2 = rules.antechamber.output.mol2,
         prmtop = rules.tleap.output.prmtop,
@@ -123,7 +123,7 @@ rule sander_em:
 rule sander:
     input:
         mol2 = rules.antechamber.output.mol2,
-        rst = rules.sander_em.output.rst,
+        rst = rules.sanderEM.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
         config = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.mdin'), cycle=cycles(config['amber']['cycles'])),
