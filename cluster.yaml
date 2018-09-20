@@ -7,7 +7,6 @@ __default__:
 
 adducts:
   name: ISiCLE_adducts
-  nodes: 1
 
 md:
   name: ISiCLE_md
