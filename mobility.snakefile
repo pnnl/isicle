@@ -6,7 +6,7 @@ from resources.utils import *
 # snakemake configuration
 configfile: 'config.yaml'
 include: 'dft.snakefile'
-localrules: parseMobcal, boltzmann_average
+
 
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
 

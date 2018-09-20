@@ -4,7 +4,7 @@ from resources.nwchem.parseOutputs import XYZtoMFJ
 # snakemake configuration
 configfile: 'config.yaml'
 include: 'molecular_dynamics.snakefile'
-localrules: createNW, parseNWChem
+
 
 # create .nw files based on template (resources/nwchem/template.nw)
 rule createNW:

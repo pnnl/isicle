@@ -9,7 +9,6 @@ import glob
 # snakemake configuration
 configfile: 'config.yaml'
 include: 'adducts.snakefile'
-localrules: convert, calculate_rmsd, downselect
 
 
 rule antechamber:

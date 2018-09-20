@@ -5,7 +5,7 @@ import logging
 
 # snakemake configuration
 configfile: 'config.yaml'
-localrules: desalt, neutralize, calculateMass
+
 
 rule desalt:
     input:
