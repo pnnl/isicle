@@ -16,6 +16,8 @@ rule desalt:
         join(config['path'], 'output', '0_desalted', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', '0_desalted', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     run:
         inchi = read_string(input[0])
         inchi = desalt(inchi, log[0])
@@ -31,6 +33,8 @@ rule neutralize:
         join(config['path'], 'output', '1_neutralized', '{id}.inchi')
     benchmark:
         join(config['path'], 'output', '1_neutralized', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     run:
         inchi = read_string(input[0])
         inchi = neutralize(inchi)
@@ -48,6 +52,8 @@ rule tautomerize:
         join(config['path'], 'output', '2_tautomer', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', '2_tautomer', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     run:
         inchi = read_string(input[0])
         inchi = tautomerize(inchi, log=log[0])
@@ -65,6 +71,8 @@ rule calculateFormula:
         join(config['path'], 'output', '2a_formula', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', '2a_formula', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     run:
         inchi = read_string(input[0])
         formula = inchi2formula(inchi, log=log[0])
@@ -77,6 +85,8 @@ rule calculateMass:
         join(config['path'], 'output', '2b_mass', '{id}.mass')
     benchmark:
         join(config['path'], 'output', '2b_mass', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     shell:
         'python resources/molmass.py `cat {input}` > {output}'
 
@@ -88,6 +98,8 @@ rule inchi2geom:
         png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
     benchmark:
         join(config['path'], 'output', '3_parent_structures', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     run:
         inchi = read_string(input[0])
         mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
@@ -103,6 +115,8 @@ rule calculatepKa:
         join(config['path'], 'output', '3a_pKa', '{id}.pka')
     benchmark:
         join(config['path'], 'output', '3a_pKa', 'benchmarks', '{id}.benchmark')
+    group:
+        'adducts'
     shell:
         'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
 
@@ -117,6 +131,8 @@ rule generateAdducts:
         join(config['path'], 'output', '4_adduct_structures', 'log', '{id}_{adduct}.log')
     benchmark:
         join(config['path'], 'output', '4_adduct_structures', 'benchmarks', '{id}_{adduct}.benchmark')
+    group:
+        'adducts'
     run:
         # log
         logging.basicConfig(filename=log[0], level=logging.DEBUG)

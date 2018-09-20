@@ -23,6 +23,8 @@ rule antechamber:
     log:
         ac = join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log'),
         parmchk = join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
+    group:
+        'md'
     run:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
@@ -73,6 +75,8 @@ rule tleap:
         inpcrd = join(config['path'], 'output', 'tleap', 'inpcrd', '{id}_{adduct}.crd')
     log:
         join(config['path'], 'output', 'tleap', 'logs', '{id}_{adduct}.log')
+    group:
+        'md'
     run:
         with open('resources/amber/tleap.template', 'r') as f:
             t = Template(f.read())
@@ -96,6 +100,8 @@ rule sander_em:
         config = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.mdin'),
         rst = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.rst'),
         out = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.out')
+    group:
+        'md'
     run:
         with open('resources/amber/sander_em.template', 'r') as f:
             t = Template(f.read())
@@ -125,6 +131,8 @@ rule sander:
         rst = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.rst'), cycle=cycles(config['amber']['cycles'])),
         crd = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.crd'), cycle=cycles(config['amber']['cycles'])),
         out = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.out'), cycle=cycles(config['amber']['cycles']))
+    group:
+        'md'
     run:
         # iterate SA steps
         for i in range(config['amber']['cycles'] + 1):
@@ -189,6 +197,8 @@ rule extract_frames:
         mol2 = join(config['path'], 'output', 'sander', 'extracted', 'mol2', '{id}_{adduct}_{cycle}_{frame}.mol2'),
     log:
         join(config['path'], 'output', 'sander', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
+    group:
+        'md'
     run:
         frame = select_frames(input.out,
                               frames=config['amber']['nframes'],
@@ -205,6 +215,8 @@ rule convert:
         mol2b = rules.antechamber.input.mol2
     output:
         xyz = join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{id}_{adduct}_{cycle}_{frame}.xyz')
+    group:
+        'md'
     run:
         standardizeMol2(input.mol2a, input.mol2b, output.xyz)
 
@@ -213,6 +225,8 @@ rule calculate_rmsd:
         xyz = rules.convert.output.xyz
     output:
         rmsd = join(config['path'], 'output', 'selected', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
+    group:
+        'md'
     run:
         mols = glob.glob(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '%s_%s_%s_*.xyz' %
                               (wildcards.id, wildcards.adduct, wildcards.cycle)))
@@ -228,10 +242,9 @@ rule downselect:
         xyz = expand(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'), frame=frames(config['amber']['nframes'])),
         rmsd = expand(join(config['path'], 'output', 'selected', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'), frame=frames(config['amber']['nframes']))
     output:
-        # s = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_s.xyz'),
-        # d1 = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_d1.xyz'),
-        # d2 = join(config['path'], 'output', 'selected', 'xyz', '{id}_{adduct}_{cycle}_d2.xyz')
         selected = expand(join(config['path'], 'output', 'selected', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'), selected=['s', 'd1', 'd2'])
+    group:
+        'md'
     run:
         vals = []
         for f in input.rmsd:

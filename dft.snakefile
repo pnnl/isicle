@@ -12,6 +12,8 @@ rule createNW:
         rules.downselect.output.selected
     output:
         join(config['path'], 'output', 'nwchem', '{id}_{adduct}_{cycle}_{selected}.nw')
+    group:
+        'dft'
     shell:
         'python resources/nwchem/generateNW.py {input} --template {config[nwchem][template]}'
 
@@ -22,6 +24,8 @@ rule NWChem:
         nw = rules.createNW.output
     output:
         join(config['path'], 'output', 'nwchem', '{id}_{adduct}_{cycle}_{selected}.out')
+    group:
+        'dft'
     shell:
         '{config[nwchem][runscript]} {input.nw}'
 
@@ -34,5 +38,7 @@ rule parseNWChem:
         geom2 = join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),
         charge1 = join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
         charge2 = join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
+    group:
+        'dft'
     run:
         XYZtoMFJ(input[0], join(config['path'], 'output', 'mobcal'))
