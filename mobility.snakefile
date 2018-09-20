@@ -17,7 +17,7 @@ rule mobcal:
     output:
         join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
     group:
-        'mobility'
+        'mobility_calculation'
     shell:
         '{config[mobcal][runscript]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input}'
 
@@ -29,7 +29,7 @@ rule parseMobcal:
     output:
         join(config['path'], 'output', 'ccs_all_conformers.tsv')
     group:
-        'mobility'
+        'mobility_calculation'
     run:
         res = []
         for ccsfile, efile in zip(input['geom'], input['energy']):
@@ -53,6 +53,6 @@ rule boltzmannAverage:
     output:
         join(config['path'], 'output', 'ccs_result.tsv')
     group:
-        'mobility'
+        'mobility_calculation'
     run:
         boltzmann(input[0], output[0])
