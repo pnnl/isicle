@@ -186,7 +186,7 @@ rule sander:
             cmd = 'sander -O -p %s -c %s -i %s -o %s -r %s -x %s' % (input.prmtop, rst_in, cfg, out, rst_out, crd)
             shell(cmd)
 
-rule extract_frames:
+rule extractFrames:
     input:
         prmtop = rules.tleap.output.prmtop,
         out = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.out'),
@@ -210,7 +210,7 @@ rule extract_frames:
 
 rule convert:
     input:
-        mol2a = rules.extract_frames.output.mol2,
+        mol2a = rules.extractFrames.output.mol2,
         mol2b = rules.antechamber.input.mol2
     output:
         xyz = join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{id}_{adduct}_{cycle}_{frame}.xyz')

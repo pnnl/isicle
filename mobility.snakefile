@@ -47,7 +47,7 @@ rule parseMobcal:
         df.to_csv(output[0], sep='\t', index=False)
 
 # boltzmann averaging
-rule boltzmann_average:
+rule boltzmannAverage:
     input:
         rules.parseMobcal.output
     output:

@@ -7,7 +7,7 @@ import logging
 configfile: 'config.yaml'
 
 
-rule desalt:
+rule desaltInChI:
     input:
         join(config['path'], 'input', '{id}.inchi')
     output:
@@ -26,9 +26,9 @@ rule desalt:
         else:
             sys.exit(1)
 
-rule neutralize:
+rule neutralizeInChI:
     input:
-        rules.desalt.output
+        rules.desaltInChI.output
     output:
         join(config['path'], 'output', '1_neutralized', '{id}.inchi')
     benchmark:
@@ -43,9 +43,9 @@ rule neutralize:
         else:
             sys.exit(1)
 
-rule tautomerize:
+rule tautomerizeInChI:
     input:
-        rules.neutralize.output
+        rules.neutralizeInChI.output
     output:
         join(config['path'], 'output', '2_tautomer', '{id}.inchi')
     log:
@@ -64,7 +64,7 @@ rule tautomerize:
 
 rule calculateFormula:
     input:
-        rules.tautomerize.output
+        rules.tautomerizeInChI.output
     output:
         join(config['path'], 'output', '2a_formula', '{id}.formula')
     log:
@@ -90,9 +90,9 @@ rule calculateMass:
     shell:
         'python resources/molmass.py `cat {input}` > {output}'
 
-rule inchi2geom:
+rule generateGeometry:
     input:
-        rules.tautomerize.output
+        rules.tautomerizeInChI.output
     output:
         mol = join(config['path'], 'output', '3_parent_structures', 'mol', '{id}.mol'),
         png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
@@ -110,7 +110,7 @@ rule inchi2geom:
 
 rule calculatepKa:
     input:
-        rules.inchi2geom.output.mol
+        rules.generateGeometry.output.mol
     output:
         join(config['path'], 'output', '3a_pKa', '{id}.pka')
     benchmark:
@@ -122,7 +122,7 @@ rule calculatepKa:
 
 rule generateAdducts:
     input:
-        molfile = rules.inchi2geom.output.mol,
+        molfile = rules.generateGeometry.output.mol,
         pkafile = rules.calculatepKa.output
     output:
         xyz = join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
