@@ -7,7 +7,7 @@ __default__:
 
 NWChem:
   name: NWChem
-  nodes: 4
+  nodes: 1
 
 mobcalCharge:
   name: MOBCAL
