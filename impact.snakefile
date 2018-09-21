@@ -13,7 +13,7 @@ rule impact:
     input:
         rules.generateAdducts.output.xyz
     output:
-        join(config['path'], 'output', '5_impact', '{id}_{adduct}.He.ccs')
+        join(config['path'], 'output', '5_impact', '{id}_{adduct}.txt')
     benchmark:
         join(config['path'], 'output', '5_impact', 'benchmarks', '{id}_{adduct}.benchmark')
     group:
@@ -28,18 +28,21 @@ rule impact:
 rule postprocess:
     input:
         ccs = rules.impact.output,
-        mass = rules.calculateMass.output,
+        mass = rules.calculateMass.output
     output:
-        join(config['path'], 'output', '5_impact', '{id}_{adduct}.N2.ccs')
+        join(config['path'], 'output', '6_impact_ccs', '{id}_{adduct}.N2.ccs'),
+        join(config['path'], 'output', '6_impact_ccs', '{id}_{adduct}.He.ccs')
     group:
         'impact'
     run:
         # read inputs
-        ccs_He = read_impact(input['ccs'])
-        m = read_mass(input['mass'])
+        ccs_He = read_impact(input[0])
+        m = read_mass(input[1])
 
         ccs_N2 = ccs_He + config['ccs']['alpha'] * m ** config['ccs']['beta']
+
         write_string(str(ccs_N2), output[0])
+        write_string(str(ccs_He), output[1])
 
 # # for report
 # ID, adduct = splitext(basename(f))[0].rsplit('_', 1)
