@@ -4,10 +4,10 @@ from resources.utils import *
 # snakemake configuration
 configfile: 'config.yaml'
 
-include: 'impact.snakefile'
+# include: 'impact.snakefile'
 # include: 'molecular_dynamics.snakefile'
 # include: 'dft.snakefile'
-# include: 'mobility.snakefile'
+include: 'mobility.snakefile'
 
 
 # # impact

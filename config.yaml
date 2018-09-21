@@ -1,7 +1,7 @@
 path: ''
 
 adducts: ['+Na', '+H', '-H']
-charges: {'+Na': 1, '+H', 1, '-H': -1, 'Ne': 0}
+charges: {'+Na': 1, '+H': 1, '-H': -1, 'Ne': 0}
 
 forcefield:
   type: 'gaff'
