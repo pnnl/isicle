@@ -4,10 +4,10 @@ from resources.utils import *
 # snakemake configuration
 configfile: 'config.yaml'
 
-# include: 'impact.snakefile'
+include: 'impact.snakefile'
 # include: 'molecular_dynamics.snakefile'
 # include: 'dft.snakefile'
-include: 'mobility.snakefile'
+# include: 'mobility.snakefile'
 
 
 # # impact
@@ -15,7 +15,7 @@ include: 'mobility.snakefile'
 
 # rule all:
 #     input:
-#         expand(join(config['path'], 'output', '5_impact', '{id}_{adduct}.N2.ccs'), id=IDS, adduct=config['adducts'])
+#         expand(join(config['path'], 'output', '6_impact_ccs', '{id}_{adduct}.N2.ccs'), id=IDS, adduct=config['adducts'])
 
 
 # # through md
@@ -42,8 +42,8 @@ include: 'mobility.snakefile'
 #         expand(join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out'),
 #                id=IDS, adduct=config['adducts'], cycle=cycles(config['cycles'])[1:], selected=['s', 'd1', 'd2'])
 
-# # end to end
-# IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+# end to end
+IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
 
 rule all:
     input:
