@@ -9,32 +9,21 @@ def tail(f, lines=1):
     return [x.strip() for x in subprocess.check_output(['tail', '-n%s' % lines, f]).decode('ascii').split('\n')]
 
 
-def _func(grp):
-    ref = grp['G'].min()
-    grp['RelG'] = grp['G'] - ref
-    grp['B'] = np.exp(-grp['RelG'] / 0.5924847535)
-    grp['Weights'] = (grp['B'] / grp['B'].sum()) * len(grp.index)
-
-    ws = DescrStatsW(grp['Mean CCS'], weights=grp['Weights'], ddof=0)
-
-    return pd.Series([ws.mean, ws.std, ws.std_mean, ws.var, len(grp.index)],
-                     index=['mean', 'std', 'std_mean', 'var', 'N'])
-
-
 def boltzmann(infile, outfile):
     df = pd.read_csv(infile, sep='\t')
 
-    # df['File'] = [x[-1] for x in df['File'].str.rsplit('/', 1).tolist()]
+    g = df['DFT Energy'].values * 627.503
+    mn = g.min()
+    relG = g - mn
+    b = np.exp(-relG / 0.5924847535)
+    w = (b / b.sum()) * len(b)
 
-    info = [x[1].split('+') for x in df['File'].str.split('_').tolist()]
+    ws = DescrStatsW(df['Mean CCS'], weights=w, ddof=0)
 
-    df['ID'] = ['molid' + str(x[0]) for x in info]
-    df['Adduct'] = ['+' + ''.join(i for i in x[1] if not i.isdigit()) for x in info]
+    res = pd.Series([ws.mean, ws.std, ws.std_mean, ws.var, len(grp.index)],
+                    index=['mean', 'std', 'std_mean', 'var', 'N'])
 
-    df['G'] = df['DFT Energy'] * 627.503
-    df = df.groupby(by=['ID', 'Adduct']).apply(_func).reset_index()
-
-    df.to_csv(outfile, sep='\t', index=False)
+    res.to_csv(outfile, sep='\t', index=False, header=True)
 
 
 def parse_mobcal(f):
@@ -51,6 +40,6 @@ def parse_mobcal(f):
             ccs_std = float(line.split('=')[-1])
             done = True
     if done is True:
-        return [basename(f), m_mn, ccs_mn, ccs_std]
+        return [m_mn, ccs_mn, ccs_std]
     else:
         return None

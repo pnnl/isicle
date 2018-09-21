@@ -8,8 +8,6 @@ configfile: 'config.yaml'
 include: 'dft.snakefile'
 
 
-IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
-
 # run mobcal on geom+charge nwchem output
 rule mobcal:
     input:
@@ -24,10 +22,12 @@ rule mobcal:
 # parse mobcal output
 rule parseMobcal:
     input:
-        geom = expand(rules.mobcal.output, id=IDS, adduct=config['adducts'], cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(rules.parseNWChem.output.charge2, id=IDS, adduct=config['adducts'], cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
+        geom = expand(join(config['path'], 'output', 'mobcal', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.out'),
+                      cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
+        energy = expand(join(config['path'], 'output', 'mobcal', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.energy'),
+                        cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        join(config['path'], 'output', 'ccs_all_conformers.tsv')
+        join(config['path'], 'output', 'conformer_ccs', '{id}_{adduct}.tsv')
     group:
         'mobility'
     run:
@@ -40,10 +40,8 @@ rule parseMobcal:
                     e = float(f.readlines()[0])
                 tmp.append(e)
                 res.append(tmp)
-            else:
-                print(ccsfile)
 
-        df = pd.DataFrame(res, columns=['File', 'Mobility', 'Mean CCS', 'Stdev CCS', 'DFT Energy'])
+        df = pd.DataFrame(res, columns=['Mobility', 'Mean CCS', 'Stdev CCS', 'DFT Energy'])
         df.to_csv(output[0], sep='\t', index=False)
 
 # boltzmann averaging
@@ -51,7 +49,7 @@ rule boltzmannAverage:
     input:
         rules.parseMobcal.output
     output:
-        join(config['path'], 'output', 'ccs_result.tsv')
+        join(config['path'], 'output', 'boltzmann_ccs', '{id}_{adduct}.tsv')
     group:
         'mobility'
     run:

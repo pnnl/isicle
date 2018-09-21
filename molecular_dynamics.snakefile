@@ -126,10 +126,14 @@ rule sander:
         rst = rules.sanderEM.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
-        config = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.mdin'), cycle=cycles(config['amber']['cycles'])),
-        rst = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.rst'), cycle=cycles(config['amber']['cycles'])),
-        crd = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.crd'), cycle=cycles(config['amber']['cycles'])),
-        out = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.out'), cycle=cycles(config['amber']['cycles']))
+        config = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.mdin'),
+                        cycle=cycles(config['amber']['cycles'])),
+        rst = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.rst'),
+                     cycle=cycles(config['amber']['cycles'])),
+        crd = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.crd'),
+                     cycle=cycles(config['amber']['cycles'])),
+        out = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.out'),
+                     cycle=cycles(config['amber']['cycles']))
     group:
         'md'
     run:
@@ -181,7 +185,8 @@ rule sander:
                 with open(cfg, 'w') as f:
                     f.write(t.substitute(d))
 
-                rst_in = join(config['path'], 'output', 'sander', 'anneal', '%03d' % (i - 1), '%s_%s.rst' % (wildcards.id, wildcards.adduct))
+                rst_in = join(config['path'], 'output', 'sander', 'anneal', '%03d' % (i - 1), '%s_%s.rst' %
+                              (wildcards.id, wildcards.adduct))
 
             cmd = 'sander -O -p %s -c %s -i %s -o %s -r %s -x %s' % (input.prmtop, rst_in, cfg, out, rst_out, crd)
             shell(cmd)
@@ -238,10 +243,13 @@ rule calculate_rmsd:
 
 rule downselect:
     input:
-        xyz = expand(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'), frame=frames(config['amber']['nframes'])),
-        rmsd = expand(join(config['path'], 'output', 'selected', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'), frame=frames(config['amber']['nframes']))
+        xyz = expand(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'),
+                     frame=frames(config['amber']['nframes'])),
+        rmsd = expand(join(config['path'], 'output', 'selected', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'),
+                      frame=frames(config['amber']['nframes']))
     output:
-        selected = expand(join(config['path'], 'output', 'selected', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'), selected=['s', 'd1', 'd2'])
+        selected = expand(join(config['path'], 'output', 'selected', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
+                          selected=['s', 'd1', 'd2'])
     group:
         'md'
     run:

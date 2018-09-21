@@ -3,19 +3,19 @@ from resources.utils import *
 
 # snakemake configuration
 configfile: 'config.yaml'
-localrules: all
+
 # include: 'impact.snakefile'
 # include: 'molecular_dynamics.snakefile'
 # include: 'dft.snakefile'
 include: 'mobility.snakefile'
 
 
-# a pseudo-rule that collects the target files
-
 # # impact
+# IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+
 # rule all:
 #     input:
-#         join(config['path'], 'output', 'impact_results.tsv')
+#         expand(join(config['path'], 'output', '5_impact', '{id}_{adduct}.N2.ccs'), id=IDS, adduct=config['adducts'])
 
 
 # # through md
@@ -42,7 +42,9 @@ include: 'mobility.snakefile'
 #         expand(join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out'),
 #                id=IDS, adduct=config['adducts'], cycle=cycles(config['cycles'])[1:], selected=['s', 'd1', 'd2'])
 
-# end to end
+# # end to end
+# IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+
 rule all:
     input:
-        join(config['path'], 'output', 'ccs_result.tsv')
+        expand(join(config['path'], 'output', 'boltzmann_ccs', '{id}_{adduct}.tsv'), id=IDS, adduct=config['adducts'])
