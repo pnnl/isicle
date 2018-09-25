@@ -43,20 +43,11 @@ rule antechamber:
         else:
             shutil.copy2(input.mol2, output.tmp)
 
-        # abspath
-        tmp = abspath(output.tmp)
-        ac = abspath(output.ac)
-        frcmod = abspath(output.frcmod)
-        log_ac = abspath(log.ac)
-        log_parmchk = abspath(log.parmchk)
-
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'antechamber', 'tmp', '%s_%s' % (wildcards.id, wildcards.adduct)))
 
-        subprocess.call('antechamber -i %s -fi mol2 -o %s -fo mol2 -c bcc -s -du -nc %.4f &> %s' %
-                        (tmp, ac, charge, log_ac), shell=True)
-        subprocess.call('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o %s &> %s' %
-                        (frcmod, log_parmchk), shell=True)
+        shell('antechamber -i {output.tmp} -fi mol2 -o {output.ac} -fo mol2 -c bcc -s -du -nc %.4f &> {log.ac}' % charge)
+        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log.parmchk}')
         os.chdir(cwd)
 
         if wildcards.adduct == '+Na':
