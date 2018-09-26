@@ -64,16 +64,12 @@ rule antechamber:
         else:
             shutil.copy2(output.ac, output.mol2)
 
-rule tleap:
+rule tleapConfig:
     input:
         mol2 = rules.antechamber.output.mol2,
         frcmod = rules.antechamber.output.frcmod
     output:
-        config = join(config['path'], 'output', 'tleap', 'config', '{id}_{adduct}.config'),
-        prmtop = join(config['path'], 'output', 'tleap', 'prmtop', '{id}_{adduct}.top'),
-        inpcrd = join(config['path'], 'output', 'tleap', 'inpcrd', '{id}_{adduct}.crd')
-    log:
-        join(config['path'], 'output', 'tleap', 'logs', '{id}_{adduct}.log')
+        config = join(config['path'], 'output', 'tleap', 'config', '{id}_{adduct}.config')
     group:
         'md'
     run:
@@ -88,7 +84,18 @@ rule tleap:
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
 
-        shell('tleap -s -f {output.config} &> {log}')
+rule tleap:
+    input:
+        config = rules.tleapConfig.output.config
+    output:
+        prmtop = join(config['path'], 'output', 'tleap', 'prmtop', '{id}_{adduct}.top'),
+        inpcrd = join(config['path'], 'output', 'tleap', 'inpcrd', '{id}_{adduct}.crd')
+    log:
+        join(config['path'], 'output', 'tleap', 'logs', '{id}_{adduct}.log')
+    group:
+        'md'
+    shell:
+        'tleap -s -f {input.config} &> {log}'
 
 rule sanderEM:
     input:
