@@ -52,7 +52,7 @@ rule antechamber:
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'antechamber', 'tmp', '%s_%s' % (wildcards.id, wildcards.adduct)))
 
-        charge = config['charges'][wilcards.adduct]
+        charge = config['charges'][wildcards.adduct]
         if wildcards.adduct == '+Na':
             idx = np.load(input.idx)
             charge -= len(idx)
@@ -132,6 +132,8 @@ rule sanderEMConfig:
         mol2 = rules.antechamber.output.mol2
     output:
         config = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.mdin')
+    group:
+        'md'
     run:
         with open('resources/amber/sander_em.template', 'r') as f:
                 t = Template(f.read())
@@ -241,7 +243,7 @@ rule extractFrames:
         crd = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.crd')
     output:
         trajin = join(config['path'], 'output', 'sander', 'extracted', 'trajin', '{id}_{adduct}_{cycle}_{frame}.trajin'),
-        mol2 = join(config['path'], 'output', 'sander', 'extracted', 'mol2', '{id}_{adduct}_{cycle}_{frame}.mol2'),
+        mol2 = join(config['path'], 'output', 'sander', 'extracted', 'mol2', '{id}_{adduct}_{cycle}_{frame}.mol2')
     log:
         join(config['path'], 'output', 'sander', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     group:
@@ -258,7 +260,7 @@ rule extractFrames:
 
 rule convert:
     input:
-        mol2a = rules.extractFrames.output.mol2,
+        mol2a = join(config['path'], 'output', 'sander', 'extracted', 'mol2', '{id}_{adduct}_{cycle}_{frame}.mol2'),
         mol2b = rules.antechamber.input.mol2
     output:
         xyz = join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{id}_{adduct}_{cycle}_{frame}.xyz')
@@ -271,7 +273,7 @@ rule calculate_rmsd:
     input:
         xyz = rules.convert.output.xyz
     output:
-        rmsd = join(config['path'], 'output', 'selected', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
+        rmsd = join(config['path'], 'output', 'sander', 'extracted', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
     group:
         'md'
     run:
@@ -288,10 +290,10 @@ rule downselect:
     input:
         xyz = expand(join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'),
                      frame=frames(config['amber']['nframes'])),
-        rmsd = expand(join(config['path'], 'output', 'selected', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'),
+        rmsd = expand(join(config['path'], 'output', 'sander', 'extracted', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'),
                       frame=frames(config['amber']['nframes']))
     output:
-        selected = expand(join(config['path'], 'output', 'selected', 'xyz', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
+        selected = expand(join(config['path'], 'output', 'nwchem', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
                           selected=['s', 'd1', 'd2'])
     group:
         'md'
@@ -308,9 +310,9 @@ rule downselect:
         d2 = input.xyz[idx[-2]]
 
         # explicit output definitions
-        sout = join(config['path'], 'output', 'selected', 'xyz', '%s_%s_%s_s.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
-        d1out = join(config['path'], 'output', 'selected', 'xyz', '%s_%s_%s_d1.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
-        d2out = join(config['path'], 'output', 'selected', 'xyz', '%s_%s_%s_d2.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
+        sout = join(config['path'], 'output', 'nwchem', '%s_%s_%s_s.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
+        d1out = join(config['path'], 'output', 'nwchem', '%s_%s_%s_d1.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
+        d2out = join(config['path'], 'output', 'nwchem', '%s_%s_%s_d2.xyz' % (wildcards.id, wildcards.adduct, wildcards.cycle))
 
         shell('cp %s %s' % (s, sout))
         shell('cp %s %s' % (d1, d1out))

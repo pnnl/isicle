@@ -9,7 +9,7 @@ include: 'molecular_dynamics.snakefile'
 # create .nw files based on template (resources/nwchem/template.nw)
 rule createNW:
     input:
-        rules.downselect.output.selected
+        join(config['path'], 'output', 'nwchem', '{id}_{adduct}_{cycle}_{selected}.xyz')
     output:
         join(config['path'], 'output', 'nwchem', '{id}_{adduct}_{cycle}_{selected}.nw')
     group:
