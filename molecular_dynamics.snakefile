@@ -165,76 +165,71 @@ rule sanderEM:
     shell:
         'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst}'
 
-rule sander:
+rule sander0:
     input:
         mol2 = rules.restore.output.mol2,
         rst = rules.sanderEM.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
-        config = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.mdin'),
-                        cycle=cycles(config['amber']['cycles'])),
-        rst = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.rst'),
-                     cycle=cycles(config['amber']['cycles'])),
-        crd = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.crd'),
-                     cycle=cycles(config['amber']['cycles'])),
-        out = expand(join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{{id}}_{{adduct}}.out'),
-                     cycle=cycles(config['amber']['cycles']))
+        config = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.mdin'),
+        rst = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.rst'),
+        crd = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.crd'),
+        out = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.out')
     group:
         'md'
     run:
-        # iterate SA steps
-        for i in range(config['amber']['cycles'] + 1):
+        with open('resources/amber/sander_md0.template', 'r') as f:
+            t = Template(f.read())
 
-            # explicit output definitions
-            cfg = join(config['path'], 'output', 'sander', 'anneal', '%03d' % i, '%s_%s.mdin' % (wildcards.id, wildcards.adduct))
-            rst_out = join(config['path'], 'output', 'sander', 'anneal', '%03d' % i, '%s_%s.rst' % (wildcards.id, wildcards.adduct))
-            crd = join(config['path'], 'output', 'sander', 'anneal', '%03d' % i, '%s_%s.crd' % (wildcards.id, wildcards.adduct))
-            out = join(config['path'], 'output', 'sander', 'anneal', '%03d' % i, '%s_%s.out' % (wildcards.id, wildcards.adduct))
+        d = {'mol2': input.mol2,
+             'imin': 0,
+             'ntb': 0,
+             'ntf': 2,
+             'ntc': 2,
+             'ntx': 1,
+             'igb': 0,
+             'ntpr': 100,
+             'ntwx': 100,
+             'ntt': 3,
+             'nscm': 1,
+             'gamma_ln': 1.0,
+             'tempi': 0.0,
+             'temp0': 300.0,
+             'nstlim': 100000,
+             'dt': 0.0005,
+             'cut': 999,
+             'ig': -1}
 
-            # first SA step
-            if i == 0:
-                with open('resources/amber/sander_md0.template', 'r') as f:
-                    t = Template(f.read())
+        with open(output.config, 'w') as f:
+            f.write(t.substitute(d))
 
-                d = {'mol2': input.mol2,
-                     'imin': 0,
-                     'ntb': 0,
-                     'ntf': 2,
-                     'ntc': 2,
-                     'ntx': 1,
-                     'igb': 0,
-                     'ntpr': 100,
-                     'ntwx': 100,
-                     'ntt': 3,
-                     'nscm': 1,
-                     'gamma_ln': 1.0,
-                     'tempi': 0.0,
-                     'temp0': 300.0,
-                     'nstlim': 100000,
-                     'dt': 0.0005,
-                     'cut': 999,
-                     'ig': -1}
+        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd}')
 
-                with open(cfg, 'w') as f:
-                    f.write(t.substitute(d))
+rule sander:
+    input:
+        mol2 = rules.restore.output.mol2,
+        s0 = rules.sander0.output.rst,
+        rst = lambda wildcards: join(config['path'], 'output', 'sander', 'anneal', '%03d', '%s_%s.rst') %
+                                    (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
+        prmtop = rules.tleap.output.prmtop
+    output:
+        config = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.mdin'),
+        rst = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.rst'),
+        crd = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.crd'),
+        out = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.out')
+    group:
+        'md'
+    run:
 
-                rst_in = input.rst
+        with open('resources/amber/sander_anneal.template', 'r') as f:
+            t = Template(f.read())
 
-            # remaining SA steps
-            else:
-                with open('resources/amber/sander_anneal.template', 'r') as f:
-                    t = Template(f.read())
+        d = {'mol2': input.mol2}
 
-                d = {'mol2': input.mol2}
+        with open(output.config, 'w') as f:
+            f.write(t.substitute(d))
 
-                with open(cfg, 'w') as f:
-                    f.write(t.substitute(d))
-
-                rst_in = join(config['path'], 'output', 'sander', 'anneal', '%03d' % (i - 1), '%s_%s.rst' %
-                              (wildcards.id, wildcards.adduct))
-
-            cmd = 'sander -O -p %s -c %s -i %s -o %s -r %s -x %s' % (input.prmtop, rst_in, cfg, out, rst_out, crd)
-            shell(cmd)
+        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd}')
 
 rule extractFrames:
     input:
