@@ -5,23 +5,20 @@ import subprocess
 import os
 from string import Template
 import glob
+import numpy as np
 
 # snakemake configuration
 configfile: 'config.yaml'
 include: 'adducts.snakefile'
 
 
-rule antechamber:
+rule prepare:
     input:
         mol2 = rules.generateAdducts.output.mol2
     output:
-        tmp = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
-        ac = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
-        frcmod = join(config['path'], 'output', 'antechamber', 'frcmod', '{id}_{adduct}.frcmod'),
-        mol2 = join(config['path'], 'output', 'antechamber', 'mol2', '{id}_{adduct}.mol2')
-    log:
-        ac = join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log'),
-        parmchk = join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
+        mol2 = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
+        idx = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
+        content = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.content.npy')
     group:
         'md'
     run:
@@ -30,35 +27,77 @@ rule antechamber:
         # assign
         mol = read_mol(input.mol2)
 
-        # this doesn't always work
-        ###################################
-        charge = config['charges'][wildcards.adduct]
-        ###################################
-
-        natoms = mol.natoms()
-
         if wildcards.adduct == '+Na':
-            idx, content = pop_atom(input.mol2, output.tmp, atom='Na')
-            charge -= len(idx)
+            idx, content = pop_atom(input.mol2, output.mol2, atom='Na')
         else:
-            shutil.copy2(input.mol2, output.tmp)
+            shutil.copy2(input.mol2, output.mol2)
+            idx = None
+            content = None
 
+        np.save(output.idx, idx)
+        np.save(output.content, content)
+
+rule antechamber:
+    input:
+        mol2 = rules.prepare.output.mol2,
+        idx = rules.prepare.output.idx
+    output:
+        mol2 = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
+        ac = join(config['path'], 'output', 'antechamber', 'tmp', '{id}_{adduct}', 'ANTECHAMBER_AC.AC')
+    log:
+        join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log'),
+    group:
+        'md'
+    run:
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'antechamber', 'tmp', '%s_%s' % (wildcards.id, wildcards.adduct)))
 
-        shell('antechamber -i {output.tmp} -fi mol2 -o {output.ac} -fo mol2 -c bcc -s -du -nc %.4f &> {log.ac}' % charge)
-        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log.parmchk}')
+        charge = config['charges'][wilcards.adduct]
+        if wildcards.adduct == '+Na':
+            idx = np.load(input.idx)
+            charge -= len(idx)
+
+        shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc %.4f &> {log}' % charge)
         os.chdir(cwd)
 
+rule parmchk2:
+    input:
+        ac = rules.antechamber.output.mol2
+    output:
+        frcmod = join(config['path'], 'output', 'antechamber', 'frcmod', '{id}_{adduct}.frcmod')
+    log:
+        join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
+    group:
+        'md'
+    run:
+        cwd = os.getcwd()
+        os.chdir(join(config['path'], 'output', 'antechamber', 'tmp', '%s_%s' % (wildcards.id, wildcards.adduct)))
+
+        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log}')
+
+        os.chdir(cwd)
+
+rule restore:
+    input:
+        mol2 = rules.antechamber.output.mol2,
+        idx = rules.prepare.output.idx,
+        content = rules.prepare.output.content
+    output:
+        mol2 = join(config['path'], 'output', 'antechamber', 'mol2', '{id}_{adduct}.mol2')
+    group:
+        'md'
+    run:
         if wildcards.adduct == '+Na':
-            push_atom(output.ac, output.mol2, idx, content)
+            idx = np.load(input.idx)
+            content = np.load(input.content)
+            push_atom(input.mol2, output.mol2, idx, content)
         else:
-            shutil.copy2(output.ac, output.mol2)
+            shutil.copy2(input.mol2, output.mol2)
 
 rule tleapConfig:
     input:
         mol2 = rules.antechamber.output.mol2,
-        frcmod = rules.antechamber.output.frcmod
+        frcmod = rules.parmchk2.output.frcmod
     output:
         config = join(config['path'], 'output', 'tleap', 'config', '{id}_{adduct}.config')
     group:
@@ -88,20 +127,14 @@ rule tleap:
     shell:
         'tleap -s -f {input.config} &> {log}'
 
-rule sanderEM:
+rule sanderEMConfig:
     input:
-        mol2 = rules.antechamber.output.mol2,
-        prmtop = rules.tleap.output.prmtop,
-        inpcrd = rules.tleap.output.inpcrd
+        mol2 = rules.antechamber.output.mol2
     output:
-        config = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.mdin'),
-        rst = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.rst'),
-        out = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.out')
-    group:
-        'md'
+        config = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.mdin')
     run:
         with open('resources/amber/sander_em.template', 'r') as f:
-            t = Template(f.read())
+                t = Template(f.read())
 
         d = {'mol2': input.mol2,
              'imin': 1,
@@ -116,11 +149,23 @@ rule sanderEM:
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
 
-        shell('sander -O -i {output.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst}')
+rule sanderEM:
+    input:
+        config = rules.sanderEMConfig.output.config,
+        mol2 = rules.restore.output.mol2,
+        prmtop = rules.tleap.output.prmtop,
+        inpcrd = rules.tleap.output.inpcrd
+    output:
+        rst = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.rst'),
+        out = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.out')
+    group:
+        'md'
+    shell:
+        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst}'
 
 rule sander:
     input:
-        mol2 = rules.antechamber.output.mol2,
+        mol2 = rules.restore.output.mol2,
         rst = rules.sanderEM.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
