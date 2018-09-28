@@ -208,7 +208,8 @@ rule sander0:
 rule sander:
     input:
         mol2 = rules.restore.output.mol2,
-        s0 = rules.sander0.output.rst,
+        # s0 required to disambiguate, but not used
+        rst0 = rules.sander0.output.rst,
         rst = lambda wildcards: join(config['path'], 'output', 'sander', 'anneal', '%03d', '%s_%s.rst') %
                                     (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
         prmtop = rules.tleap.output.prmtop
