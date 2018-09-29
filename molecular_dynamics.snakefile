@@ -12,6 +12,10 @@ configfile: 'config.yaml'
 include: 'adducts.snakefile'
 
 
+# wildcard_constraints:
+#     cycle = '^[0-9]+$'
+
+
 rule prepare:
     input:
         mol2 = rules.generateAdducts.output.mol2
@@ -171,10 +175,10 @@ rule sander0:
         rst = rules.sanderEM.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
-        config = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.mdin'),
-        rst = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.rst'),
-        crd = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.crd'),
-        out = join(config['path'], 'output', 'sander', 'anneal', '000', '{id}_{adduct}.out')
+        config = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.mdin'),
+        rst = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
+        crd = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
+        out = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.out')
     group:
         'md'
     run:
@@ -210,18 +214,17 @@ rule sander:
         mol2 = rules.restore.output.mol2,
         # s0 required to disambiguate, but not used
         rst0 = rules.sander0.output.rst,
-        rst = lambda wildcards: join(config['path'], 'output', 'sander', 'anneal', '%03d', '%s_%s.rst') %
+        rst = lambda wildcards: join(config['path'], 'output', 'sander', 'anneal', 'cycle_%03d', '%s_%s.rst') %
                                     (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
         prmtop = rules.tleap.output.prmtop
     output:
-        config = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.mdin'),
-        rst = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.rst'),
-        crd = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.crd'),
-        out = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.out')
+        config = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin'),
+        rst = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
+        crd = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
+        out = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
     group:
         'md'
     run:
-
         with open('resources/amber/sander_anneal.template', 'r') as f:
             t = Template(f.read())
 
@@ -235,8 +238,8 @@ rule sander:
 rule extractFrames:
     input:
         prmtop = rules.tleap.output.prmtop,
-        out = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.out'),
-        crd = join(config['path'], 'output', 'sander', 'anneal', '{cycle}', '{id}_{adduct}.crd')
+        out = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out'),
+        crd = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd')
     output:
         trajin = join(config['path'], 'output', 'sander', 'extracted', 'trajin', '{id}_{adduct}_{cycle}_{frame}.trajin'),
         mol2 = join(config['path'], 'output', 'sander', 'extracted', 'mol2', '{id}_{adduct}_{cycle}_{frame}.mol2')
