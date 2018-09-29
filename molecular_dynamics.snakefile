@@ -10,10 +10,7 @@ import numpy as np
 # snakemake configuration
 configfile: 'config.yaml'
 include: 'adducts.snakefile'
-
-
-# wildcard_constraints:
-#     cycle = '^[0-9]+$'
+ruleorder: sander0 > sander
 
 
 rule prepare:
