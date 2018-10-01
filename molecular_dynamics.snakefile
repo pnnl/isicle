@@ -161,10 +161,12 @@ rule sanderEM:
     output:
         rst = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.rst'),
         out = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.out')
+    log:
+        join(config['path'], 'output', 'sander', 'em', 'logs', '{id}_{adduct}.log')
     group:
         'md'
     shell:
-        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst}'
+        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}'
 
 rule sander0:
     input:
@@ -176,6 +178,8 @@ rule sander0:
         rst = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
         crd = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
         out = join(config['path'], 'output', 'sander', 'anneal', 'cycle_000', '{id}_{adduct}.out')
+    log:
+        join(config['path'], 'output', 'sander', 'anneal', 'logs', '{id}_{adduct}_000.log')
     group:
         'md'
     run:
@@ -204,7 +208,7 @@ rule sander0:
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
 
-        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd}')
+        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 rule sander:
     input:
@@ -219,6 +223,8 @@ rule sander:
         rst = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
         crd = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
         out = join(config['path'], 'output', 'sander', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
+    log:
+        join(config['path'], 'output', 'sander', 'anneal', 'logs', '{id}_{adduct}_{cycle}.log')
     group:
         'md'
     run:
@@ -230,7 +236,7 @@ rule sander:
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
 
-        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd}')
+        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 rule extractFrames:
     input:
