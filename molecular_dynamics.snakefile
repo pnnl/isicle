@@ -126,7 +126,7 @@ rule tleap:
     group:
         'md'
     shell:
-        'tleap -s -f {input.config} &> {log}'
+        'tleap -s -f {input.config} logFile {log}'
 
 rule sanderEMConfig:
     input:
