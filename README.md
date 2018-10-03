@@ -50,7 +50,7 @@ snakemake -j 999 -k --cluster-config cluster.yaml --cluster "sbatch -A {cluster.
 
 Citing ISiCLE
 -------------
-If you would like to reference ISiCLE in an academic paper, we ask you use both of the following references::
+If you would like to reference ISiCLE in an academic paper, we ask you include both of the following references::
 
 * Colby, S.M., Thomas, D.G., Nunez, J.R., Baxter, D.J., Glaesemann, K.R., Brown, J.M., Pirrung, M.A., Govind, N., Teeguarden, J.G., Metz, T.O. and Renslow, R.S., 2018. ISiCLE: A molecular collision cross section calculation pipeline for establishing large in silico reference libraries for compound identification. arXiv preprint arXiv:1809.08378.
 * ISiCLE, version 0.1.0 http://github.com/pnnl/isicle (accessed Oct 2018)
