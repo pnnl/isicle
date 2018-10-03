@@ -1,9 +1,9 @@
 from os.path import *
-from resources.utils import *
+from isicle.resources.utils import *
 
 # snakemake configuration
-configfile: 'config.yaml'
-include: 'mobility.snakefile'
+configfile: 'isicle/config.yaml'
+include: 'isicle/mobility.snakefile'
 
 # end to end
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))

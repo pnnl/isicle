@@ -2,7 +2,7 @@ from os.path import *
 from resources.nwchem.parseOutputs import XYZtoMFJ
 
 # snakemake configuration
-configfile: 'config.yaml'
+configfile: 'isicle/config.yaml'
 include: 'molecular_dynamics.snakefile'
 
 

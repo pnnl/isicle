@@ -36,11 +36,12 @@ python generate_input.py /path/to/inchi_list.txt
 ```
 Additional options can be accessed through the help flag (``--help`` or ``-h``).
 
-To begin simulations, simply execute:
+To begin simulations, simply execute ``snakemake`` in the ISiCLE respository directory, with desired configuration flags (``snakemake -h`` for help). Default workflow and cluster configurations are provided, but these may be modified and supplied by the user. 
+
+An example usage for ``slurm`` cluster environments:
 ```bash
-python isicle.py 
+snakemake -j 999 -k --cluster-config cluster.yaml --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"
 ```
-Additional options can be accessed through the help flag (``--help`` or ``-h``). Default workflow and cluster configurations are provided, but these may be modified and supplied by the user.
 
 Citing ISiCLE
 -------------
