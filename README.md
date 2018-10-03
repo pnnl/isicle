@@ -45,7 +45,7 @@ To begin simulations, simply execute ``snakemake`` in the ISiCLE respository dir
 
 An example usage for ``slurm`` cluster environments:
 ```bash
-snakemake -j 999 -k --cluster-config cluster.yaml --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"
+snakemake -j 999 -k --cluster-config isicle/cluster.yaml --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"
 ```
 
 Citing ISiCLE
