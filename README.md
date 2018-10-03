@@ -3,7 +3,7 @@ ISiCLE
 
 Overview
 --------
-ISiCLE, or the _in silico_ chemical library engine, is a pipeline for high-accuracy chemical property calculation. ISiCLE takes an InChI (international chemical identifier) string as input, generates an initial 3D conformation, and subsequently optimizes this initial structure through molecular dynamics simulations and quantum chemistry optimizations. Finally, ISiCLE simulates desired properties (e.g. collision cross section, CCS) for each conformer yielded during molecular dynamics simulations to produce a single value, Boltzmann-weighted by Gibb's free energy, giving emphasis to properties from highly probable conformations.
+ISiCLE, or the _in silico_ chemical library engine, is a pipeline for high-accuracy chemical property calculation. ISiCLE takes an [InChI](https://en.wikipedia.org/wiki/International_Chemical_Identifier) (international chemical identifier) string as input, generates an initial 3D conformation, and subsequently optimizes this initial structure through molecular dynamics simulations and quantum chemistry optimizations. Finally, ISiCLE simulates desired properties (e.g. collision cross section, CCS) for each conformer yielded during molecular dynamics simulations to produce a single value, Boltzmann-weighted by Gibb's free energy, giving emphasis to properties from highly probable conformations.
 
 ISiCLE is implemented using the snakemake workflow management system, enabling scalability, portability, provenance, fault tolerance, and automatic job restarting. Snakemake provides a readable Python-based workflow definition language and execution environment that scales, without modification, from single-core workstations to compute clusters through as-available job queuing based on a task dependency graph.
 
@@ -18,7 +18,7 @@ Simply clone ISiCLE to your workstation or cluster, ensuring the following Pytho
 * chembl_ikey
 * statsmodels
 
-If using ``conda``, this can be achieved by creating a new virtual environment (however, chembl_ikey must be installed manually or by using ``pip``):
+If using ``conda``, this can be achieved by creating a new virtual environment (however, ``chembl_ikey`` must be installed manually or by using ``pip``):
 ```bash
 conda create -n isicle -c bioconda -c openbabel python=3.6.1 openbabel pybel snakemake numpy pandas yaml pathlib statsmodels
 ```
@@ -27,6 +27,11 @@ Additionally, ensure the following third-party software is installed and added t
 * [cxcalc](https://chemaxon.com/marvin-archive/5_2_0/marvin/help/applications/calc.html)
 * [ambertools](http://ambermd.org/GetAmber.php#ambertools)
 * [NWChem](http://www.nwchem-sw.org/index.php/Download)
+
+Activate the virtual environment by executing:
+```bash
+source activate isicle
+```
 
 Getting Started
 ---------------
