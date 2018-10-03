@@ -9,14 +9,38 @@ ISiCLE is implemented using the snakemake workflow management system, enabling s
 
 Installation
 ------------
-Simply clone ISiCLE to your workstation or cluster, ensuring the following Python packages are installed:
-* Snakemake
-* OpenBabel, PyBel
+Simply clone ISiCLE to your workstation or cluster, ensuring the following Python 3 packages are installed:
+* snakemake
+* openbabel, pybel
+* numpy
+* pandas
+* yaml
+* chembl_ikey
+* statsmodels
 
+If using ``conda``, this can be achieved by creating a new virtual environment (however, chembl_ikey must be installed manually or by using ``pip``):
+```bash
+conda create -n isicle -c bioconda -c openbabel python=3.6.1 openbabel pybel snakemake numpy pandas yaml pathlib statsmodels
+```
+
+Additionally, ensure the following third-party software is installed and added to your ``PATH``:
+* [cxcalc](https://chemaxon.com/marvin-archive/5_2_0/marvin/help/applications/calc.html)
+* [ambertools](http://ambermd.org/GetAmber.php#ambertools)
+* [NWChem](http://www.nwchem-sw.org/index.php/Download)
 
 Getting Started
 ---------------
+ISiCLE assumes a user starts with an InChI string on each line. Use ``generate_input.py`` to prepare inputs for Snakemake:
+```bash
+python generate_input.py /path/to/inchi_list.txt
+```
+Additional options can be accessed through the help flag (``--help`` or ``-h``).
 
+To begin simulations, simply execute:
+```bash
+python isicle.py 
+```
+Additional options can be accessed through the help flag (``--help`` or ``-h``). Default workflow and cluster configurations are provided, but these may be modified and supplied by the user.
 
 Citing ISiCLE
 -------------
