@@ -26,8 +26,13 @@ def inchi2smi(inchi, desalt=False, log=None):
         sep = ''
 
     cmd = 'echo "%s" | obabel -iinchi %s -ocan' % (inchi, ds)
-    res = subprocess.check_output(cmd,
-                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+
+    try:
+        res = subprocess.check_output(cmd,
+                                      stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    except:
+        return None
+
     if log is not None:
         with open(log, 'a') as f:
             f.write('inchi2smi:\n')
