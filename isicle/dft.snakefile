@@ -15,7 +15,7 @@ rule createNW:
     group:
         'dft'
     shell:
-        'python resources/nwchem/generateNW.py {input} --template {config[nwchem][template]}'
+        'python isicle/resources/nwchem/generateNW.py {input} --template {config[nwchem][template]}'
 
 # run NWChem
 rule NWChem:

@@ -104,7 +104,7 @@ rule tleapConfig:
     group:
         'md'
     run:
-        with open('resources/amber/tleap.template', 'r') as f:
+        with open('isicle/resources/amber/tleap.template', 'r') as f:
             t = Template(f.read())
 
         d = {'frcmod': input.frcmod,
@@ -136,7 +136,7 @@ rule sanderEMConfig:
     group:
         'md'
     run:
-        with open('resources/amber/sander_em.template', 'r') as f:
+        with open('isicle/resources/amber/sander_em.template', 'r') as f:
                 t = Template(f.read())
 
         d = {'mol2': input.mol2,
@@ -183,7 +183,7 @@ rule sander0:
     group:
         'md'
     run:
-        with open('resources/amber/sander_md0.template', 'r') as f:
+        with open('isicle/resources/amber/sander_md0.template', 'r') as f:
             t = Template(f.read())
 
         d = {'mol2': input.mol2,
@@ -228,7 +228,7 @@ rule sander:
     group:
         'md'
     run:
-        with open('resources/amber/sander_anneal.template', 'r') as f:
+        with open('isicle/resources/amber/sander_anneal.template', 'r') as f:
             t = Template(f.read())
 
         d = {'mol2': input.mol2}

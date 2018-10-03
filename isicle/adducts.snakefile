@@ -88,7 +88,7 @@ rule calculateMass:
     group:
         'adducts'
     shell:
-        'python resources/molmass.py `cat {input}` > {output}'
+        'python isicle/resources/molmass.py `cat {input}` > {output}'
 
 rule generateGeometry:
     input:
