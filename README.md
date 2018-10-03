@@ -18,7 +18,7 @@ Simply clone ISiCLE to your workstation or cluster, ensuring the following Pytho
 * chembl_ikey
 * statsmodels
 
-If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment (however, ``chembl_ikey`` must be installed manually or by using ``pip``):
+If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment (however, [``chembl_ikey``](https://github.com/mnowotka/chembl_ikey) must be installed manually or by using [``pip``](https://pypi.org/project/pip/)):
 ```bash
 conda create -n isicle -c bioconda -c openbabel python=3.6.1 openbabel pybel snakemake numpy pandas yaml pathlib statsmodels
 ```
