@@ -18,7 +18,7 @@ Simply clone ISiCLE to your workstation or cluster, ensuring the following Pytho
 * chembl_ikey
 * statsmodels
 
-If using ``conda``, this can be achieved by creating a new virtual environment (however, ``chembl_ikey`` must be installed manually or by using ``pip``):
+If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment (however, ``chembl_ikey`` must be installed manually or by using ``pip``):
 ```bash
 conda create -n isicle -c bioconda -c openbabel python=3.6.1 openbabel pybel snakemake numpy pandas yaml pathlib statsmodels
 ```
@@ -28,13 +28,13 @@ Additionally, ensure the following third-party software is installed and added t
 * [ambertools](http://ambermd.org/GetAmber.php#ambertools)
 * [NWChem](http://www.nwchem-sw.org/index.php/Download)
 
-Activate the virtual environment by executing:
+Getting Started
+---------------
+First, if using ``conda``, activate the virtual environment by executing:
 ```bash
 source activate isicle
 ```
 
-Getting Started
----------------
 ISiCLE assumes a user starts with an InChI string on each line. Use ``generate_input.py`` to prepare inputs for Snakemake:
 ```bash
 python generate_input.py /path/to/inchi_list.txt
