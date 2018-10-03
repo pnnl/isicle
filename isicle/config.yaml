@@ -24,10 +24,10 @@ amber:
   high: 1.45e+06
 
 nwchem:
-  runscript: resources/nwchem/cascade.sh
-  template: resources/nwchem/template.nw
+  runscript: isicle/resources/nwchem/cascade.sh
+  template: isicle/resources/nwchem/template.nw
 
 mobcal:
-  params: resources/mobcal/mobcal.params
-  atomtypes: resources/mobcal/atomtype_parameters.in
-  runscript: resources/mobcal/cascade.sh
+  params: isicle/resources/mobcal/mobcal.params
+  atomtypes: isicle/resources/mobcal/atomtype_parameters.in
+  runscript: isicle/resources/mobcal/cascade.sh
