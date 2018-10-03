@@ -4,7 +4,7 @@ import pandas as pd
 from resources.utils import *
 
 # snakemake configuration
-configfile: 'config.yaml'
+configfile: 'isicle/config.yaml'
 include: 'dft.snakefile'
 
 

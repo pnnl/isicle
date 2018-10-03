@@ -8,7 +8,7 @@ import glob
 import numpy as np
 
 # snakemake configuration
-configfile: 'config.yaml'
+configfile: 'isicle/config.yaml'
 include: 'adducts.snakefile'
 ruleorder: sander0 > sander
 

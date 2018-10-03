@@ -1,0 +1,10 @@
+snakemake
+openbabel
+pybel
+numpy
+pandas
+argparse
+yaml
+pathlib
+chembl_ikey
+statsmodels

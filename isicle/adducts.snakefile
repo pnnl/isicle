@@ -4,7 +4,7 @@ import sys
 import logging
 
 # snakemake configuration
-configfile: 'config.yaml'
+configfile: 'isicle/config.yaml'
 
 
 rule desaltInChI:
