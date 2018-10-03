@@ -35,13 +35,13 @@ First, if using ``conda``, activate the virtual environment by executing:
 source activate isicle
 ```
 
-ISiCLE assumes a user starts with an InChI string on each line. Use ``generate_input.py`` to prepare inputs for Snakemake:
+ISiCLE assumes a user starts with a text file with an InChI string on each line. Use ``generate_input.py`` to prepare inputs for Snakemake:
 ```bash
 python generate_input.py /path/to/inchi_list.txt
 ```
 Additional options can be accessed through the help flag (``--help`` or ``-h``).
 
-To begin simulations, simply execute ``snakemake`` in the ISiCLE respository directory, with desired configuration flags (``snakemake -h`` for help). Default workflow and cluster configurations are provided, but these may be modified and supplied by the user. 
+To begin simulations, simply execute ``snakemake`` in the ISiCLE respository directory, with desired configuration flags (``snakemake -h`` for help). Default [workflow](isicle/config.yaml) and [cluster](isicle/cluster.yaml) configurations are provided, but these may be modified and/or supplied by the user. 
 
 An example usage for ``slurm`` cluster environments:
 ```bash
