@@ -110,7 +110,8 @@ rule tleapConfig:
         d = {'frcmod': input.frcmod,
              'mol2': input.mol2,
              'prmtop': join(config['path'], 'output', 'tleap', 'prmtop', '%s_%s.top' % (wildcards.id, wildcards.adduct)),
-             'inpcrd': join(config['path'], 'output', 'tleap', 'inpcrd', '%s_%s.crd' % (wildcards.id, wildcards.adduct))}
+             'inpcrd': join(config['path'], 'output', 'tleap', 'inpcrd', '%s_%s.crd' % (wildcards.id, wildcards.adduct)),
+             'log': join(config['path'], 'output', 'tleap', 'logs', '%s_%s.log' % (wildcards.id, wildcards.adduct))}
 
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
@@ -120,13 +121,12 @@ rule tleap:
         config = rules.tleapConfig.output.config
     output:
         prmtop = join(config['path'], 'output', 'tleap', 'prmtop', '{id}_{adduct}.top'),
-        inpcrd = join(config['path'], 'output', 'tleap', 'inpcrd', '{id}_{adduct}.crd')
-    log:
-        join(config['path'], 'output', 'tleap', 'logs', '{id}_{adduct}.log')
+        inpcrd = join(config['path'], 'output', 'tleap', 'inpcrd', '{id}_{adduct}.crd'),
+        log = join(config['path'], 'output', 'tleap', 'logs', '{id}_{adduct}.log')
     group:
         'md'
     shell:
-        'tleap -s -f {input.config} logFile {log}'
+        'tleap -s -f {input.config}'
 
 rule sanderEMConfig:
     input:
