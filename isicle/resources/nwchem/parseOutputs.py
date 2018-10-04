@@ -6,7 +6,7 @@ import shutil
 
 def XYZtoMFJ(resfile, outpath):
     # atomic masses
-    masses = pd.read_csv('resources/mobcal/atomic_mass.tsv', sep='\t', usecols=['Number', 'Mass'])
+    masses = pd.read_csv('isicle/resources/mobcal/atomic_mass.tsv', sep='\t', usecols=['Number', 'Mass'])
 
     # read NWChem output file
     with open(resfile, 'r') as f:
