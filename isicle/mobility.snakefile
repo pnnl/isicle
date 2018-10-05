@@ -13,7 +13,7 @@ rule mobcal:
     input:
         rules.parseNWChem.output.geom2
     output:
-        join(config['path'], 'output', 'mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
+        join(config['path'], 'output', '{id}', 'adduct_{adduct}', '9_mobcal', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out'),
     group:
         'mobility'
     shell:
@@ -22,9 +22,9 @@ rule mobcal:
 # parse mobcal output
 rule parseMobcal:
     input:
-        geom = expand(join(config['path'], 'output', 'mobcal', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.out'),
+        geom = expand(join(config['path'], 'output', '{id}', 'adduct_{adduct}', '9_mobcal', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.out'),
                       cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(join(config['path'], 'output', 'mobcal', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.energy'),
+        energy = expand(join(config['path'], 'output', '{id}', 'adduct_{adduct}', '9_mobcal', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.energy'),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
         join(config['path'], 'output', 'conformer_ccs', '{id}_{adduct}.tsv')

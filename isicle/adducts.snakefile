@@ -11,11 +11,11 @@ rule desaltInChI:
     input:
         join(config['path'], 'input', '{id}.inchi')
     output:
-        join(config['path'], 'output', '0_desalted', '{id}.inchi')
+        join(config['path'], 'output', '{id}', '0_desalted', '{id}.inchi')
     log:
-        join(config['path'], 'output', '0_desalted', 'logs', '{id}.log')
+        join(config['path'], 'output', '{id}', '0_desalted', '{id}.log')
     benchmark:
-        join(config['path'], 'output', '0_desalted', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', '0_desalted', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -30,9 +30,9 @@ rule neutralizeInChI:
     input:
         rules.desaltInChI.output
     output:
-        join(config['path'], 'output', '1_neutralized', '{id}.inchi')
+        join(config['path'], 'output', '{id}', '1_neutralized', '{id}.inchi')
     benchmark:
-        join(config['path'], 'output', '1_neutralized', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', '1_neutralized', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -47,11 +47,11 @@ rule tautomerizeInChI:
     input:
         rules.neutralizeInChI.output
     output:
-        join(config['path'], 'output', '2_tautomer', '{id}.inchi')
+        join(config['path'], 'output', '{id}', '2a_tautomer', '{id}.inchi')
     log:
-        join(config['path'], 'output', '2_tautomer', 'logs', '{id}.log')
+        join(config['path'], 'output', '{id}', '2a_tautomer', '{id}.log')
     benchmark:
-        join(config['path'], 'output', '2_tautomer', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', '2a_tautomer', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -66,11 +66,11 @@ rule calculateFormula:
     input:
         rules.tautomerizeInChI.output
     output:
-        join(config['path'], 'output', '2a_formula', '{id}.formula')
+        join(config['path'], 'output', '{id}', 'parent', '2b_formula', '{id}.formula')
     log:
-        join(config['path'], 'output', '2a_formula', 'logs', '{id}.log')
+        join(config['path'], 'output', '{id}', 'parent', '2b_formula', '{id}.log')
     benchmark:
-        join(config['path'], 'output', '2a_formula', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '2b_formula', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -82,9 +82,9 @@ rule calculateMass:
     input:
         rules.calculateFormula.output
     output:
-        join(config['path'], 'output', '2b_mass', '{id}.mass')
+        join(config['path'], 'output', '{id}', 'parent', '2b_mass', '{id}.mass')
     benchmark:
-        join(config['path'], 'output', '2b_mass', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '2b_mass', '{id}.benchmark')
     group:
         'adducts'
     shell:
@@ -94,10 +94,10 @@ rule generateGeometry:
     input:
         rules.tautomerizeInChI.output
     output:
-        mol = join(config['path'], 'output', '3_parent_structures', 'mol', '{id}.mol'),
-        png = join(config['path'], 'output', '3_parent_structures', 'png', '{id}.png')
+        mol = join(config['path'], 'output', '{id}', 'parent', '3a_geometry', '{id}.mol'),
+        png = join(config['path'], 'output', '{id}', 'parent', '3b_image', '{id}.png')
     benchmark:
-        join(config['path'], 'output', '3_parent_structures', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '3a_geometry', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -112,9 +112,9 @@ rule calculatepKa:
     input:
         rules.generateGeometry.output.mol
     output:
-        join(config['path'], 'output', '3a_pKa', '{id}.pka')
+        join(config['path'], 'output', '{id}', 'parent', '3c_pKa', '{id}.pka')
     benchmark:
-        join(config['path'], 'output', '3a_pKa', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '3c_pKa', '{id}.benchmark')
     group:
         'adducts'
     shell:
@@ -125,12 +125,12 @@ rule generateAdducts:
         molfile = rules.generateGeometry.output.mol,
         pkafile = rules.calculatepKa.output
     output:
-        xyz = join(config['path'], 'output', '4_adduct_structures', 'xyz', '{id}_{adduct}.xyz'),
-        mol2 = join(config['path'], 'output', '4_adduct_structures', 'mol2', '{id}_{adduct}.mol2')
+        xyz = join(config['path'], 'output', '{id}', 'adduct_{adduct}', '0_geometry', '{id}_{adduct}.xyz'),
+        mol2 = join(config['path'], 'output', '{id}', 'adduct_{adduct}', '0_geometry', '{id}_{adduct}.mol2')
     log:
-        join(config['path'], 'output', '4_adduct_structures', 'log', '{id}_{adduct}.log')
+        join(config['path'], 'output', '{id}', 'adduct_{adduct}', '0_geometry', '{id}_{adduct}.log')
     benchmark:
-        join(config['path'], 'output', '4_adduct_structures', 'benchmarks', '{id}_{adduct}.benchmark')
+        join(config['path'], 'output', '{id}', 'adduct_{adduct}', '0_geometry', '{id}_{adduct}.benchmark')
     group:
         'adducts'
     run:
