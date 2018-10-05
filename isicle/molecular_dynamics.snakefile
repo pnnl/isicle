@@ -118,9 +118,9 @@ rule tleapConfig:
 
         d = {'frcmod': input.frcmod,
              'mol2': input.mol2,
-             'prmtop': join(config['path'], 'output', 'tleap', '%s_%s.top') % (wildcards.adduct, wildcards.id, wildcards.adduct),
-             'inpcrd': join(config['path'], 'output', 'tleap', '%s_%s.crd') % (wildcards.adduct, wildcards.id, wildcards.adduct),
-             'log': join(config['path'], 'output', 'tleap', '%s_%s.main.log') % (wildcards.adduct, wildcards.id, wildcards.adduct)}
+             'prmtop': join(config['path'], 'output', 'tleap', '%s_%s.top') % (wildcards.id, wildcards.adduct),
+             'inpcrd': join(config['path'], 'output', 'tleap', '%s_%s.crd') % (wildcards.id, wildcards.adduct),
+             'log': join(config['path'], 'output', 'tleap', 'logs', '%s_%s.main.log') % (wildcards.id, wildcards.adduct)}
 
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
