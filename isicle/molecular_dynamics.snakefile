@@ -298,6 +298,8 @@ rule calculate_rmsd:
         xyz = rules.convert.output.xyz
     output:
         rmsd = join(config['path'], 'output', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
+    benchmark:
+        join(config['path'], 'output', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
     group:
         'md'
     run:
