@@ -151,6 +151,8 @@ rule generateAdducts:
             adduct = create_adduct(mol, a, pka['a1'],
                                    forcefield=config['forcefield']['type'],
                                    steps=config['forcefield']['steps'])
+        else:
+            adduct = mol
 
         adduct.write('xyz', output.xyz, overwrite=True)
         adduct.write('mol2', output.mol2, overwrite=True)
