@@ -11,11 +11,11 @@ rule desaltInChI:
     input:
         join(config['path'], 'input', '{id}.inchi')
     output:
-        join(config['path'], 'output', '{id}', '0_desalted', '{id}.inchi')
+        join(config['path'], 'output', '{id}', 'parent', '0_desalted', '{id}.inchi')
     log:
-        join(config['path'], 'output', '{id}', '0_desalted', '{id}.log')
+        join(config['path'], 'output', '{id}', 'parent', '0_desalted', '{id}.log')
     benchmark:
-        join(config['path'], 'output', '{id}', '0_desalted', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '0_desalted', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -30,9 +30,9 @@ rule neutralizeInChI:
     input:
         rules.desaltInChI.output
     output:
-        join(config['path'], 'output', '{id}', '1_neutralized', '{id}.inchi')
+        join(config['path'], 'output', '{id}', 'parent', '1_neutralized', '{id}.inchi')
     benchmark:
-        join(config['path'], 'output', '{id}', '1_neutralized', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '1_neutralized', '{id}.benchmark')
     group:
         'adducts'
     run:
@@ -47,11 +47,11 @@ rule tautomerizeInChI:
     input:
         rules.neutralizeInChI.output
     output:
-        join(config['path'], 'output', '{id}', '2a_tautomer', '{id}.inchi')
+        join(config['path'], 'output', '{id}', 'parent', '2a_tautomer', '{id}.inchi')
     log:
-        join(config['path'], 'output', '{id}', '2a_tautomer', '{id}.log')
+        join(config['path'], 'output', '{id}', 'parent', '2a_tautomer', '{id}.log')
     benchmark:
-        join(config['path'], 'output', '{id}', '2a_tautomer', '{id}.benchmark')
+        join(config['path'], 'output', '{id}', 'parent', '2a_tautomer', '{id}.benchmark')
     group:
         'adducts'
     run:

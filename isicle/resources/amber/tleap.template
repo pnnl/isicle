@@ -1,6 +1,4 @@
-logFile ${log}
 source leaprc.gaff
-logFile ${log}
 source oldff/leaprc.ff14SB
 logFile ${log}
 loadAmberParams ${frcmod}

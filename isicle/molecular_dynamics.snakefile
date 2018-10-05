@@ -215,7 +215,7 @@ rule sander:
         mol2 = rules.restore.output.mol2,
         # s0 required to disambiguate, but not used
         rst0 = rules.sander0.output.rst,
-        rst = lambda wildcards: join(config['path'], 'output', '%s', 'adduct_%s', '5_anneal', 'cycle_%03d', '%s_%s.rst') %
+        rst = lambda wildcards: join(config['path'], 'output', '%s', 'adduct_%s', '5_anneal', 'cycle_%03d', '%s_%s.rst') % \
                                     (wildcards.id, wildcards.adduct, int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
         prmtop = rules.tleap.output.prmtop
     output:
