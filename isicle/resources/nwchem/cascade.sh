@@ -7,10 +7,8 @@ module load nwchem/6.8.1_rhel7
 cd /scratch
 
 export ARMCI_DEFAULT_SHMMAX=131072
-export NWCHEM_BASIS_LIBRARY="/home/scicons/cascade/apps/nwchem-6.8.1_rhel7/src/b
-asis/libraries/"
-export NWCHEM_NWPW_LIBRARY="/home/scicons/cascade/apps/nwchem-6.8.1_rhel7/src/nw
-pw/libraryps/"
+export NWCHEM_BASIS_LIBRARY="/home/scicons/cascade/apps/nwchem-6.8.1_rhel7/src/basis/libraries/"
+export NWCHEM_NWPW_LIBRARY="/home/scicons/cascade/apps/nwchem-6.8.1_rhel7/src/nwpw/libraryps/"
 #this disables xeon phi offload
 export NWC_RANKS_PER_DEVICE=0
 #this disables threaded in MKL since it is better to keep it to advanced users
