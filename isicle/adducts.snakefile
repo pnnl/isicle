@@ -95,6 +95,8 @@ rule generateGeometry:
         rules.tautomerizeInChI.output
     output:
         mol = join(config['path'], 'output', 'geometry_parent', '{id}.mol'),
+        mol = join(config['path'], 'output', 'geometry_parent', '{id}.mol2'),
+        mol = join(config['path'], 'output', 'geometry_parent', '{id}.xyz'),
         png = join(config['path'], 'output', 'geometry_parent', 'images', '{id}.png')
     benchmark:
         join(config['path'], 'output', 'geometry_parent', 'benchmarks', '{id}.benchmark')
@@ -107,6 +109,8 @@ rule generateGeometry:
 
         mol.draw(show=False, filename=output.png, usecoords=False, update=False)
         mol.write('mol', output.mol, overwrite=True)
+        mol.write('xyz', output.xyz, overwrite=True)
+        mol.write('mol2', output.mol2, overwrite=True)
 
 rule calculatepKa:
     input:
