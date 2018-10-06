@@ -95,8 +95,8 @@ rule generateGeometry:
         rules.tautomerizeInChI.output
     output:
         mol = join(config['path'], 'output', 'geometry_parent', '{id}.mol'),
-        mol = join(config['path'], 'output', 'geometry_parent', '{id}.mol2'),
-        mol = join(config['path'], 'output', 'geometry_parent', '{id}.xyz'),
+        mol2 = join(config['path'], 'output', 'geometry_parent', '{id}.mol2'),
+        xyz = join(config['path'], 'output', 'geometry_parent', '{id}.xyz'),
         png = join(config['path'], 'output', 'geometry_parent', 'images', '{id}.png')
     benchmark:
         join(config['path'], 'output', 'geometry_parent', 'benchmarks', '{id}.benchmark')
