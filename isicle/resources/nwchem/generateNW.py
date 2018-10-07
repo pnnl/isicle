@@ -28,9 +28,9 @@ class NWChemHelper:
                 d['charge'] = 1
             elif "+na" in d['filename'].lower():
                 d['charge'] = 1
-            elif "+de" in d['filename'].lower():
+            elif "-h" in d['filename'].lower():
                 d['charge'] = -1
-            elif "+ne" in d['filename'].lower():
+            elif "_ne_" in d['filename'].lower():
                 d['charge'] = 0
 
             outfile = splitext(self.file)[0] + '.nw'
