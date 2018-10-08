@@ -11,6 +11,8 @@ rule copyOver:
         join(config['path'], 'output', 'md', 'downselected', '{id}_{adduct}_{cycle}_{selected}.xyz')
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.xyz')
+    # group:
+    #     'dft'
     shell:
         'cp {input} {output}'
 
@@ -20,8 +22,8 @@ rule createNW:
         rules.copyOver.output
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw')
-    group:
-        'dft'
+    # group:
+    #     'dft'
     shell:
         'python isicle/resources/nwchem/generateNW.py {input} --template {config[nwchem][dft_template]}'
 
@@ -33,9 +35,9 @@ rule NWChem:
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out')
     benchmark:
-        join(config['path'], 'output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.nwchem.benchmark')
-    group:
-        'dft'
+        join(config['path'], 'output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.dft.benchmark')
+    # group:
+    #     'dft'
     shell:
         '{config[nwchem][runscript]} {input.nw} || :'
 
@@ -50,7 +52,7 @@ rule parseNWChem:
         charge2 = join(config['path'], 'output', 'mobility', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
     benchmark:
         join(config['path'], 'output', 'nwchem', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark')
-    group:
-        'dft'
+    # group:
+    #     'dft'
     run:
         XYZtoMFJ(input[0], join(config['path'], 'output', 'mobcal'))

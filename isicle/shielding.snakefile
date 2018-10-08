@@ -11,6 +11,8 @@ rule copyOver:
         join(config['path'], 'output', 'md', 'downselected', '{id}_Ne_{cycle}_{selected}.xyz')
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz')
+    # group:
+    #     'shielding'
     shell:
         'cp {input} {output}'
 
@@ -20,8 +22,8 @@ rule createNW:
         rules.copyOver.output
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw')
-    group:
-        'dft'
+    # group:
+    #     'shielding'
     shell:
         'python isicle/resources/nwchem/generateNW.py {input} --template {config[nwchem][shielding_template]}'
 
@@ -34,7 +36,7 @@ rule NWChem:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
     benchmark:
         join(config['path'], 'output', 'shielding', 'benchmarks', '{id}_{cycle}_{selected}.nwchem.benchmark')
-    group:
-        'dft'
+    # group:
+    #     'shielding'
     shell:
         '{config[nwchem][runscript]} {input.nw} || :'

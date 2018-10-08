@@ -16,8 +16,8 @@ rule impact:
         join(config['path'], 'output', 'impact', '{id}_{adduct}.txt')
     benchmark:
         join(config['path'], 'output', 'impact', 'benchmarks', '{id}_{adduct}.benchmark')
-    group:
-        'impact'
+    # group:
+    #     'mobility_alt'
     shell:
         # run impact on adducts
         'IMPACT_RANDSEED={config[impact][seed]} resources/IMPACT/{OS}/impact {input} -o {output} -H \
@@ -32,8 +32,8 @@ rule postprocess:
     output:
         join(config['path'], 'output', 'impact_ccs', '{id}_{adduct}.N2.ccs'),
         join(config['path'], 'output', 'impact_ccs', '{id}_{adduct}.He.ccs')
-    group:
-        'impact'
+    # group:
+    #     'mobility_alt'
     run:
         # read inputs
         ccs_He = read_impact(input[0])

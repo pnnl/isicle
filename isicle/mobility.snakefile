@@ -16,8 +16,8 @@ rule mobcal:
         join(config['path'], 'output', 'mobility', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
     benchmark:
         join(config['path'], 'output', 'mobility', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark')
-    group:
-        'mobility'
+    # group:
+    #     'mobility'
     shell:
         '{config[mobcal][runscript]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input}'
 
@@ -32,8 +32,8 @@ rule parseMobcal:
         join(config['path'], 'output', 'conformer_ccs', '{id}_{adduct}.tsv')
     benchmark:
         join(config['path'], 'output', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
-    group:
-        'mobility'
+    # group:
+    #     'mobility'
     run:
         res = []
         for ccsfile, efile in zip(input['geom'], input['energy']):
@@ -56,7 +56,7 @@ rule boltzmannAverage:
         join(config['path'], 'output', 'boltzmann_ccs', '{id}_{adduct}.tsv')
     benchmark:
         join(config['path'], 'output', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
-    group:
-        'mobility'
+    # group:
+    #     'mobility'
     run:
         boltzmann(input[0], output[0])

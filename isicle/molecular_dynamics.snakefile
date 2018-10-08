@@ -22,8 +22,8 @@ rule prepare:
         content = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
     benchmark:
         join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
@@ -51,8 +51,8 @@ rule antechamber:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log')
     benchmark:
         join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.antechamber.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
@@ -74,8 +74,8 @@ rule parmchk2:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
     benchmark:
         join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.parmchk2.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
@@ -93,8 +93,8 @@ rule restore:
         mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
     benchmark:
         join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.restore.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         if wildcards.adduct == '+Na':
             idx = np.load(input.idx)
@@ -109,8 +109,8 @@ rule tleapConfig:
         frcmod = rules.parmchk2.output.frcmod
     output:
         config = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.config')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         with open('isicle/resources/amber/tleap.template', 'r') as f:
             t = Template(f.read())
@@ -134,8 +134,8 @@ rule tleap:
         join(config['path'], 'output', 'md', 'tleap', 'logs', '{id}_{adduct}.meta.log')
     benchmark:
         join(config['path'], 'output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     shell:
         'tleap -s -f {input.config} > {log}'
 
@@ -144,8 +144,8 @@ rule sanderEMConfig:
         mol2 = rules.antechamber.output.mol2
     output:
         config = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.mdin')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         with open('isicle/resources/amber/sander_em.template', 'r') as f:
                 t = Template(f.read())
@@ -176,8 +176,8 @@ rule sanderEM:
         join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.log')
     benchmark:
         join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     shell:
         'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}'
 
@@ -195,8 +195,8 @@ rule sander0:
         join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.log')
     benchmark:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         with open('isicle/resources/amber/sander_md0.template', 'r') as f:
             t = Template(f.read())
@@ -242,8 +242,8 @@ rule sander:
         join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.log')
     benchmark:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         with open('isicle/resources/amber/sander_anneal.template', 'r') as f:
             t = Template(f.read())
@@ -267,8 +267,8 @@ rule extractFrames:
         join(config['path'], 'output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
         join(config['path'], 'output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.log')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         frame = select_frames(input.out,
                               frames=config['amber']['nframes'],
@@ -287,8 +287,8 @@ rule convert:
         xyz = join(config['path'], 'output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
     benchmark:
         join(config['path'], 'output', 'md', 'converted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         standardizeMol2(input.mol2a, input.mol2b, output.xyz)
 
@@ -299,8 +299,8 @@ rule calculate_rmsd:
         rmsd = join(config['path'], 'output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
     benchmark:
         join(config['path'], 'output', 'md', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         mols = glob.glob(join(config['path'], 'output', 'md', 'converted', '%s_%s_%s_*.xyz') %
                          (wildcards.id, wildcards.adduct, wildcards.cycle))
@@ -322,8 +322,8 @@ rule downselect:
                           selected=['s', 'd1', 'd2'])
     benchmark:
         join(config['path'], 'output', 'md', 'downselected', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
-    group:
-        'md'
+    # group:
+    #     'md'
     run:
         vals = []
         for f in input.rmsd:
