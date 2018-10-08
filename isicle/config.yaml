@@ -18,7 +18,7 @@ ccs:
   beta: 0.14
 
 amber:
-  cycles: 2
+  cycles: 10
   nframes: 10
   low: 1.25e+06
   high: 1.45e+06
