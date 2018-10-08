@@ -262,6 +262,14 @@ def push_atom(path, output, idx, content):
     info = [int(x) for x in lines[2].split()]
 
     for i, line in zip(idx, content):
+        if 'NA' in line:
+            parts = line.split()
+            parts[1] = 'NA'
+            parts[5] = 'Na+'
+            parts[6] = '2'
+            parts[7] = 'Na+'
+            parts[8] = '1.0000'
+            line = ' '.join(parts) + '\n'
         lines.insert(i + 1, line)
 
     change = len(idx)

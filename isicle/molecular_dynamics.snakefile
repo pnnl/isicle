@@ -281,7 +281,7 @@ rule extractFrames:
 rule convert:
     input:
         mol2a = rules.extractFrames.output.mol2,
-        mol2b = rules.antechamber.input.mol2
+        mol2b = rules.prepare.input.mol2
     output:
         xyz = join(config['path'], 'output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
     benchmark:
