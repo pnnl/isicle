@@ -1,0 +1,80 @@
+title "${filename}"
+start ${filename}
+
+memory global 1600 mb heap 100 mb stack 600 mb
+
+permanent_dir ${dir}
+scratch_dir /scratch
+
+echo
+print low
+
+charge 0
+geometry noautoz noautosym
+ load ${dir}/${filename}.xyz
+end
+
+
+basis spherical
+ * library 3-21G
+end
+
+dft
+ direct
+ xc b3lyp
+ grid lebedev 75 11
+end
+
+driver
+ maxiter 1000
+ xyz ${filename}_geom
+end
+
+task dft ignore
+task dft optimize
+
+basis spherical
+ * library 6-31G**
+end
+
+dft
+ direct
+ xc b3lyp
+ grid lebedev 75 11
+end
+
+cosmo
+ do_gasphase false
+ solvent dmso
+end
+
+driver
+ maxiter 1000
+ xyz ${filename}_geom2
+end
+
+task dft ignore
+task dft optimize
+
+basis spherical
+ * library 6-311+G(2d,p)
+end
+
+dft
+ direct
+ xc mpw91 0.75 HFexch 0.25 perdew91
+ tolerances tight
+ grid fine
+end
+
+cosmo
+ do_gasphase false
+ solvent dmso
+end
+
+property
+  shielding N#ofnuclei A#1 A#2 A#3 A#4 A#5 A#6 ... A#N
+end
+
+task dft ignore
+task dft property

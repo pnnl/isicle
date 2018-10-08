@@ -17,12 +17,11 @@ rule prepare:
     input:
         mol2 = rules.generateAdducts.output.mol2
     output:
-        mol2 = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
-        idx = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
-        content = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
+        mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
+        idx = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
+        content = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
     benchmark:
-        join(config['path'], 'output', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark')
-
+        join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark')
     group:
         'md'
     run:
@@ -46,17 +45,17 @@ rule antechamber:
         mol2 = rules.prepare.output.mol2,
         idx = rules.prepare.output.idx
     output:
-        mol2 = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
-        ac = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC')
+        mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
+        ac = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC')
     log:
-        join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log')
+        join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log')
     benchmark:
-        join(config['path'], 'output', 'antechamber', 'benchmarks', '{id}_{adduct}.antechamber.benchmark')
+        join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.antechamber.benchmark')
     group:
         'md'
     run:
         cwd = os.getcwd()
-        os.chdir(join(config['path'], 'output', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
+        os.chdir(join(config['path'], 'output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
 
         charge = config['charges'][wildcards.adduct]
         if wildcards.adduct == '+Na':
@@ -70,16 +69,16 @@ rule parmchk2:
     input:
         ac = rules.antechamber.output.mol2
     output:
-        frcmod = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.frcmod')
+        frcmod = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.frcmod')
     log:
-        join(config['path'], 'output', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
+        join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
     benchmark:
-        join(config['path'], 'output', 'antechamber', 'benchmarks', '{id}_{adduct}.parmchk2.benchmark')
+        join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.parmchk2.benchmark')
     group:
         'md'
     run:
         cwd = os.getcwd()
-        os.chdir(join(config['path'], 'output', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
+        os.chdir(join(config['path'], 'output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
 
         shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log}')
 
@@ -91,9 +90,9 @@ rule restore:
         idx = rules.prepare.output.idx,
         content = rules.prepare.output.content
     output:
-        mol2 = join(config['path'], 'output', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
+        mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
     benchmark:
-        join(config['path'], 'output', 'antechamber', 'benchmarks', '{id}_{adduct}.restore.benchmark')
+        join(config['path'], 'output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.restore.benchmark')
     group:
         'md'
     run:
@@ -109,7 +108,7 @@ rule tleapConfig:
         mol2 = rules.antechamber.output.mol2,
         frcmod = rules.parmchk2.output.frcmod
     output:
-        config = join(config['path'], 'output', 'tleap', '{id}_{adduct}.config')
+        config = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.config')
     group:
         'md'
     run:
@@ -118,9 +117,9 @@ rule tleapConfig:
 
         d = {'frcmod': input.frcmod,
              'mol2': input.mol2,
-             'prmtop': join(config['path'], 'output', 'tleap', '%s_%s.top') % (wildcards.id, wildcards.adduct),
-             'inpcrd': join(config['path'], 'output', 'tleap', '%s_%s.crd') % (wildcards.id, wildcards.adduct),
-             'log': join(config['path'], 'output', 'tleap', 'logs', '%s_%s.main.log') % (wildcards.id, wildcards.adduct)}
+             'prmtop': join(config['path'], 'output', 'md', 'tleap', '%s_%s.top') % (wildcards.id, wildcards.adduct),
+             'inpcrd': join(config['path'], 'output', 'md', 'tleap', '%s_%s.crd') % (wildcards.id, wildcards.adduct),
+             'log': join(config['path'], 'output', 'md', 'tleap', 'logs', '%s_%s.main.log') % (wildcards.id, wildcards.adduct)}
 
         with open(output.config, 'w') as f:
             f.write(t.substitute(d))
@@ -129,12 +128,12 @@ rule tleap:
     input:
         config = rules.tleapConfig.output.config
     output:
-        prmtop = join(config['path'], 'output', 'tleap', '{id}_{adduct}.top'),
-        inpcrd = join(config['path'], 'output', 'tleap', '{id}_{adduct}.crd')
+        prmtop = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.top'),
+        inpcrd = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.crd')
     log:
-        join(config['path'], 'output', 'tleap', 'logs', '{id}_{adduct}.meta.log')
+        join(config['path'], 'output', 'md', 'tleap', 'logs', '{id}_{adduct}.meta.log')
     benchmark:
-        join(config['path'], 'output', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark')
+        join(config['path'], 'output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark')
     group:
         'md'
     shell:
@@ -144,7 +143,7 @@ rule sanderEMConfig:
     input:
         mol2 = rules.antechamber.output.mol2
     output:
-        config = join(config['path'], 'output', 'em', '{id}_{adduct}.mdin')
+        config = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.mdin')
     group:
         'md'
     run:
@@ -171,12 +170,12 @@ rule sanderEM:
         prmtop = rules.tleap.output.prmtop,
         inpcrd = rules.tleap.output.inpcrd
     output:
-        rst = join(config['path'], 'output', 'em', '{id}_{adduct}.rst'),
-        out = join(config['path'], 'output', 'em', '{id}_{adduct}.out')
+        rst = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.rst'),
+        out = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.out')
     log:
-        join(config['path'], 'output', 'em', 'logs', '{id}_{adduct}.log')
+        join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.log')
     benchmark:
-        join(config['path'], 'output', 'em', 'benchmarks', '{id}_{adduct}.benchmark')
+        join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.benchmark')
     group:
         'md'
     shell:
@@ -188,14 +187,14 @@ rule sander0:
         rst = rules.sanderEM.output.rst,
         prmtop = rules.tleap.output.prmtop
     output:
-        config = join(config['path'], 'output', 'anneal', 'cycle_000', '{id}_{adduct}.mdin'),
-        rst = join(config['path'], 'output', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
-        crd = join(config['path'], 'output', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
-        out = join(config['path'], 'output', 'anneal', 'cycle_000', '{id}_{adduct}.out')
+        config = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin'),
+        rst = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
+        crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
+        out = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.out')
     log:
-        join(config['path'], 'output', 'anneal', 'logs', '{id}_{adduct}_000.log')
+        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.log')
     benchmark:
-        join(config['path'], 'output', 'anneal', 'benchmarks', '{id}_{adduct}_000.benchmark')
+        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.benchmark')
     group:
         'md'
     run:
@@ -231,18 +230,18 @@ rule sander:
         mol2 = rules.restore.output.mol2,
         # s0 required to disambiguate, but not used
         rst0 = rules.sander0.output.rst,
-        rst = lambda wildcards: join(config['path'], 'output', 'anneal', 'cycle_%03d', '%s_%s.rst') % \
+        rst = lambda wildcards: join(config['path'], 'output', 'md', 'anneal', 'cycle_%03d', '%s_%s.rst') % \
                                     (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
         prmtop = rules.tleap.output.prmtop
     output:
-        config = join(config['path'], 'output', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin'),
-        rst = join(config['path'], 'output', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
-        crd = join(config['path'], 'output', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
-        out = join(config['path'], 'output', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
+        config = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin'),
+        rst = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
+        crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
+        out = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
     log:
-        join(config['path'], 'output', 'anneal', 'logs', '{id}_{adduct}_{cycle}.log')
+        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.log')
     benchmark:
-        join(config['path'], 'output', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
+        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
     group:
         'md'
     run:
@@ -259,15 +258,15 @@ rule sander:
 rule extractFrames:
     input:
         prmtop = rules.tleap.output.prmtop,
-        out = join(config['path'], 'output', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out'),
-        crd = join(config['path'], 'output', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd')
+        out = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out'),
+        crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd')
     output:
-        trajin = join(config['path'], 'output', 'extracted', '{id}_{adduct}_{cycle}_{frame}.trajin'),
-        mol2 = join(config['path'], 'output', 'extracted', '{id}_{adduct}_{cycle}_{frame}.mol2')
+        trajin = join(config['path'], 'output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.trajin'),
+        mol2 = join(config['path'], 'output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.mol2')
     log:
-        join(config['path'], 'output', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
+        join(config['path'], 'output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
-        join(config['path'], 'output', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.log')
+        join(config['path'], 'output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.log')
     group:
         'md'
     run:
@@ -285,9 +284,9 @@ rule convert:
         mol2a = rules.extractFrames.output.mol2,
         mol2b = rules.antechamber.input.mol2
     output:
-        xyz = join(config['path'], 'output', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
+        xyz = join(config['path'], 'output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
     benchmark:
-        join(config['path'], 'output', 'converted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
+        join(config['path'], 'output', 'md', 'converted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
     group:
         'md'
     run:
@@ -297,13 +296,13 @@ rule calculate_rmsd:
     input:
         xyz = rules.convert.output.xyz
     output:
-        rmsd = join(config['path'], 'output', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
+        rmsd = join(config['path'], 'output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
     benchmark:
-        join(config['path'], 'output', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
+        join(config['path'], 'output', 'md', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
     group:
         'md'
     run:
-        mols = glob.glob(join(config['path'], 'output', 'converted', '%s_%s_%s_*.xyz') %
+        mols = glob.glob(join(config['path'], 'output', 'md', 'converted', '%s_%s_%s_*.xyz') %
                          (wildcards.id, wildcards.adduct, wildcards.cycle))
         total = 0
         for mol in mols:
@@ -314,15 +313,15 @@ rule calculate_rmsd:
 
 rule downselect:
     input:
-        xyz = expand(join(config['path'], 'output', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'),
+        xyz = expand(join(config['path'], 'output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'),
                      frame=frames(config['amber']['nframes'])),
-        rmsd = expand(join(config['path'], 'output', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'),
+        rmsd = expand(join(config['path'], 'output', 'md', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'),
                       frame=frames(config['amber']['nframes']))
     output:
-        selected = expand(join(config['path'], 'output', 'nwchem', '{{id}}_{{adduct}}', 'cycle_{{cycle}}_{selected}', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
+        selected = expand(join(config['path'], 'output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
                           selected=['s', 'd1', 'd2'])
     benchmark:
-        join(config['path'], 'output', 'nwchem', 'benchmarks', '{id}_{adduct}_{cycle}.downselect.benchmark')
+        join(config['path'], 'output', 'md', 'downselected', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
     group:
         'md'
     run:
@@ -338,12 +337,12 @@ rule downselect:
         d2 = input.xyz[idx[-2]]
 
         # explicit output definitions
-        sout = join(config['path'], 'output', 'nwchem', '%s_%s', 'cycle_%s_s', '%s_%s_%s_s.xyz') % \
-                   (wildcards.id, wildcards.adduct, wildcards.cycle, wildcards.id, wildcards.adduct, wildcards.cycle)
-        d1out = join(config['path'], 'output', 'nwchem', '%s_%s', 'cycle_%s_d1', '%s_%s_%s_d1.xyz') % \
-                    (wildcards.id, wildcards.adduct, wildcards.cycle, wildcards.id, wildcards.adduct, wildcards.cycle)
-        d2out = join(config['path'], 'output', 'nwchem', '%s_%s', 'cycle_%s_d2', '%s_%s_%s_d2.xyz') % \
-                    (wildcards.id, wildcards.adduct, wildcards.cycle, wildcards.id, wildcards.adduct, wildcards.cycle)
+        sout = join(config['path'], 'output', 'md', 'downselected', '%s_%s_%s_s.xyz') % \
+                   (wildcards.id, wildcards.adduct, wildcards.cycle)
+        d1out = join(config['path'], 'output', 'md', 'downselected', '%s_%s_%s_d1.xyz') % \
+                    (wildcards.id, wildcards.adduct, wildcards.cycle)
+        d2out = join(config['path'], 'output', 'md', 'downselected', '%s_%s_%s_d2.xyz') % \
+                    (wildcards.id, wildcards.adduct, wildcards.cycle)
 
         shell('cp %s %s' % (s, sout))
         shell('cp %s %s' % (d1, d1out))

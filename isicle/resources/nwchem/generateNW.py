@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # if template not specified, pass default template
     if args.template == '-1':
-        args.template = 'isicle/resources/nwchem/template.nw'
+        args.template = 'isicle/resources/nwchem/dft.template'
 
     nwc = NWChemHelper(args.file)
     nwc.generateNWChemFile(args.template)
