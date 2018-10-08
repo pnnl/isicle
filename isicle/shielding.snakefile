@@ -39,4 +39,4 @@ rule NWChem:
     # group:
     #     'shielding'
     shell:
-        '{config[nwchem][runscript]} {input.nw} || :'
+        '{config[nwchem][runscript]} {input.nw}'
