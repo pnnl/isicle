@@ -46,13 +46,13 @@ rule parseNWChem:
     input:
         rules.NWChem.output
     output:
-        geom1 = join(config['path'], 'output', 'mobility', '{id}_{adduct}_{cycle}_{selected}_charge.mfj'),
-        geom2 = join(config['path'], 'output', 'mobility', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),
-        charge1 = join(config['path'], 'output', 'mobility', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
-        charge2 = join(config['path'], 'output', 'mobility', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
+        geom1 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.mfj'),
+        geom2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),
+        charge1 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
+        charge2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
     benchmark:
-        join(config['path'], 'output', 'nwchem', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark')
+        join(config['path'], 'output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark')
     # group:
     #     'dft'
     run:
-        XYZtoMFJ(input[0], join(config['path'], 'output', 'mobcal'))
+        XYZtoMFJ(input[0], join(config['path'], 'output', 'mobility', 'mobcal', 'runs'))
