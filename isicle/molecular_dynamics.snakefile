@@ -97,7 +97,7 @@ rule restore:
 
 rule tleapConfig:
     input:
-        mol2 = rules.antechamber.output.mol2,
+        mol2 = rules.restore.output.mol2,
         frcmod = rules.parmchk2.output.frcmod
     output:
         config = join(config['path'], 'output', 'tleap', 'config', '{id}_{adduct}.config')
@@ -130,7 +130,7 @@ rule tleap:
 
 rule sanderEMConfig:
     input:
-        mol2 = rules.antechamber.output.mol2
+        mol2 = rules.restore.output.mol2
     output:
         config = join(config['path'], 'output', 'sander', 'em', '{id}_{adduct}.mdin')
     group:
@@ -155,7 +155,6 @@ rule sanderEMConfig:
 rule sanderEM:
     input:
         config = rules.sanderEMConfig.output.config,
-        mol2 = rules.restore.output.mol2,
         prmtop = rules.tleap.output.prmtop,
         inpcrd = rules.tleap.output.inpcrd
     output:

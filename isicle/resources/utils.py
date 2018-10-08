@@ -262,7 +262,7 @@ def push_atom(path, output, idx, content):
     info = [int(x) for x in lines[2].split()]
 
     for i, line in zip(idx, content):
-        lines.insert(i, line)
+        lines.insert(i + 1, line)
 
     change = len(idx)
     with open(output, 'w') as f:
