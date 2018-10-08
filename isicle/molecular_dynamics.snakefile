@@ -262,7 +262,7 @@ rule extractFrames:
 rule convert:
     input:
         mol2a = join(config['path'], 'output', 'sander', 'extracted', 'mol2', '{id}_{adduct}_{cycle}_{frame}.mol2'),
-        mol2b = rules.antechamber.input.mol2
+        mol2b = rules.prepare.input.mol2
     output:
         xyz = join(config['path'], 'output', 'sander', 'extracted', 'xyz', '{id}_{adduct}_{cycle}_{frame}.xyz')
     group:
