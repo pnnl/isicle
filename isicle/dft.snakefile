@@ -39,7 +39,7 @@ rule NWChem:
     # group:
     #     'dft'
     shell:
-        '{config[nwchem][runscript]} {input.nw} || :'
+        '{config[nwchem][runscript]} {input.nw}'
 
 # parse nwchem outputs (geometry files)
 rule parseNWChem:
