@@ -5,7 +5,7 @@ from generators import *
 
 # snakemake configuration
 include: 'adducts.snakefile'
-ruleorder: sander0 &> sander
+ruleorder: sander0 > sander
 
 
 rule prepare:
