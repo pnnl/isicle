@@ -19,7 +19,7 @@ rule mobcal:
     # group:
     #     'mobility'
     shell:
-        '{config[mobcal][runscript]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input}'
+        '{config[mobcal][exe]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input} {output}'
 
 # parse mobcal output
 rule parseMobcal:

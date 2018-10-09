@@ -30,8 +30,7 @@ rule createNW:
 # run NWChem
 rule NWChem:
     input:
-        xyz = rules.createNW.input,
-        nw = rules.createNW.output
+        rules.createNW.output
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out')
     benchmark:
@@ -39,7 +38,7 @@ rule NWChem:
     # group:
     #     'dft'
     shell:
-        '{config[nwchem][runscript]} {input.nw}'
+        'srun --mpi=pmi2 nwchem {input} > {output}'
 
 # parse nwchem outputs (geometry files)
 rule parseNWChem:
