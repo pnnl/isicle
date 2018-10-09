@@ -22,7 +22,7 @@ rule impact:
         # run impact on adducts
         'IMPACT_RANDSEED={config[impact][seed]} resources/IMPACT/{OS}/impact {input} -o {output} -H \
          -shotsPerRot {config[impact][shotsPerRot]} -convergence {config[impact][convergence]} \
-         -nRuns {config[impact][nRuns]} -nocite > {log}'
+         -nRuns {config[impact][nRuns]} -nocite &> {log}'
 
 
 rule postprocess:
@@ -40,7 +40,7 @@ rule postprocess:
     #     'mobility_alt'
     shell:
         'python isicle/parse_impact.py {input.ccs} {input.mass} {output.he} {output.n2} \
-         --alpha {config[ccs][alpha]} --beta {config[ccs][beta]} > {log}'
+         --alpha {config[ccs][alpha]} --beta {config[ccs][beta]} &> {log}'
 
 # # for report
 # ID, adduct = splitext(basename(f))[0].rsplit('_', 1)

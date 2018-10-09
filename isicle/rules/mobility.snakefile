@@ -34,7 +34,7 @@ rule parseMobcal:
     # group:
     #     'mobility'
     shell:
-        'python isicle/parse_mobcal.py {input.geom} {input.energy} {output} > {log}'
+        'python isicle/parse_mobcal.py {input.geom} {input.energy} {output} &> {log}'
 
 
 # boltzmann averaging
@@ -50,4 +50,4 @@ rule boltzmannAverage:
     # group:
     #     'mobility'
     shell:
-        'python isicle/boltzmann.py {input} {output} > {log}'
+        'python isicle/boltzmann.py {input} {output} &> {log}'

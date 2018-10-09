@@ -5,7 +5,7 @@ from generators import *
 
 # snakemake configuration
 include: 'adducts.snakefile'
-ruleorder: sander0 > sander
+ruleorder: sander0 &> sander
 
 
 rule prepare:
@@ -25,7 +25,7 @@ rule prepare:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
         # assign
-        'python isicle/md_helper.py {input} {output.mol2} [{wildcards.adduct}] --prepare > {log}'
+        'python isicle/md_helper.py {input} {output.mol2} [{wildcards.adduct}] --prepare &> {log}'
 
 
 rule antechamber:
@@ -50,7 +50,7 @@ rule antechamber:
             idx = np.load(input.idx)
             charge -= len(idx)
 
-        shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc %.4f &> {log}' % charge)
+        shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc %.4f &&> {log}' % charge)
 
         os.chdir(cwd)
 
@@ -70,7 +70,7 @@ rule parmchk2:
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
 
-        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log}')
+        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &&> {log}')
 
         os.chdir(cwd)
 
@@ -89,7 +89,7 @@ rule restore:
     # group:
     #     'md'
     shell:
-        'python isicle/md_helper.py {input.mol2} {output.mol2} [{wildcards.adduct}] --restore > {log}'
+        'python isicle/md_helper.py {input.mol2} {output.mol2} [{wildcards.adduct}] --restore &> {log}'
 
 
 rule tleap:
@@ -108,7 +108,7 @@ rule tleap:
     #     'md'
     run:
         shell('python isicle/prepare_tleap.py {input.mol2} {input.frcmod} {output.config}')
-        shell('tleap -s -f {output.config} > {log}')
+        shell('tleap -s -f {output.config} &> {log}')
 
 
 rule sanderEM:
@@ -191,7 +191,7 @@ rule selectFrames:
     #     'md'
     shell:
         'python isicle/select_frames.py {input.out} {input.crd} {output} \
-         --nframes {config[amber][nframes]} --low {config[amber][low]} --high {config[amber][high]} > {log}'
+         --nframes {config[amber][nframes]} --low {config[amber][low]} --high {config[amber][high]} &> {log}'
 
 
 rule extractFrames:
@@ -207,7 +207,7 @@ rule extractFrames:
     # group:
     #     'md'
     shell:
-        'cpptraj {input.prmtop} {input.trajin} > {log}'
+        'cpptraj {input.prmtop} {input.trajin} &> {log}'
 
 
 rule convert:
@@ -223,7 +223,7 @@ rule convert:
     # group:
     #     'md'
     shell:
-        'python isicle/standardize_mol2.py {input.mol2a} {input.mol2b} {output} > {log}'
+        'python isicle/standardize_mol2.py {input.mol2a} {input.mol2b} {output} &> {log}'
 
 
 rule calculate_rmsd:
@@ -240,7 +240,7 @@ rule calculate_rmsd:
     # group:
     #     'md'
     shell:
-        'python isicle/rmsd.py {input.ref} {output.rmsd} {input.xyzs} > {log}'
+        'python isicle/rmsd.py {input.ref} {output.rmsd} {input.xyzs} &> {log}'
 
 
 rule downselect:
@@ -259,5 +259,5 @@ rule downselect:
     # group:
     #     'md'
     run:
-        shell('python isicle/downselect.py %s --infiles {input.xyz} --rfiles {input.rmsd} > {log}' %
+        shell('python isicle/downselect.py %s --infiles {input.xyz} --rfiles {input.rmsd} &> {log}' %
               join(config['path'], 'output', 'md', 'downselected'))

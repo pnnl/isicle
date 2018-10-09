@@ -13,7 +13,7 @@ rule desaltInChI:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --desalt > {log}'
+        'python isicle/process_inchi.py {input} {output} --desalt &> {log}'
 
 
 rule neutralizeInChI:
@@ -28,7 +28,7 @@ rule neutralizeInChI:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --neutralize > {log}'
+        'python isicle/process_inchi.py {input} {output} --neutralize &> {log}'
 
 
 rule tautomerizeInChI:
@@ -43,7 +43,7 @@ rule tautomerizeInChI:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --tautomerize > {log}'
+        'python isicle/process_inchi.py {input} {output} --tautomerize &> {log}'
 
 
 rule calculateFormula:
@@ -58,7 +58,7 @@ rule calculateFormula:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --formula > {log}'
+        'python isicle/process_inchi.py {input} {output} --formula &> {log}'
 
 
 rule calculateMass:
@@ -71,7 +71,7 @@ rule calculateMass:
     group:
         'adducts'
     shell:
-        'python isicle/resources/molmass.py `cat {input}` > {output}'
+        'python isicle/resources/molmass.py `cat {input}` &> {output}'
 
 
 rule generateGeometry:
@@ -90,7 +90,7 @@ rule generateGeometry:
     #     'adducts'
     shell:
         'python isicle/generate_geometry.py {input} {output.mol} {output.mol2} {output.xyz} {output.png} \
-         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} > {log}'
+         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
 
 
 rule calculatepKa:
@@ -103,7 +103,7 @@ rule calculatepKa:
     # group:
     #     'adducts'
     shell:
-        'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
+        'cxcalc pka -i -40 -x 40 -d large {input} &> {output}'
 
 
 rule generateAdduct:
@@ -121,4 +121,4 @@ rule generateAdduct:
     #     'adducts'
     shell:
         'python isicle/generate_adduct.py {input.molfile} {input.pkafile} [{wildcards.adduct}] {output.mol2} {output.xyz} \
-         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} > {log}'
+         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'

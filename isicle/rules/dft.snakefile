@@ -28,7 +28,7 @@ rule createNW:
     # group:
     #     'dft'
     shell:
-        'python isicle/generateNW.py {input} --template {config[nwchem][dft_template]} > {log}'
+        'python isicle/generateNW.py {input} --template {config[nwchem][dft_template]} &> {log}'
 
 
 # run NWChem
@@ -42,7 +42,7 @@ rule NWChem:
     # group:
     #     'dft'
     shell:
-        'srun --mpi=pmi2 nwchem {input} > {output}'
+        'srun --mpi=pmi2 nwchem {input} &> {output}'
 
 
 # parse nwchem outputs (geometry files)
@@ -62,4 +62,4 @@ rule parseNWChem:
     #     'dft'
     run:
         outdir = dirname(output.geom2)
-        shell('python isicle/parse_nwchem.py {input} %s --mode dft > {log}' % outdir)
+        shell('python isicle/parse_nwchem.py {input} %s --mode dft &> {log}' % outdir)
