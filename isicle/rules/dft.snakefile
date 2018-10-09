@@ -1,8 +1,6 @@
 from os.path import *
-from resources.nwchem.parseOutputs import XYZtoMFJ
 
 # snakemake configuration
-configfile: 'isicle/config.yaml'
 include: 'molecular_dynamics.snakefile'
 
 
@@ -16,16 +14,22 @@ rule copyOver:
     shell:
         'cp {input} {output}'
 
+
 # create .nw files based on template (resources/nwchem/template.nw)
 rule createNW:
     input:
         rules.copyOver.output
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw')
+    log:
+        join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log')
+    benchmark:
+        join(config['path'], 'output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.create.benchmark')
     # group:
     #     'dft'
     shell:
-        'python isicle/resources/nwchem/generateNW.py {input} --template {config[nwchem][dft_template]}'
+        'python isicle/generateNW.py {input} --template {config[nwchem][dft_template]} > {log}'
+
 
 # run NWChem
 rule NWChem:
@@ -40,6 +44,7 @@ rule NWChem:
     shell:
         'srun --mpi=pmi2 nwchem {input} > {output}'
 
+
 # parse nwchem outputs (geometry files)
 rule parseNWChem:
     input:
@@ -49,9 +54,12 @@ rule parseNWChem:
         geom2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),
         charge1 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
         charge2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
+    log:
+        join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log')
     benchmark:
         join(config['path'], 'output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark')
     # group:
     #     'dft'
     run:
-        XYZtoMFJ(input[0], join(config['path'], 'output', 'mobility', 'mobcal', 'runs'))
+        outdir = dirname(output.geom2)
+        shell('python isicle/parse_nwchem.py {input} %s --mode dft > {log}' % outdir)

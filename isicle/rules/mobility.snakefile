@@ -1,10 +1,6 @@
 from os.path import *
-from resources.mobcal.finish import boltzmann, parse_mobcal
-import pandas as pd
-from resources.utils import *
 
 # snakemake configuration
-configfile: 'isicle/config.yaml'
 include: 'dft.snakefile'
 
 
@@ -21,6 +17,7 @@ rule mobcal:
     shell:
         '{config[mobcal][exe]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input} {output}'
 
+
 # parse mobcal output
 rule parseMobcal:
     input:
@@ -30,23 +27,15 @@ rule parseMobcal:
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
+    log:
+        join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility'
-    run:
-        res = []
-        for ccsfile, efile in zip(input['geom'], input['energy']):
-            tmp = parse_mobcal(ccsfile)
-            if tmp is not None:
-                # get energy
-                with open(efile, 'r') as f:
-                    e = float(f.readlines()[0])
-                tmp.append(e)
-                res.append(tmp)
+    shell:
+        'python isicle/parse_mobcal.py {input.geom} {input.energy} {output} > {log}'
 
-        df = pd.DataFrame(res, columns=['Mobility', 'Mean CCS', 'Stdev CCS', 'DFT Energy'])
-        df.to_csv(output[0], sep='\t', index=False)
 
 # boltzmann averaging
 rule boltzmannAverage:
@@ -54,9 +43,11 @@ rule boltzmannAverage:
         rules.parseMobcal.output
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
+    log:
+        join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility'
-    run:
-        boltzmann(input[0], output[0])
+    shell:
+        'python isicle/boltzmann.py {input} {output} > {log}'

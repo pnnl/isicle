@@ -1,9 +1,7 @@
 from os.path import *
-import pandas as pd
-from resources.utils import *
+from core.utils import getOS
 
 # snakemake configuration
-configfile: 'config.yaml'
 include: 'adducts.snakefile'
 
 OS = getOS()
@@ -11,9 +9,11 @@ OS = getOS()
 
 rule impact:
     input:
-        rules.generateAdducts.output.xyz
+        rules.generateAdduct.output.xyz
     output:
         join(config['path'], 'output', 'mobility', 'impact', 'runs', '{id}_{adduct}.txt')
+    log:
+        join(config['path'], 'output', 'mobility', 'impact', 'runs', 'logs', '{id}_{adduct}.log')
     benchmark:
         join(config['path'], 'output', 'mobility', 'impact', 'runs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
@@ -23,28 +23,25 @@ rule impact:
         'IMPACT_RANDSEED={config[impact][seed]} resources/IMPACT/{OS}/impact {input} -o {output} -H \
         -shotsPerRot {config[impact][shotsPerRot]} \
         -convergence {config[impact][convergence]} \
-        -nRuns {config[impact][nRuns]} -nocite'
+        -nRuns {config[impact][nRuns]} -nocite > {log}'
+
 
 rule postprocess:
     input:
         ccs = rules.impact.output,
         mass = rules.calculateMass.output
     output:
-        join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs'),
-        join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs')
+        he = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
+        n2 = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs')
+    log:
+        join(config['path'], 'output', 'mobility', 'impact', 'ccs', 'logs', '{id}_{adduct}.benchmark')
     benchmark:
         join(config['path'], 'output', 'mobility', 'impact', 'ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility_alt'
-    run:
-        # read inputs
-        ccs_He = read_impact(input[0])
-        m = read_mass(input[1])
-
-        ccs_N2 = ccs_He + config['ccs']['alpha'] * m ** config['ccs']['beta']
-
-        write_string(str(ccs_N2), output[0])
-        write_string(str(ccs_He), output[1])
+    shell:
+        'python isicle/parse_impact.py {input.ccs} {input.mass} {output.he} {output.n2} \
+         --alpha {config[ccs][alpha]} --beta {config[ccs][beta]} > {log}'
 
 # # for report
 # ID, adduct = splitext(basename(f))[0].rsplit('_', 1)

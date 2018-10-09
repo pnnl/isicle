@@ -1,10 +1,4 @@
 from os.path import *
-from resources.utils import *
-import sys
-import logging
-
-# snakemake configuration
-configfile: 'isicle/config.yaml'
 
 
 rule desaltInChI:
@@ -18,30 +12,24 @@ rule desaltInChI:
         join(config['path'], 'output', 'adducts', 'desalted', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
-    run:
-        inchi = read_string(input[0])
-        inchi = desalt(inchi, log[0])
-        if inchi is not None:
-            write_string(inchi, output[0])
-        else:
-            sys.exit(1)
+    shell:
+        'python isicle/process_inchi.py {input} {output} --desalt > {log}'
+
 
 rule neutralizeInChI:
     input:
         rules.desaltInChI.output
     output:
         join(config['path'], 'output', 'adducts', 'neutralized', '{id}.inchi')
+    log:
+        join(config['path'], 'output', 'adducts', 'neutralized', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', 'adducts', 'neutralized', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
-    run:
-        inchi = read_string(input[0])
-        inchi = neutralize(inchi)
-        if inchi is not None:
-            write_string(inchi, output[0])
-        else:
-            sys.exit(1)
+    shell:
+        'python isicle/process_inchi.py {input} {output} --neutralize > {log}'
+
 
 rule tautomerizeInChI:
     input:
@@ -54,13 +42,9 @@ rule tautomerizeInChI:
         join(config['path'], 'output', 'adducts', 'tautomer', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
-    run:
-        inchi = read_string(input[0])
-        inchi = tautomerize(inchi, log=log[0])
-        if inchi is not None:
-            write_string(inchi, output[0])
-        else:
-            sys.exit(1)
+    shell:
+        'python isicle/process_inchi.py {input} {output} --tautomerize > {log}'
+
 
 rule calculateFormula:
     input:
@@ -73,10 +57,9 @@ rule calculateFormula:
         join(config['path'], 'output', 'adducts', 'formula', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
-    run:
-        inchi = read_string(input[0])
-        formula = inchi2formula(inchi, log=log[0])
-        write_string(formula, output[0])
+    shell:
+        'python isicle/process_inchi.py {input} {output} --formula > {log}'
+
 
 rule calculateMass:
     input:
@@ -90,6 +73,7 @@ rule calculateMass:
     shell:
         'python isicle/resources/molmass.py `cat {input}` > {output}'
 
+
 rule generateGeometry:
     input:
         rules.tautomerizeInChI.output
@@ -98,19 +82,16 @@ rule generateGeometry:
         mol2 = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.mol2'),
         xyz = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.xyz'),
         png = join(config['path'], 'output', 'adducts', 'geometry_parent', 'images', '{id}.png')
+    log:
+        join(config['path'], 'output', 'adducts', 'geometry_parent', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', 'adducts', 'geometry_parent', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
-    run:
-        inchi = read_string(input[0])
-        mol = inchi2geom(inchi, forcefield=config['forcefield']['type'],
-                         steps=config['forcefield']['steps'])
+    shell:
+        'python isicle/generate_geometry.py {input} {output.mol} {output.mol2} {output.xyz} {output.png} \
+         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} > {log}'
 
-        mol.draw(show=False, filename=output.png, usecoords=False, update=False)
-        mol.write('mol', output.mol, overwrite=True)
-        mol.write('xyz', output.xyz, overwrite=True)
-        mol.write('mol2', output.mol2, overwrite=True)
 
 rule calculatepKa:
     input:
@@ -124,7 +105,8 @@ rule calculatepKa:
     shell:
         'cxcalc pka -i -40 -x 40 -d large {input} > {output}'
 
-rule generateAdducts:
+
+rule generateAdduct:
     input:
         molfile = rules.generateGeometry.output.mol,
         pkafile = rules.calculatepKa.output
@@ -137,26 +119,6 @@ rule generateAdducts:
         join(config['path'], 'output', 'adducts', 'geometry_{adduct}', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'adducts'
-    run:
-        # log
-        logging.basicConfig(filename=log[0], level=logging.DEBUG)
-
-        # read inputs
-        mol = next(pybel.readfile("mol", input[0]))
-        pka = read_pka(input[1])
-
-        # generate adduct
-        a = wildcards.adduct
-        if '+' in a:
-            adduct = create_adduct(mol, a, pka['b1'],
-                                   forcefield=config['forcefield']['type'],
-                                   steps=config['forcefield']['steps'])
-        elif '-' in a:
-            adduct = create_adduct(mol, a, pka['a1'],
-                                   forcefield=config['forcefield']['type'],
-                                   steps=config['forcefield']['steps'])
-        else:
-            adduct = mol
-
-        adduct.write('xyz', output.xyz, overwrite=True)
-        adduct.write('mol2', output.mol2, overwrite=True)
+    shell:
+        'python isicle/generate_adduct.py {input.molfile} {input.pkafile} {wildcards.adduct} {output.mol2} {output.xyz} \
+         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} > {log}'

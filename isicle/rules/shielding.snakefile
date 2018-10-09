@@ -1,8 +1,6 @@
 from os.path import *
-from resources.nwchem.parseOutputs import XYZtoMFJ
 
 # snakemake configuration
-configfile: 'isicle/config.yaml'
 include: 'molecular_dynamics.snakefile'
 
 
@@ -16,6 +14,7 @@ rule copyOver:
     shell:
         'cp {input} {output}'
 
+
 # create .nw files based on template (resources/nwchem/template.nw)
 rule createNW:
     input:
@@ -25,13 +24,13 @@ rule createNW:
     # group:
     #     'shielding'
     shell:
-        'python isicle/resources/nwchem/generateNW.py {input} --template {config[nwchem][shielding_template]}'
+        'python isicle/generateNW.py {input} --template {config[nwchem][shielding_template]}'
+
 
 # run NWChem
 rule NWChem:
     input:
-        xyz = rules.createNW.input,
-        nw = rules.createNW.output
+        rules.createNW.output
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
     benchmark:
@@ -39,4 +38,4 @@ rule NWChem:
     # group:
     #     'shielding'
     shell:
-        '{config[nwchem][runscript]} {input.nw}'
+        'srun --mpi=pmi2 nwchem {input} > {output}'

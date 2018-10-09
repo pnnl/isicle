@@ -2,6 +2,8 @@ from os.path import *
 from string import Template
 import argparse
 
+__version__ = '0.1.0'
+
 
 class NWChemHelper:
     def __init__(self, file):

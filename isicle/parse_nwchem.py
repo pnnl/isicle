@@ -2,6 +2,9 @@ from os.path import *
 import glob
 import pandas as pd
 import shutil
+import argparse
+
+__version__ = '0.1.0'
 
 
 def XYZtoMFJ(resfile, outpath):
@@ -96,3 +99,15 @@ def parseOutput(res, idx=0):
 
     natoms = int(res[indices[1] - 1].split()[0])
     return natoms, lowdinIdx, energies
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Parse NWChem DFT output.')
+    parser.add_argument('infile', help='Path to NWChem .out file.')
+    parser.add_argument('outdir', help='Path to output directory.')
+    parser.add_argument('--mode', '-m', default='dft', help='Specify NWChem output modality [dft, shielding].')
+
+    args = parser.parse_args()
+
+    if args.mode.lower() == 'dft':
+        XYZtoMFJ(args.infile, args.outdir)

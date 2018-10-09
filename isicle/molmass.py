@@ -96,7 +96,7 @@ import math
 import copy
 from functools import reduce
 
-from elements import ELEMENTS, Isotope
+from core.elements import ELEMENTS, Isotope
 
 __version__ = '2018.02.06'
 __docformat__ = 'restructuredtext en'
