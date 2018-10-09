@@ -25,7 +25,7 @@ rule prepare:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
         # assign
-        'python isicle/md_helper.py {input} {output.mol2} {wildcards.adduct} --prepare > {log}'
+        'python isicle/md_helper.py {input} {output.mol2} [{wildcards.adduct}] --prepare > {log}'
 
 
 rule antechamber:
@@ -89,7 +89,7 @@ rule restore:
     # group:
     #     'md'
     shell:
-        'python isicle/md_helper.py {input.mol2} {output.mol2} {wildcards.adduct} --restore > {log}'
+        'python isicle/md_helper.py {input.mol2} {output.mol2} [{wildcards.adduct}] --restore > {log}'
 
 
 rule tleap:
@@ -259,5 +259,5 @@ rule downselect:
     # group:
     #     'md'
     run:
-        shell('python isicle/downselect.py {input.xyz} {input.rmsd} %s > {log}' %
+        shell('python isicle/downselect.py %s --infiles {input.xyz} --rfiles {input.rmsd} > {log}' %
               join(config['path'], 'output', 'md', 'downselected'))

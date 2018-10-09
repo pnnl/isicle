@@ -29,14 +29,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Select frames from simulated annealing.')
     parser.add_argument('infile', help='Path to simulated annealing .out file.')
     parser.add_argument('crdfile', help='Path to .crd file.')
-    parser.add_argument('outfiles', help='Paths to output .trajin files (one per frame).')
+    parser.add_argument('outfiles', nargs='+', help='Paths to output .trajin files (one per frame).')
     parser.add_argument('--nframes', type=int, default=10, help='Number of frames.')
     parser.add_argument('--low', type=float, default=1.25e+06, help='Lower timestep bound.')
     parser.add_argument('--high', type=float, default=1.45e+06, help='Upper timestep bound.')
 
     args = parser.parse_args()
 
-    frames = select_frames(input.out,
+    frames = select_frames(args.infile,
                            nframes=args.nframes,
                            low=args.low,
                            high=args.high)

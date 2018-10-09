@@ -21,9 +21,8 @@ rule impact:
     shell:
         # run impact on adducts
         'IMPACT_RANDSEED={config[impact][seed]} resources/IMPACT/{OS}/impact {input} -o {output} -H \
-        -shotsPerRot {config[impact][shotsPerRot]} \
-        -convergence {config[impact][convergence]} \
-        -nRuns {config[impact][nRuns]} -nocite > {log}'
+         -shotsPerRot {config[impact][shotsPerRot]} -convergence {config[impact][convergence]} \
+         -nRuns {config[impact][nRuns]} -nocite > {log}'
 
 
 rule postprocess:

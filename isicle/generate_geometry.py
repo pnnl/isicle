@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     inchi = read_string(args.infile)
     mol = inchi2geom(inchi, forcefield=args.forcefield,
-                     steps=args.iterations)
+                     steps=args.steps)
 
     mol.draw(show=False, filename=args.png, usecoords=False, update=False)
     mol.write('mol', args.mol, overwrite=True)

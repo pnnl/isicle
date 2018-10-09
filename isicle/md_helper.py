@@ -16,7 +16,7 @@ def prepare(infile, outfile, adduct='+H'):
         content = None
 
     np.save(splitext(splitext(outfile)[0])[0] + '.idx.npy', idx)
-    np.save(basename(basename(outfile)[0])[0] + '.content.npy', content)
+    np.save(splitext(splitext(outfile)[0])[0] + '.content.npy', content)
 
 
 def restore(infile, outfile, adduct='+H'):
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     mode.add_argument('--restore', action='store_true', help='Restore mode.')
 
     args = parser.parse_args()
+    args.adduct = args.adduct[1:-1]
 
     if args.prepare is True:
         prepare(args.infile, args.outfile, adduct=args.adduct)

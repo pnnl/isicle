@@ -120,5 +120,5 @@ rule generateAdduct:
     # group:
     #     'adducts'
     shell:
-        'python isicle/generate_adduct.py {input.molfile} {input.pkafile} {wildcards.adduct} {output.mol2} {output.xyz} \
+        'python isicle/generate_adduct.py {input.molfile} {input.pkafile} [{wildcards.adduct}] {output.mol2} {output.xyz} \
          --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} > {log}'

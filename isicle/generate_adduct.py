@@ -33,6 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--steps', '-s', type=int, default=500, help='Number of forcefield optimization steps.')
 
     args = parser.parse_args()
+    args.adduct = args.adduct[1:-1]
 
     # read inputs
     mol = next(pybel.readfile("mol", args.infile))

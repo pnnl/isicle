@@ -9,9 +9,9 @@ __version__ = '0.1.0'
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Downselect conformers by RMSD.')
-    parser.add_argument('infiles', nargs='+', help='Paths to .xyz files.')
-    parser.add_argument('rfiles', nargs='+', help='Paths to .rmsd files.')
     parser.add_argument('outdir', help='Path to output directory.')
+    parser.add_argument('--infiles', nargs='+', required=True, help='Paths to .xyz files.')
+    parser.add_argument('--rfiles', nargs='+', required=True, help='Paths to .rmsd files.')
 
     args = parser.parse_args()
 
@@ -31,9 +31,9 @@ if __name__ == '__main__':
     d1 = args.infiles[idx[-1]]
     d2 = args.infiles[idx[-2]]
 
-    sout = join(outdir, basename(s).rsplit('_', 1)[0] + '_s.xyz')
-    d1out = join(outdir, basename(d1).rsplit('_', 1)[0] + '_d1.xyz')
-    d2out = join(outdir, basename(d2).rsplit('_', 1)[0] + '_d2.xyz')
+    sout = join(args.outdir, basename(s).rsplit('_', 1)[0] + '_s.xyz')
+    d1out = join(args.outdir, basename(d1).rsplit('_', 1)[0] + '_d1.xyz')
+    d2out = join(args.outdir, basename(d2).rsplit('_', 1)[0] + '_d2.xyz')
 
     shutil.copy2(s, sout)
     shutil.copy2(d1, d1out)
