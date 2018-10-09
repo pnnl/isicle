@@ -1,6 +1,7 @@
 from os.path import *
 import numpy as np
 import os
+from generators import *
 
 # snakemake configuration
 include: 'adducts.snakefile'
@@ -211,8 +212,8 @@ rule extractFrames:
 
 rule convert:
     input:
-        mol2a = rules.extractFrames.output.mol2,
-        mol2b = rules.prepare.input.mol2
+        mol2a = rules.extractFrames.output,
+        mol2b = rules.prepare.input
     output:
         join(config['path'], 'output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
     log:
@@ -259,4 +260,4 @@ rule downselect:
     #     'md'
     run:
         shell('python isicle/downselect.py {input.xyz} {input.rmsd} %s > {log}' %
-              join(config['path'], 'output', 'md', 'downselected')
+              join(config['path'], 'output', 'md', 'downselected'))

@@ -126,11 +126,3 @@ def push_atom(path, output, idx, content):
                 f.write(' %s %s %s %s %s\n' % tuple(info))
             else:
                 f.write(line)
-
-
-def cycles(n):
-    return ['%03d' % x for x in range(1, n + 1)]
-
-
-def frames(n):
-    return ['%03d' % x for x in range(n)]
