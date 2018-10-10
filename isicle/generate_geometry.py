@@ -36,5 +36,5 @@ if __name__ == '__main__':
 
     mol.draw(show=False, filename=args.png, usecoords=False, update=False)
     mol.write('mol', args.mol, overwrite=True)
-    mol.write('xyz', args.xyz, overwrite=True)
     mol.write('mol2', args.mol2, overwrite=True)
+    mol.write('xyz', args.xyz, overwrite=True)
