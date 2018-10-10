@@ -1,5 +1,5 @@
 from os.path import *
-from core.utils import getOS
+from helpers import getOS
 
 # snakemake configuration
 include: 'adducts.snakefile'

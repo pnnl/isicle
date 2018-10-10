@@ -2,18 +2,10 @@ import subprocess
 import pandas as pd
 import pybel
 import numpy as np
-import platform
 
 
 def tail(f, lines=1):
     return [x.strip() for x in subprocess.check_output(['tail', '-n%s' % lines, f]).decode('ascii').split('\n')]
-
-
-def getOS():
-    system = platform.system().lower()
-    if system == 'darwin':
-        return 'osx'
-    return system
 
 
 def read_string(path):

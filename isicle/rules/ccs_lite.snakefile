@@ -1,7 +1,7 @@
 from os.path import *
 
 # snakemake configuration
-include: 'isicle/rules/mobility.snakefile'
+include: 'mobility_alt.snakefile'
 
 # default to SMILES as input
 IDS, = glob_wildcards(join(config['path'], 'input', '{id}.smi'))
@@ -13,5 +13,7 @@ if len(IDS) == 0:
 
 rule all:
     input:
-        expand(join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv'),
+        expand(join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
+               id=IDS, adduct=config['adducts']),
+        expand(join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs'),
                id=IDS, adduct=config['adducts'])

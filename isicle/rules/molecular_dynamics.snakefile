@@ -1,7 +1,7 @@
 from os.path import *
 import numpy as np
 import os
-from generators import *
+from helpers import cycles, frames
 
 # snakemake configuration
 include: 'adducts.snakefile'
