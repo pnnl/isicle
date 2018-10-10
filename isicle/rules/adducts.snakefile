@@ -1,11 +1,26 @@
 from os.path import *
 
 
-rule desaltInChI:
+rule inchi2smiles:
     input:
         join(config['path'], 'input', '{id}.inchi')
     output:
-        join(config['path'], 'output', 'adducts', 'desalted', '{id}.inchi')
+        join(config['path'], 'input', '{id}.smi')
+    log:
+        join(config['path'], 'output', 'adducts', 'inchi2smiles', 'logs', '{id}.log')
+    benchmark:
+        join(config['path'], 'output', 'adducts', 'inchi2smiles', 'benchmarks', '{id}.benchmark')
+    # group:
+    #     'adducts'
+    shell:
+        'python isicle/process_smiles.py {input} {output} --inchi &> {log}'
+
+
+rule desalt:
+    input:
+        rules.inchi2smiles.output
+    output:
+        join(config['path'], 'output', 'adducts', 'desalted', '{id}.smi')
     log:
         join(config['path'], 'output', 'adducts', 'desalted', 'logs', '{id}.log')
     benchmark:
@@ -13,14 +28,14 @@ rule desaltInChI:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --desalt &> {log}'
+        'python isicle/process_smiles.py {input} {output} --desalt &> {log}'
 
 
-rule neutralizeInChI:
+rule neutralize:
     input:
-        rules.desaltInChI.output
+        rules.desalt.output
     output:
-        join(config['path'], 'output', 'adducts', 'neutralized', '{id}.inchi')
+        join(config['path'], 'output', 'adducts', 'neutralized', '{id}.smi')
     log:
         join(config['path'], 'output', 'adducts', 'neutralized', 'logs', '{id}.log')
     benchmark:
@@ -28,14 +43,14 @@ rule neutralizeInChI:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --neutralize &> {log}'
+        'python isicle/process_smiles.py {input} {output} --neutralize &> {log}'
 
 
-rule tautomerizeInChI:
+rule tautomerize:
     input:
-        rules.neutralizeInChI.output
+        rules.neutralize.output
     output:
-        join(config['path'], 'output', 'adducts', 'tautomer', '{id}.inchi')
+        join(config['path'], 'output', 'adducts', 'tautomer', '{id}.smi')
     log:
         join(config['path'], 'output', 'adducts', 'tautomer', 'logs', '{id}.log')
     benchmark:
@@ -43,12 +58,12 @@ rule tautomerizeInChI:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --tautomerize &> {log}'
+        'python isicle/process_smiles.py {input} {output} --tautomerize &> {log}'
 
 
 rule calculateFormula:
     input:
-        rules.tautomerizeInChI.output
+        rules.tautomerize.output
     output:
         join(config['path'], 'output', 'adducts', 'formula', '{id}.formula')
     log:
@@ -58,7 +73,7 @@ rule calculateFormula:
     # group:
     #     'adducts'
     shell:
-        'python isicle/process_inchi.py {input} {output} --formula &> {log}'
+        'python isicle/process_smiles.py {input} {output} --formula &> {log}'
 
 
 rule calculateMass:
@@ -76,7 +91,7 @@ rule calculateMass:
 
 rule generateGeometry:
     input:
-        rules.tautomerizeInChI.output
+        rules.tautomerize.output
     output:
         mol = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.mol'),
         mol2 = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.mol2'),
