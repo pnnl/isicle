@@ -50,7 +50,7 @@ rule antechamber:
             idx = np.load(input.idx)
             charge -= len(idx)
 
-        shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc %.4f &&> {log}' % charge)
+        shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc %.4f &> {log}' % charge)
 
         os.chdir(cwd)
 
@@ -70,7 +70,7 @@ rule parmchk2:
         cwd = os.getcwd()
         os.chdir(join(config['path'], 'output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
 
-        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &&> {log}')
+        shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log}')
 
         os.chdir(cwd)
 

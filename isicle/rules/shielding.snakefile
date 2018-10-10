@@ -38,4 +38,4 @@ rule NWChem:
     # group:
     #     'shielding'
     shell:
-        'srun --mpi=pmi2 nwchem {input} &> {output}'
+        'srun --mpi=pmi2 nwchem {input} > {output}'

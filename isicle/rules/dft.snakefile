@@ -42,7 +42,7 @@ rule NWChem:
     # group:
     #     'dft'
     shell:
-        'srun --mpi=pmi2 nwchem {input} &> {output}'
+        'srun --mpi=pmi2 nwchem {input} > {output}'
 
 
 # parse nwchem outputs (geometry files)
