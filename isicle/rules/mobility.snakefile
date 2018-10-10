@@ -10,12 +10,14 @@ rule mobcal:
         rules.parseNWChem.output.geom2
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
+    log:
+        join(config['path'], 'output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log')
     benchmark:
         join(config['path'], 'output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark')
     # group:
     #     'mobility'
     shell:
-        '{config[mobcal][exe]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input} {output}'
+        '{config[mobcal][exe]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input} {output} &> {log}'
 
 
 # parse mobcal output

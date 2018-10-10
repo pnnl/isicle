@@ -107,7 +107,7 @@ rule tleap:
     # group:
     #     'md'
     run:
-        shell('python isicle/prepare_tleap.py {input.mol2} {input.frcmod} {output.config}')
+        shell('python isicle/prepare_tleap.py {input.mol2} {input.frcmod} {output.config} &> {log}')
         shell('tleap -s -f {output.config} &> {log}')
 
 
@@ -127,7 +127,7 @@ rule sanderEM:
     # group:
     #     'md'
     run:
-        shell('python isicle/prepare_sander.py {input.mol2} {output.config} --em')
+        shell('python isicle/prepare_sander.py {input.mol2} {output.config} --em &> {log}')
         shell('sander -O -i {output.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}')
 
 
@@ -148,7 +148,7 @@ rule sander0:
     # group:
     #     'md'
     run:
-        shell('python isicle/prepare_sander.py {input.mol2} {output.config} --iter0')
+        shell('python isicle/prepare_sander.py {input.mol2} {output.config} --iter0 &> {log}')
         shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 
@@ -172,7 +172,7 @@ rule sander:
     # group:
     #     'md'
     run:
-        shell('python isicle/prepare_sander.py {input.mol2} {output.config} --sa')
+        shell('python isicle/prepare_sander.py {input.mol2} {output.config} --sa &> {log}')
         shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 
