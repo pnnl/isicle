@@ -90,7 +90,7 @@ def smiles2formula(smiles):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process InChI string.')
+    parser = argparse.ArgumentParser(description='Process InChI/SMILES string.')
     parser.add_argument('infile', help='Path to input InChI (.inchi) or canonical SMILES (.smi) file.')
     parser.add_argument('outfile', help='Path to output canonical SMILES (.smi) file.')
 
