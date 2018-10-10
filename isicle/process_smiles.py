@@ -135,6 +135,7 @@ if __name__ == '__main__':
     mode.add_argument('--neutralize', action='store_true', help='Neutralize mode.')
     mode.add_argument('--tautomerize', action='store_true', help='Tautomerize mode.')
     mode.add_argument('--formula', action='store_true', help='Formula mode.')
+    mode.add_argument('--canonicalize', action='store_true', help='Canonicalization mode.')
 
     args = parser.parse_args()
 
@@ -150,6 +151,8 @@ if __name__ == '__main__':
         smiles = tautomerize(s)
     elif args.formula is True:
         smiles = smiles2formula(s)
+    elif args.canonicalize is True:
+        smiles = canonicalize(s)
 
     if smiles is not None:
         write_string(smiles, args.outfile)

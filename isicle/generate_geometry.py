@@ -50,7 +50,7 @@ if __name__ == '__main__':
     if splitext(args.infile)[-1].lower() == '.inchi':
         mol = inchi2geom(s, forcefield=args.forcefield,
                          steps=args.steps)
-    elif splitext(args.infile)[-1].lower() in ['.can', '.smi', '.smiles']:
+    elif splitext(args.infile)[-1].lower() == '.smi':
         mol = smiles2geom(s, forcefield=args.forcefield,
                           steps=args.steps)
     else:

@@ -1,24 +1,42 @@
 from os.path import *
 
+# snakemake configuration
+ruleorder: canonicalize > inchi2smiles
+
 
 rule inchi2smiles:
     input:
         join(config['path'], 'input', '{id}.inchi')
     output:
-        join(config['path'], 'input', '{id}.smi')
+        join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
     log:
-        join(config['path'], 'output', 'adducts', 'inchi2smiles', 'logs', '{id}.log')
+        join(config['path'], 'output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'adducts', 'inchi2smiles', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', 'adducts', 'canonicalized', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
     shell:
         'python isicle/process_smiles.py {input} {output} --inchi &> {log}'
 
 
+rule canonicalize:
+    input:
+        join(config['path'], 'input', '{id}.smi')
+    output:
+        join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
+    log:
+        join(config['path'], 'output', 'adducts', 'canonicalized', 'logs', '{id}.log')
+    benchmark:
+        join(config['path'], 'output', 'adducts', 'canonicalized', 'benchmarks', '{id}.benchmark')
+    # group:
+    #     'adducts'
+    shell:
+        'python isicle/process_smiles.py {input} {output} --canonicalize &> {log}'
+
+
 rule desalt:
     input:
-        rules.inchi2smiles.output
+        join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
     output:
         join(config['path'], 'output', 'adducts', 'desalted', '{id}.smi')
     log:
