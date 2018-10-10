@@ -2,6 +2,8 @@ import argparse
 import subprocess
 from core.utils import read_string, write_string
 import sys
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
 
 __version__ = '0.1.0'
@@ -61,8 +63,41 @@ def desalt(smiles):
 def neutralize(smiles):
     '''Neutralizes an canonical SMILES string.'''
 
-    # currently not operational for SMILES
-    return smiles
+    def _InitializeNeutralisationReactions():
+        patts = (
+            # Imidazoles
+            ('[n+;H]', 'n'),
+            # Amines
+            ('[N+;!H0]', 'N'),
+            # Carboxylic acids and alcohols
+            ('[$([O-]);!$([O-][#7])]', 'O'),
+            # Thiols
+            ('[S-;X1]', 'S'),
+            # Sulfonamides
+            ('[$([N-;X2]S(=O)=O)]', 'N'),
+            # Enamines
+            ('[$([N-;X2][C,N]=C)]', 'N'),
+            # Tetrazoles
+            ('[n-]', '[nH]'),
+            # Sulfoxides
+            ('[$([S-]=O)]', 'S'),
+            # Amides
+            ('[$([N-]C=O)]', 'N'),
+        )
+        return [(Chem.MolFromSmarts(x), Chem.MolFromSmiles(y, False)) for x, y in patts]
+
+    reactions = _InitializeNeutralisationReactions()
+    mol = Chem.MolFromSmiles(smiles)
+    replaced = False
+    for i, (reactant, product) in enumerate(reactions):
+        while mol.HasSubstructMatch(reactant):
+            replaced = True
+            rms = AllChem.ReplaceSubstructs(mol, reactant, product)
+            mol = rms[0]
+    if replaced:
+        return canonicalize(Chem.MolToSmiles(mol))
+    else:
+        return smiles
 
 
 def tautomerize(smiles):
