@@ -101,8 +101,8 @@ rule calculateMass:
         join(config['path'], 'output', 'adducts', 'mass', '{id}.mass')
     benchmark:
         join(config['path'], 'output', 'adducts', 'mass', 'benchmarks', '{id}.benchmark')
-    group:
-        'adducts'
+    # group:
+    #     'adducts'
     shell:
         'python isicle/resources/molmass.py `cat {input}` &> {output}'
 

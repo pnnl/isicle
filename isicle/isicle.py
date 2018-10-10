@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.css is True:
+    if args.ccs is True:
         if args.standard is True:
             cmd = 'snakemake --snakefile isicle/rules/ccs_standard.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
         elif args.lite is True:
