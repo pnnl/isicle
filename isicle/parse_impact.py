@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 from core.utils import read_mass, write_string
 
+
 __version__ = '0.1.0'
 
 

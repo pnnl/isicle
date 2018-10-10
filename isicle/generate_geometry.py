@@ -2,6 +2,7 @@ import argparse
 import pybel
 from core.utils import read_string
 
+
 __version__ = '0.1.0'
 
 
