@@ -1,7 +1,6 @@
 import argparse
 import subprocess
 import multiprocessing as mp
-import sys
 
 
 if __name__ == '__main__':
