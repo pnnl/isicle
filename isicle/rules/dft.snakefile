@@ -20,7 +20,7 @@ rule copyOver:
 
 
 # create .nw files based on template (resources/nwchem/template.nw)
-rule createNW:
+rule createDFTConfig:
     input:
         rules.copyOver.output
     output:
@@ -36,9 +36,9 @@ rule createNW:
 
 
 # run NWChem
-rule NWChem:
+rule dft:
     input:
-        rules.createNW.output
+        rules.createDFTConfig.output
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out')
     log:
@@ -52,9 +52,9 @@ rule NWChem:
 
 
 # parse nwchem outputs (geometry files)
-rule parseNWChem:
+rule parseDFT:
     input:
-        rules.NWChem.output
+        rules.dft.output
     output:
         geom1 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.mfj'),
         geom2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),

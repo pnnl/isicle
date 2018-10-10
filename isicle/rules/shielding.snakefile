@@ -1,4 +1,5 @@
 from os.path import *
+from helpers import cycles
 
 # snakemake configuration
 include: 'molecular_dynamics.snakefile'
@@ -20,7 +21,7 @@ rule copyOver:
 
 
 # create .nw files based on template (resources/nwchem/template.nw)
-rule createNW:
+rule createShieldingConfig:
     input:
         rules.copyOver.output
     output:
@@ -36,9 +37,9 @@ rule createNW:
 
 
 # run NWChem
-rule NWChem:
+rule shielding:
     input:
-        rules.createNW.output
+        rules.createShieldingConfig.output
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
     log:
@@ -49,3 +50,23 @@ rule NWChem:
     #     'shielding'
     shell:
         'srun --mpi=pmi2 nwchem {input} > {output} 2> {log}'
+
+
+# placeholder until shielding is done
+rule parseShielding:
+    input:
+        expand(join(config['path'], 'output', 'shielding', '{{id}}', 'cycle_{cycle}_{selected}', '{{id}}_{cycle}_{selected}.out'),
+               selected=['s', 'd1', 'd2'], cycle=cycles(config['amber']['cycles']))
+    output:
+        join(config['path'], 'output', 'chemical_shifts', '{id}.tsv')
+    log:
+        join(config['path'], 'output', 'chemical_shifts', 'logs', '{id}.log')
+    benchmark:
+        join(config['path'], 'output', 'chemical_shifts', 'benchmarks', '{id}.benchmark')
+    # group:
+    #     'dft'
+    # run:
+    #     outdir = dirname(output.geom2)
+    #     shell('python isicle/parse_nwchem.py {input} %s --mode shielding &> {log}' % outdir)
+    shell:
+        'touch {output}'

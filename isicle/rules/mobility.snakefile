@@ -7,7 +7,7 @@ include: 'dft.snakefile'
 # run mobcal on geom+charge nwchem output
 rule mobcal:
     input:
-        rules.parseNWChem.output.geom2
+        rules.parseDFT.output.geom2
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
     log:
