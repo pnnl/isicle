@@ -1,6 +1,7 @@
 import argparse
 import subprocess
 import multiprocessing as mp
+import sys
 
 
 if __name__ == '__main__':
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     mprop.add_argument('--chem-shifts', action='store_true', help='Calculate NMR chemical shifts.')
 
     mode = parser.add_argument_group('Calculation mode (CCS only)')
-    mmode = mode.add_mutually_exclusive_group(required=True)
+    mmode = mode.add_mutually_exclusive_group()
     mmode.add_argument('--standard', action='store_true', help='Standard calculation mode.')
     mmode.add_argument('--lite', action='store_true', help='Lite calculation mode.')
 
@@ -32,6 +33,8 @@ if __name__ == '__main__':
             cmd = 'snakemake --snakefile isicle/rules/ccs_standard.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
         elif args.lite is True:
             cmd = 'snakemake --snakefile isicle/rules/ccs_lite.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
+        else:
+            raise argparse.ArgumentTypeError('Please select a CCS calculation mode.')
     elif args.chem_shifts is True:
         cmd = 'snakemake --snakefile isicle/rules/chemshifts.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
 
