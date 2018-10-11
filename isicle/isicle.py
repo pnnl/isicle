@@ -33,7 +33,7 @@ if __name__ == '__main__':
         elif args.lite is True:
             cmd = 'snakemake --snakefile isicle/rules/ccs_lite.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
         else:
-            raise argparse.ArgumentTypeError('Please select a CCS calculation mode.')
+            parser.error('Please select a CCS calculation mode.')
     elif args.chem_shifts is True:
         cmd = 'snakemake --snakefile isicle/rules/chemshifts.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
 
