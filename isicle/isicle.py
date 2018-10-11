@@ -2,7 +2,7 @@ import argparse
 from multiprocessing import cpu_count
 
 
-if __name__ == '__main__':
+def cli():
     parser = argparse.ArgumentParser(description='Execute ISiCLE simulations.')
 
     config = parser.add_argument_group('Snakemake configuration')
