@@ -69,7 +69,7 @@ def desalt(smiles):
     return None
 
 
-def neutralize(smiles):
+def neutralize2(smiles):
     '''Neutralizes an canonical SMILES string.'''
 
     def _InitializeNeutralisationReactions():
@@ -109,7 +109,7 @@ def neutralize(smiles):
         return smiles
 
 
-def neutralize2(smiles):
+def neutralize(smiles):
     '''Neutralizes an canonical SMILES string (alternate).'''
 
     def neutralize_inchi(inchi):

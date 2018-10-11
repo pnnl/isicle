@@ -3,7 +3,6 @@ from helpers import getOS
 
 # snakemake configuration
 include: 'adducts.snakefile'
-
 OS = getOS()
 
 
