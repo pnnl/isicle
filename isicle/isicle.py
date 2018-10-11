@@ -1,7 +1,5 @@
 import argparse
-import subprocess
-import multiprocessing as mp
-
+from multiprocessing import cpu_count
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Execute ISiCLE simulations.')
@@ -12,7 +10,7 @@ if __name__ == '__main__':
     # cluster mode not yet supported through this interface
     config.add_argument('--cluster-config', help='Path to cluster execution configuration file.')
 
-    config.add_argument('--cores', type=int, default=mp.cpu_count(), help='Number of cores used for execution (ignored for cluster execution).')
+    config.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (ignored for cluster execution).')
     config.add_argument('--dryrun', action='store_true', help='Perform a dry run.')
 
     prop = parser.add_argument_group('Property calculation')
@@ -26,6 +24,8 @@ if __name__ == '__main__':
     mmode.add_argument('--lite', action='store_true', help='Lite calculation mode.')
 
     args = parser.parse_args()
+
+    import subprocess
 
     if args.ccs is True:
         if args.standard is True:
