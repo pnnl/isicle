@@ -21,6 +21,20 @@ def inchi2smi(inchi):
     return None
 
 
+def smi2inchi(smi):
+    '''Converts SMILES string to InChI string.'''
+
+    res = subprocess.check_output('obabel -:"%s" -oinchi' % smi,
+                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+
+    if 'molecule converted' in res[-1]:
+        return res[-2]
+
+    return None
+
+
 def canonicalize(smiles):
     '''Converts SMILES string to canonical SMILES string.'''
 
@@ -93,6 +107,25 @@ def neutralize(smiles):
         return canonicalize(Chem.MolToSmiles(mol))
     else:
         return smiles
+
+
+def neutralize2(smiles):
+    '''Neutralizes an canonical SMILES string (alternate).'''
+
+    def neutralize_inchi(inchi):
+        '''Neutralizes an InChI string.'''
+        if 'q' in inchi:
+            layers = inchi.split('/')
+            new = layers[0]
+            for i in range(1, len(layers)):
+                if 'q' not in layers[i]:
+                    new += '/' + layers[i]
+            return new
+        return inchi
+
+    inchi = smi2inchi(smiles)
+    inchi = neutralize_inchi(inchi)
+    return inchi2smi(inchi)
 
 
 def tautomerize(smiles):
