@@ -29,6 +29,8 @@ rule parseMobcal:
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
+    version:
+        'python isicle/parse_mobcal.py --version'
     log:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -45,6 +47,8 @@ rule boltzmannAverage:
         rules.parseMobcal.output
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
+    version:
+        'python isicle/boltzmann.py --version'
     log:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:

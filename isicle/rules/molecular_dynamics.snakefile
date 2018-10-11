@@ -15,6 +15,8 @@ rule prepare:
         mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
         idx = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
         content = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
+    version:
+        'python isicle/md_helper.py --version'
     log:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.prepare.log')
     benchmark:
@@ -35,6 +37,8 @@ rule antechamber:
     output:
         mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
         ac = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC')
+    version:
+        "antechamber | grep 'Welcome to antechamber' | awk '{print substr($4, 0, length($4) - 1)}'"
     log:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log')
     benchmark:
@@ -82,6 +86,8 @@ rule restore:
         content = rules.prepare.output.content
     output:
         mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
+    version:
+        'python isicle/md_helper.py --version'
     log:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.restore.log')
     benchmark:
@@ -100,6 +106,9 @@ rule tleap:
         config = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.config'),
         prmtop = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.top'),
         inpcrd = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.crd')
+    version:
+        # using cpptraj as proxy for version
+        "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
         join(config['path'], 'output', 'md', 'tleap', 'logs', '{id}_{adduct}.meta.log')
     benchmark:
@@ -120,6 +129,9 @@ rule sanderEM:
         config = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.mdin'),
         rst = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.rst'),
         out = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.out')
+    version:
+        # using cpptraj as proxy for version
+        "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
         join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -141,6 +153,9 @@ rule sander0:
         rst = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
         crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
         out = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.out')
+    version:
+        # using cpptraj as proxy for version
+        "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
         join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.log')
     benchmark:
@@ -165,6 +180,9 @@ rule sander:
         rst = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
         crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
         out = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
+    version:
+        # using cpptraj as proxy for version
+        "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
         join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.log')
     benchmark:
@@ -183,6 +201,8 @@ rule selectFrames:
     output:
         expand(join(config['path'], 'output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin'),
                frame=frames(config['amber']['nframes']))
+    version:
+        'python isicle/select_frames.py --version'
     log:
         join(config['path'], 'output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}.select.log')
     benchmark:
@@ -200,6 +220,8 @@ rule extractFrames:
         trajin = join(config['path'], 'output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.trajin')
     output:
         join(config['path'], 'output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.mol2')
+    version:
+        "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
         join(config['path'], 'output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.extract.log')
     benchmark:
@@ -216,6 +238,8 @@ rule convert:
         mol2b = rules.prepare.input
     output:
         join(config['path'], 'output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
+    version:
+        'python isicle/standardize_mol2.py --version'
     log:
         join(config['path'], 'output', 'md', 'converted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
@@ -233,6 +257,8 @@ rule calculate_rmsd:
                       frame=frames(config['amber']['nframes']))
     output:
         rmsd = join(config['path'], 'output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
+    version:
+        'python isicle/rmsd.py --version'
     log:
         join(config['path'], 'output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
@@ -252,6 +278,8 @@ rule downselect:
     output:
         expand(join(config['path'], 'output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
                selected=['s', 'd1', 'd2'])
+    version:
+        'python isicle/downselect.py --version'
     log:
         join(config['path'], 'output', 'md', 'downselected', 'logs', '{id}_{adduct}_{cycle}.log')
     benchmark:

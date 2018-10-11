@@ -26,6 +26,8 @@ rule canonicalize:
         join(config['path'], 'input', '{id}.smi')
     output:
         join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
+    version:
+        'python isicle/process_smiles.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:
@@ -41,6 +43,8 @@ rule desalt:
         join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
     output:
         join(config['path'], 'output', 'adducts', 'desalted', '{id}.smi')
+    version:
+        'python isicle/process_smiles.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'desalted', 'logs', '{id}.log')
     benchmark:
@@ -56,6 +60,8 @@ rule neutralize:
         rules.desalt.output
     output:
         join(config['path'], 'output', 'adducts', 'neutralized', '{id}.smi')
+    version:
+        'python isicle/process_smiles.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'neutralized', 'logs', '{id}.log')
     benchmark:
@@ -71,6 +77,8 @@ rule tautomerize:
         rules.neutralize.output
     output:
         join(config['path'], 'output', 'adducts', 'tautomer', '{id}.smi')
+    version:
+        'python isicle/process_smiles.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'tautomer', 'logs', '{id}.log')
     benchmark:
@@ -86,6 +94,8 @@ rule calculateFormula:
         rules.tautomerize.output
     output:
         join(config['path'], 'output', 'adducts', 'formula', '{id}.formula')
+    version:
+        'python isicle/process_smiles.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'formula', 'logs', '{id}.log')
     benchmark:
@@ -101,6 +111,8 @@ rule calculateMass:
         rules.calculateFormula.output
     output:
         join(config['path'], 'output', 'adducts', 'mass', '{id}.mass')
+    version:
+        'python isicle/molmass.py --version'
     benchmark:
         join(config['path'], 'output', 'adducts', 'mass', 'benchmarks', '{id}.benchmark')
     # group:
@@ -117,6 +129,8 @@ rule generateGeometry:
         mol2 = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.mol2'),
         xyz = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.xyz'),
         png = join(config['path'], 'output', 'adducts', 'geometry_parent', 'images', '{id}.png')
+    version:
+        'python isicle/generate_geometry.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'geometry_parent', 'logs', '{id}.log')
     benchmark:
@@ -133,6 +147,8 @@ rule calculatepKa:
         rules.generateGeometry.output.mol
     output:
         join(config['path'], 'output', 'adducts', 'pKa', '{id}.pka')
+    version:
+        "cxcalc --help | grep 'version ' | awk '{print $2}'"
     benchmark:
         join(config['path'], 'output', 'adducts', 'pKa', 'benchmarks', '{id}.benchmark')
     # group:
@@ -148,6 +164,8 @@ rule generateAdduct:
     output:
         xyz = join(config['path'], 'output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.xyz'),
         mol2 = join(config['path'], 'output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2')
+    version:
+        'python isicle/generate_adduct.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'geometry_{adduct}', 'logs', '{id}_{adduct}.log')
     benchmark:

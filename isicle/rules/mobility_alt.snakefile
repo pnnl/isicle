@@ -12,6 +12,8 @@ rule impact:
         rules.generateAdduct.output.xyz
     output:
         join(config['path'], 'output', 'mobility', 'impact', 'runs', '{id}_{adduct}.txt')
+    version:
+        'isicle/resources/IMPACT/osx/impact -version -nocite'
     log:
         join(config['path'], 'output', 'mobility', 'impact', 'runs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -20,7 +22,7 @@ rule impact:
     #     'mobility_alt'
     shell:
         # run impact on adducts
-        'IMPACT_RANDSEED={config[impact][seed]} resources/IMPACT/{OS}/impact {input} -o {output} -H \
+        'IMPACT_RANDSEED={config[impact][seed]} isicle/resources/IMPACT/{OS}/impact {input} -o {output} -H \
          -shotsPerRot {config[impact][shotsPerRot]} -convergence {config[impact][convergence]} \
          -nRuns {config[impact][nRuns]} -nocite &> {log}'
 
@@ -32,6 +34,8 @@ rule postprocess:
     output:
         he = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
         n2 = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs')
+    version:
+        'python isicle/parse_impact.py --version'
     log:
         join(config['path'], 'output', 'mobility', 'impact', 'ccs', 'logs', '{id}_{adduct}.benchmark')
     benchmark:

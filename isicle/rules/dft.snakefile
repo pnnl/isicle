@@ -25,6 +25,8 @@ rule createDFTConfig:
         rules.copyOver.output
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw')
+    version:
+        'python isicle/generateNW.py --version'
     log:
         join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log')
     benchmark:
@@ -41,6 +43,8 @@ rule dft:
         rules.createDFTConfig.output
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out')
+    version:
+        "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
         join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.nwchem.log')
     benchmark:
@@ -60,6 +64,8 @@ rule parseDFT:
         geom2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),
         charge1 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
         charge2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
+    version:
+        'python isicle/parse_nwchem.py --version'
     log:
         join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log')
     benchmark:

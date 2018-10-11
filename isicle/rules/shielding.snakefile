@@ -26,6 +26,8 @@ rule createShieldingConfig:
         rules.copyOver.output
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw')
+    version:
+        'python isicle/generateNW.py --version'
     log:
         join(config['path'], 'output', 'shielding', 'logs', '{id}_{cycle}_{selected}.create.log')
     benchmark:
@@ -42,6 +44,8 @@ rule shielding:
         rules.createShieldingConfig.output
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
+    version:
+        "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
         join(config['path'], 'output', 'shielding', 'logs', '{id}_{cycle}_{selected}.nwchem.log')
     benchmark:
