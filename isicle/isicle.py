@@ -6,8 +6,6 @@ if __name__ == '__main__':
 
     config = parser.add_argument_group('Snakemake configuration')
     config.add_argument('--config', required=True, help='Path to ISiCLE configuration file.')
-
-    # cluster mode not yet supported through this interface
     config.add_argument('--cluster-config', help='Path to cluster execution configuration file.')
 
     config.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (ignored for cluster execution).')
@@ -36,6 +34,10 @@ if __name__ == '__main__':
             parser.error('Please select a CCS calculation mode.')
     elif args.chem_shifts is True:
         cmd = 'snakemake --snakefile isicle/rules/chemshifts.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
+
+    if args.cluster_config is not None:
+        cmd += ' --cluster-config %s' % args.cluster_config
+        cmd += ' --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"'
 
     if args.dryrun:
         cmd += ' --dryrun'
