@@ -296,9 +296,9 @@ def select_frames(path, frames=10, low=1.25E6, high=1.45E6):
     stepsize = df['step'][1] - df['step'][0]
     df['frame'] = df['step'] // stepsize
 
-    ss = df[(df['step'] >= low) & (df['step'] <= high)]
+    ss = df[(df['step'] >= low) & (df['step'] <= high)].sample(n=frames)
 
-    return ss['frame'].values[-frames:]
+    return ss['frame'].values
 
 
 def standardizeMol2(path, reference, output):
