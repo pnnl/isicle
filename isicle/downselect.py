@@ -1,8 +1,4 @@
 import argparse
-from core.utils import read_string
-import numpy as np
-from os.path import *
-import shutil
 
 
 __version__ = '0.1.0'
@@ -13,8 +9,14 @@ if __name__ == '__main__':
     parser.add_argument('outdir', help='Path to output directory.')
     parser.add_argument('--infiles', nargs='+', required=True, help='Paths to .xyz files.')
     parser.add_argument('--rfiles', nargs='+', required=True, help='Paths to .rmsd files.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    from core.utils import read_string
+    import numpy as np
+    from os.path import *
+    import shutil
 
     assert len(args.infiles) == len(args.rfiles), 'Number of .xyz and .rmsd files must be equal.'
 

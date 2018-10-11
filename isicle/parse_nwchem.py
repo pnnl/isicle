@@ -1,7 +1,3 @@
-from os.path import *
-import glob
-import pandas as pd
-import shutil
 import argparse
 
 
@@ -107,8 +103,14 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='Path to NWChem .out file.')
     parser.add_argument('outdir', help='Path to output directory.')
     parser.add_argument('--mode', '-m', default='dft', help='Specify NWChem output modality [dft, shielding].')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    from os.path import *
+    import glob
+    import pandas as pd
+    import shutil
 
     if args.mode.lower() == 'dft':
         XYZtoMFJ(args.infile, args.outdir)

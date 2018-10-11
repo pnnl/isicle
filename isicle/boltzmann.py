@@ -1,6 +1,3 @@
-import pandas as pd
-import numpy as np
-from statsmodels.stats.weightstats import DescrStatsW
 import argparse
 
 
@@ -28,7 +25,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Perform Boltzmann weighting by energy across conformers.')
     parser.add_argument('infile', help='Path to input .tsv file.')
     parser.add_argument('outfile', help='Path to output .tsv file.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    import pandas as pd
+    import numpy as np
+    from statsmodels.stats.weightstats import DescrStatsW
 
     boltzmann(args.infile, args.outfile)

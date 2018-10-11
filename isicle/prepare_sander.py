@@ -1,4 +1,3 @@
-from string import Template
 import argparse
 
 
@@ -9,6 +8,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Prepare molecule for MD.')
     parser.add_argument('mol2', help='Path to .mol2 file.')
     parser.add_argument('outfile', help='Path to output .mdin file.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--em', action='store_true', help='Energy minimization mode.')
@@ -16,6 +16,8 @@ if __name__ == '__main__':
     mode.add_argument('--sa', action='store_true', help='Subsequent simulated annealing iteration mode.')
 
     args = parser.parse_args()
+
+    from string import Template
 
     if args.em is True:
         with open('isicle/resources/amber/sander_em.template', 'r') as f:

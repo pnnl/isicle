@@ -1,7 +1,4 @@
 import argparse
-import pybel
-from core.utils import read_string
-from os.path import *
 
 
 __version__ = '0.1.0'
@@ -42,8 +39,13 @@ if __name__ == '__main__':
     parser.add_argument('png', help='Path to output .png image.')
     parser.add_argument('--forcefield', '-ff', type=str, default='gaff', help='Forcefield type.')
     parser.add_argument('--steps', '-s', type=int, default=500, help='Number of forcefield optimization steps.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    import pybel
+    from core.utils import read_string
+    from os.path import *
 
     s = read_string(args.infile)
 

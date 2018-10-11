@@ -9,6 +9,8 @@ rule inchi2smiles:
         join(config['path'], 'input', '{id}.inchi')
     output:
         join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
+    version:
+        'python isicle/process_smiles.py --version'
     log:
         join(config['path'], 'output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:

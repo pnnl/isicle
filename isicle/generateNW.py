@@ -1,5 +1,3 @@
-from os.path import *
-from string import Template
 import argparse
 
 
@@ -45,8 +43,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Perform the proper preparation steps for an NWChem job.')
     parser.add_argument('file', help='Path to input .xyz file.')
     parser.add_argument('--template', help='Path to template .nw file.', default='-1')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    from os.path import *
+    from string import Template
 
     # if template not specified, pass default template
     if args.template == '-1':

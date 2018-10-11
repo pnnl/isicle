@@ -1,5 +1,3 @@
-from string import Template
-from os.path import *
 import argparse
 
 
@@ -11,8 +9,12 @@ if __name__ == '__main__':
     parser.add_argument('mol2', help='Path to .mol2 file.')
     parser.add_argument('frcmod', help='Path to .frcmod file.')
     parser.add_argument('outfile', help='Path to output .config file.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    from string import Template
+    from os.path import *
 
     with open('isicle/resources/amber/tleap.template', 'r') as f:
         t = Template(f.read())

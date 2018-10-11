@@ -1,6 +1,4 @@
-from core.utils import tail
 import argparse
-import pandas as pd
 
 
 __version__ = '0.1.0'
@@ -45,8 +43,12 @@ if __name__ == '__main__':
     parser.add_argument('infiles', nargs='+', help='Paths to MOBCAL .out files.')
     parser.add_argument('efiles', nargs='+', help='Paths to .energy files.')
     parser.add_argument('outfile', help='Path to output file.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    import pandas as pd
+    from core.utils import tail
 
     assert len(args.infiles) == len(args.efiles), 'Number of output and energy files must be equal.'
 

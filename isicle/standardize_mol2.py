@@ -1,4 +1,3 @@
-import pybel
 import argparse
 
 
@@ -24,7 +23,10 @@ if __name__ == '__main__':
     parser.add_argument('mol2', help='Path to .mol2 file.')
     parser.add_argument('ref', help='Path to reference .mol2 file.')
     parser.add_argument('outfile', help='Path to output .xyz file.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    import pybel
 
     standardize(args.mol2, args.ref, args.outfile)

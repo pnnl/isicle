@@ -1,8 +1,4 @@
-import numpy as np
-from core.utils import pop_atom, push_atom
-import shutil
 import argparse
-from os.path import *
 
 
 __version__ = '0.1.0'
@@ -34,12 +30,19 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='Path to .mol2 file.')
     parser.add_argument('outfile', help='Path to output .mol2 file.')
     parser.add_argument('adduct', help='Adduct type.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--prepare', action='store_true', help='Prepare mode.')
     mode.add_argument('--restore', action='store_true', help='Restore mode.')
 
     args = parser.parse_args()
+
+    import numpy as np
+    from core.utils import pop_atom, push_atom
+    import shutil
+    from os.path import *
+
     args.adduct = args.adduct[1:-1]
 
     if args.prepare is True:

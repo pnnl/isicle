@@ -1,7 +1,4 @@
 import argparse
-import pybel
-from core import geometry
-from core.utils import read_pka
 
 
 __version__ = '0.1.0'
@@ -32,8 +29,14 @@ if __name__ == '__main__':
     parser.add_argument('xyz', help='Path to output .xyz file.')
     parser.add_argument('--forcefield', '-ff', type=str, default='gaff', help='Forcefield type.')
     parser.add_argument('--steps', '-s', type=int, default=500, help='Number of forcefield optimization steps.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
+
+    import pybel
+    from core import geometry
+    from core.utils import read_pka
+
     args.adduct = args.adduct[1:-1]
 
     # read inputs

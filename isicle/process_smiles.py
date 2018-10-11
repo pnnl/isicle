@@ -1,9 +1,4 @@
 import argparse
-import subprocess
-from core.utils import read_string, write_string
-import sys
-from rdkit import Chem
-from rdkit.Chem import AllChem
 
 
 __version__ = '0.1.0'
@@ -128,6 +123,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process InChI/SMILES string.')
     parser.add_argument('infile', help='Path to input InChI (.inchi) or canonical SMILES (.smi) file.')
     parser.add_argument('outfile', help='Path to output canonical SMILES (.smi) file.')
+    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--inchi', action='store_true', help='InChI to SMILES mode.')
@@ -138,6 +134,12 @@ if __name__ == '__main__':
     mode.add_argument('--canonicalize', action='store_true', help='Canonicalization mode.')
 
     args = parser.parse_args()
+
+    import subprocess
+    from core.utils import read_string, write_string
+    import sys
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
 
     s = read_string(args.infile)
 
