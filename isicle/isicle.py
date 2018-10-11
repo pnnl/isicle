@@ -1,6 +1,7 @@
 import argparse
 from multiprocessing import cpu_count
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Execute ISiCLE simulations.')
 
