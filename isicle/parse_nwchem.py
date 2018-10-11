@@ -103,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='Path to NWChem .out file.')
     parser.add_argument('outdir', help='Path to output directory.')
     parser.add_argument('--mode', '-m', default='dft', help='Specify NWChem output modality [dft, shielding].')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

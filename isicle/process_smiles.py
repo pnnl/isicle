@@ -156,7 +156,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process InChI/SMILES string.')
     parser.add_argument('infile', help='Path to input InChI (.inchi) or canonical SMILES (.smi) file.')
     parser.add_argument('outfile', help='Path to output canonical SMILES (.smi) file.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--inchi', action='store_true', help='InChI to SMILES mode.')

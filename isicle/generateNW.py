@@ -43,7 +43,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Perform the proper preparation steps for an NWChem job.')
     parser.add_argument('file', help='Path to input .xyz file.')
     parser.add_argument('--template', help='Path to template .nw file.', default='-1')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

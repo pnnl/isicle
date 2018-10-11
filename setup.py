@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import isicle
 
 
 with open('README.md') as f:
@@ -15,7 +16,7 @@ pkgs = find_packages(exclude=('examples', 'docs'))
 
 setup(
     name='ISiCLE',
-    version='0.1.0',
+    version=isicle.__version__,
     description='In Silico Chemical Library Engine.',
     long_description=readme,
     author='Sean M. Colby',

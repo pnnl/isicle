@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='Path to .mol2 file.')
     parser.add_argument('outfile', help='Path to output .mol2 file.')
     parser.add_argument('adduct', help='Adduct type.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--prepare', action='store_true', help='Prepare mode.')

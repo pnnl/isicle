@@ -1,14 +1,15 @@
 import argparse
 from multiprocessing import cpu_count
+import isicle
 
 
 def cli():
     parser = argparse.ArgumentParser(description='Execute ISiCLE simulations.')
+    parser.add_argument('--version', '-v', action='version', version=isicle.__version__, help='Print version and exit.')
 
     config = parser.add_argument_group('Snakemake configuration')
     config.add_argument('--config', required=True, help='Path to ISiCLE configuration file.')
     config.add_argument('--cluster-config', help='Path to cluster execution configuration file.')
-
     config.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (ignored for cluster execution).')
     config.add_argument('--dryrun', action='store_true', help='Perform a dry run.')
 
@@ -44,3 +45,7 @@ def cli():
         cmd += ' --dryrun'
 
     subprocess.call(cmd, shell=True)
+
+
+if __name__ == '__main__':
+    cli()

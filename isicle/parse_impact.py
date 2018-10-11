@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('out_N2', help='Path to N2 CCS output file.')
     parser.add_argument('--alpha', '-a', type=float, default=27.9, help='Alpha calibration.')
     parser.add_argument('--beta', '-b', type=float, default=0.14, help='Beta calibration.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--unique', nargs='?', const='store_true', help="Include unique to write uniquefilename.inchi")
     parser.add_argument('--output', nargs='?', const=None,
                         help="Allows for unique inchi output location (Default path: config.yaml[''path'']/input/")
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

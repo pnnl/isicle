@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--nframes', type=int, default=10, help='Number of frames.')
     parser.add_argument('--low', type=float, default=1.25e+06, help='Lower timestep bound.')
     parser.add_argument('--high', type=float, default=1.45e+06, help='Upper timestep bound.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('ref', help='Reference .xyz file.')
     parser.add_argument('outfile', help='Path to output .rmsd file.')
     parser.add_argument('infiles', nargs='+', help='Input .xyz files.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

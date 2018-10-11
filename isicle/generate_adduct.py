@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('xyz', help='Path to output .xyz file.')
     parser.add_argument('--forcefield', '-ff', type=str, default='gaff', help='Forcefield type.')
     parser.add_argument('--steps', '-s', type=int, default=500, help='Number of forcefield optimization steps.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 

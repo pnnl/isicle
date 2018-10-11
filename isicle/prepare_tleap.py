@@ -9,7 +9,7 @@ if __name__ == '__main__':
     parser.add_argument('mol2', help='Path to .mol2 file.')
     parser.add_argument('frcmod', help='Path to .frcmod file.')
     parser.add_argument('outfile', help='Path to output .config file.')
-    parser.add_argument('--version', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
 
