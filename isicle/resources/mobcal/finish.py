@@ -20,7 +20,7 @@ def boltzmann(infile, outfile):
 
     ws = DescrStatsW(df['Mean CCS'], weights=w, ddof=0)
 
-    res = pd.Series([ws.mean, ws.std, ws.std_mean, ws.var, len(grp.index)],
+    res = pd.Series([ws.mean, ws.std, ws.std_mean, ws.var, len(df.index)],
                     index=['mean', 'std', 'std_mean', 'var', 'N'])
 
     res.to_csv(outfile, sep='\t', index=False, header=True)
