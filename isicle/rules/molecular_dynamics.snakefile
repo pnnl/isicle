@@ -110,7 +110,7 @@ rule tleap:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'tleap', 'logs', '{id}_{adduct}.meta.log')
+        join(config['path'], 'output', 'md', 'tleap', 'logs', '{id}_{adduct}.log')
     benchmark:
         join(config['path'], 'output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
