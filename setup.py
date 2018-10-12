@@ -12,7 +12,7 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
     required = None
 
-pkgs = find_packages(exclude=('examples', 'docs'))
+pkgs = find_packages(exclude=('examples', 'docs', 'resources'))
 
 setup(
     name='ISiCLE',
