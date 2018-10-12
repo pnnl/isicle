@@ -1,7 +1,7 @@
 from os.path import *
 import numpy as np
 import os
-from helpers import cycles, frames
+from isicle.utils import cycles, frames
 
 # snakemake configuration
 include: 'adducts.snakefile'
@@ -16,7 +16,7 @@ rule prepare:
         idx = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
         content = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
     version:
-        'python -m isicle.md_helper --version'
+        'python -m isicle.scripts.md_helper --version'
     log:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.prepare.log')
     benchmark:
@@ -27,7 +27,7 @@ rule prepare:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
         # assign
-        'python -m isicle.md_helper {input} {output.mol2} [{wildcards.adduct}] --prepare &> {log}'
+        'python -m isicle.scripts.md_helper {input} {output.mol2} [{wildcards.adduct}] --prepare &> {log}'
 
 
 rule antechamber:
@@ -87,7 +87,7 @@ rule restore:
     output:
         mol2 = join(config['path'], 'output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
     version:
-        'python -m isicle.md_helper --version'
+        'python -m isicle.scripts.md_helper --version'
     log:
         join(config['path'], 'output', 'md', 'antechamber', 'logs', '{id}_{adduct}.restore.log')
     benchmark:
@@ -95,7 +95,7 @@ rule restore:
     # group:
     #     'md'
     shell:
-        'python -m isicle.md_helper {input.mol2} {output.mol2} [{wildcards.adduct}] --restore &> {log}'
+        'python -m isicle.scripts.md_helper {input.mol2} {output.mol2} [{wildcards.adduct}] --restore &> {log}'
 
 
 rule tleap:
@@ -116,7 +116,7 @@ rule tleap:
     # group:
     #     'md'
     run:
-        shell('python -m isicle.prepare_tleap {input.mol2} {input.frcmod} {output.config} &> {log}')
+        shell('python -m isicle.scripts.prepare_tleap {input.mol2} {input.frcmod} {output.config} &> {log}')
         shell('tleap -s -f {output.config} &> {log}')
 
 
@@ -139,7 +139,7 @@ rule sanderEM:
     # group:
     #     'md'
     run:
-        shell('python -m isicle.prepare_sander {input.mol2} {output.config} --em &> {log}')
+        shell('python -m isicle.scripts.prepare_sander {input.mol2} {output.config} --em &> {log}')
         shell('sander -O -i {output.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}')
 
 
@@ -163,7 +163,7 @@ rule sander0:
     # group:
     #     'md'
     run:
-        shell('python -m isicle.prepare_sander {input.mol2} {output.config} --iter0 &> {log}')
+        shell('python -m isicle.scripts.prepare_sander {input.mol2} {output.config} --iter0 &> {log}')
         shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 
@@ -190,7 +190,7 @@ rule sander:
     # group:
     #     'md'
     run:
-        shell('python -m isicle.prepare_sander {input.mol2} {output.config} --sa &> {log}')
+        shell('python -m isicle.scripts.prepare_sander {input.mol2} {output.config} --sa &> {log}')
         shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 
@@ -202,7 +202,7 @@ rule selectFrames:
         expand(join(config['path'], 'output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin'),
                frame=frames(config['amber']['nframes']))
     version:
-        'python -m isicle.select_frames --version'
+        'python -m isicle.scripts.select_frames --version'
     log:
         join(config['path'], 'output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}.select.log')
     benchmark:
@@ -210,7 +210,7 @@ rule selectFrames:
     # group:
     #     'md'
     shell:
-        'python -m isicle.select_frames {input.out} {input.crd} {output} \
+        'python -m isicle.scripts.select_frames {input.out} {input.crd} {output} \
          --nframes {config[amber][nframes]} --low {config[amber][low]} --high {config[amber][high]} &> {log}'
 
 
@@ -239,7 +239,7 @@ rule convert:
     output:
         join(config['path'], 'output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
     version:
-        'python -m isicle.standardize_mol2 --version'
+        'python -m isicle.scripts.standardize_mol2 --version'
     log:
         join(config['path'], 'output', 'md', 'converted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
@@ -247,7 +247,7 @@ rule convert:
     # group:
     #     'md'
     shell:
-        'python -m isicle.standardize_mol2 {input.mol2a} {input.mol2b} {output} &> {log}'
+        'python -m isicle.scripts.standardize_mol2 {input.mol2a} {input.mol2b} {output} &> {log}'
 
 
 rule calculate_rmsd:
@@ -258,7 +258,7 @@ rule calculate_rmsd:
     output:
         rmsd = join(config['path'], 'output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
     version:
-        'python -m isicle.rmsd --version'
+        'python -m isicle.scripts.rmsd --version'
     log:
         join(config['path'], 'output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
@@ -266,7 +266,7 @@ rule calculate_rmsd:
     # group:
     #     'md'
     shell:
-        'python -m isicle.rmsd {input.ref} {output.rmsd} {input.xyzs} &> {log}'
+        'python -m isicle.scripts.rmsd {input.ref} {output.rmsd} {input.xyzs} &> {log}'
 
 
 rule downselect:
@@ -279,7 +279,7 @@ rule downselect:
         expand(join(config['path'], 'output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
                selected=['s', 'd1', 'd2'])
     version:
-        'python -m isicle.downselect --version'
+        'python -m isicle.scripts.downselect --version'
     log:
         join(config['path'], 'output', 'md', 'downselected', 'logs', '{id}_{adduct}_{cycle}.log')
     benchmark:
@@ -287,5 +287,5 @@ rule downselect:
     # group:
     #     'md'
     run:
-        shell('python -m isicle.downselect %s --infiles {input.xyz} --rfiles {input.rmsd} &> {log}' %
+        shell('python -m isicle.scripts.downselect %s --infiles {input.xyz} --rfiles {input.rmsd} &> {log}' %
               join(config['path'], 'output', 'md', 'downselected'))

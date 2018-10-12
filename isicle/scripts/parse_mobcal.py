@@ -48,7 +48,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     import pandas as pd
-    from isicle.core.utils import tail
+    from isicle.utils import tail
 
     assert len(args.infiles) == len(args.efiles), 'Number of output and energy files must be equal.'
 

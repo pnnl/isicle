@@ -1,5 +1,5 @@
 from os.path import *
-from helpers import getOS
+from isicle.utils import getOS
 from pkg_resources import resource_filename
 
 
@@ -36,7 +36,7 @@ rule postprocess:
         he = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
         n2 = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs')
     version:
-        'python -m isicle.parse_impact --version'
+        'python -m isicle.scripts.parse_impact --version'
     log:
         join(config['path'], 'output', 'mobility', 'impact', 'ccs', 'logs', '{id}_{adduct}.benchmark')
     benchmark:
@@ -44,7 +44,7 @@ rule postprocess:
     # group:
     #     'mobility_alt'
     shell:
-        'python -m isicle.parse_impact {input.ccs} {input.mass} {output.he} {output.n2} \
+        'python -m isicle.scripts.parse_impact {input.ccs} {input.mass} {output.he} {output.n2} \
          --alpha {config[ccs][alpha]} --beta {config[ccs][beta]} &> {log}'
 
 # # for report

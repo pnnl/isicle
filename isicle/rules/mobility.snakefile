@@ -43,7 +43,7 @@ rule parseMobcal:
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
     version:
-        'python -m isicle.parse_mobcal --version'
+        'python -m isicle.scripts.parse_mobcal --version'
     log:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -51,7 +51,7 @@ rule parseMobcal:
     # group:
     #     'mobility'
     shell:
-        'python -m isicle.parse_mobcal {input.geom} {input.energy} {output} &> {log}'
+        'python -m isicle.scripts.parse_mobcal {input.geom} {input.energy} {output} &> {log}'
 
 
 # boltzmann averaging
@@ -61,7 +61,7 @@ rule boltzmannAverage:
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
     version:
-        'python -m isicle.boltzmann --version'
+        'python -m isicle.scripts.boltzmann --version'
     log:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -69,4 +69,4 @@ rule boltzmannAverage:
     # group:
     #     'mobility'
     shell:
-        'python -m isicle.boltzmann {input} {output} &> {log}'
+        'python -m isicle.scripts.boltzmann {input} {output} &> {log}'

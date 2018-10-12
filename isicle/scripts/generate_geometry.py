@@ -44,7 +44,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     import pybel
-    from isicle.core.utils import read_string
+    from isicle.utils import read_string
     from os.path import *
 
     s = read_string(args.infile)

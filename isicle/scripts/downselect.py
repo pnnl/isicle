@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    from isicle.core.utils import read_string
+    from isicle.utils import read_string
     import numpy as np
     from os.path import *
     import shutil

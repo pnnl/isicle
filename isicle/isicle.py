@@ -17,6 +17,7 @@ def cli():
     config.add_argument('--cluster-config', help='Path to cluster execution configuration file.')
     config.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (ignored for cluster execution).')
     config.add_argument('--dryrun', action='store_true', help='Perform a dry run.')
+    config.add_argument('--unlock', action='store_true', help='Unlock directory.')
 
     prop = parser.add_argument_group('Property calculation')
     mprop = prop.add_mutually_exclusive_group(required=True)
@@ -48,6 +49,9 @@ def cli():
 
     if args.dryrun:
         cmd += ' --dryrun'
+
+    if args.unlock:
+        cmd += ' --unlock'
 
     subprocess.call(cmd, shell=True)
 

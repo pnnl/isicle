@@ -10,7 +10,7 @@ rule inchi2smiles:
     output:
         join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
     version:
-        'python -m isicle.process_smiles --version'
+        'python -m isicle.scripts.process_smiles --version'
     log:
         join(config['path'], 'output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:
@@ -18,7 +18,7 @@ rule inchi2smiles:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.process_smiles {input} {output} --inchi &> {log}'
+        'python -m isicle.scripts.process_smiles {input} {output} --inchi &> {log}'
 
 
 rule canonicalize:
@@ -27,7 +27,7 @@ rule canonicalize:
     output:
         join(config['path'], 'output', 'adducts', 'canonicalized', '{id}.smi')
     version:
-        'python -m isicle.process_smiles --version'
+        'python -m isicle.scripts.process_smiles --version'
     log:
         join(config['path'], 'output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:
@@ -35,7 +35,7 @@ rule canonicalize:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.process_smiles {input} {output} --canonicalize &> {log}'
+        'python -m isicle.scripts.process_smiles {input} {output} --canonicalize &> {log}'
 
 
 rule desalt:
@@ -44,7 +44,7 @@ rule desalt:
     output:
         join(config['path'], 'output', 'adducts', 'desalted', '{id}.smi')
     version:
-        'python -m isicle.process_smiles --version'
+        'python -m isicle.scripts.process_smiles --version'
     log:
         join(config['path'], 'output', 'adducts', 'desalted', 'logs', '{id}.log')
     benchmark:
@@ -52,7 +52,7 @@ rule desalt:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.process_smiles {input} {output} --desalt &> {log}'
+        'python -m isicle.scripts.process_smiles {input} {output} --desalt &> {log}'
 
 
 rule neutralize:
@@ -61,7 +61,7 @@ rule neutralize:
     output:
         join(config['path'], 'output', 'adducts', 'neutralized', '{id}.smi')
     version:
-        'python -m isicle.process_smiles --version'
+        'python -m isicle.scripts.process_smiles --version'
     log:
         join(config['path'], 'output', 'adducts', 'neutralized', 'logs', '{id}.log')
     benchmark:
@@ -69,7 +69,7 @@ rule neutralize:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.process_smiles {input} {output} --neutralize &> {log}'
+        'python -m isicle.scripts.process_smiles {input} {output} --neutralize &> {log}'
 
 
 rule tautomerize:
@@ -78,7 +78,7 @@ rule tautomerize:
     output:
         join(config['path'], 'output', 'adducts', 'tautomer', '{id}.smi')
     version:
-        'python -m isicle.process_smiles --version'
+        'python -m isicle.scripts.process_smiles --version'
     log:
         join(config['path'], 'output', 'adducts', 'tautomer', 'logs', '{id}.log')
     benchmark:
@@ -86,7 +86,7 @@ rule tautomerize:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.process_smiles {input} {output} --tautomerize &> {log}'
+        'python -m isicle.scripts.process_smiles {input} {output} --tautomerize &> {log}'
 
 
 rule calculateFormula:
@@ -95,7 +95,7 @@ rule calculateFormula:
     output:
         join(config['path'], 'output', 'adducts', 'formula', '{id}.formula')
     version:
-        'python -m isicle.process_smiles --version'
+        'python -m isicle.scripts.process_smiles --version'
     log:
         join(config['path'], 'output', 'adducts', 'formula', 'logs', '{id}.log')
     benchmark:
@@ -103,7 +103,7 @@ rule calculateFormula:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.process_smiles {input} {output} --formula &> {log}'
+        'python -m isicle.scripts.process_smiles {input} {output} --formula &> {log}'
 
 
 rule calculateMass:
@@ -112,13 +112,13 @@ rule calculateMass:
     output:
         join(config['path'], 'output', 'adducts', 'mass', '{id}.mass')
     version:
-        'python -m isicle.molmass --version'
+        'python -m isicle.scripts.molmass --version'
     benchmark:
         join(config['path'], 'output', 'adducts', 'mass', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.molmass `cat {input}` &> {output}'
+        'python -m isicle.scripts.molmass `cat {input}` &> {output}'
 
 
 rule generateGeometry:
@@ -130,7 +130,7 @@ rule generateGeometry:
         xyz = join(config['path'], 'output', 'adducts', 'geometry_parent', '{id}.xyz'),
         png = join(config['path'], 'output', 'adducts', 'geometry_parent', 'images', '{id}.png')
     version:
-        'python -m isicle.generate_geometry --version'
+        'python -m isicle.scripts.generate_geometry --version'
     log:
         join(config['path'], 'output', 'adducts', 'geometry_parent', 'logs', '{id}.log')
     benchmark:
@@ -138,7 +138,7 @@ rule generateGeometry:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.generate_geometry {input} {output.mol} {output.mol2} {output.xyz} {output.png} \
+        'python -m isicle.scripts.generate_geometry {input} {output.mol} {output.mol2} {output.xyz} {output.png} \
          --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
 
 
@@ -165,7 +165,7 @@ rule generateAdduct:
         xyz = join(config['path'], 'output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.xyz'),
         mol2 = join(config['path'], 'output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2')
     version:
-        'python -m isicle.generate_adduct --version'
+        'python -m isicle.scripts.generate_adduct --version'
     log:
         join(config['path'], 'output', 'adducts', 'geometry_{adduct}', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -173,5 +173,5 @@ rule generateAdduct:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.generate_adduct {input.molfile} {input.pkafile} [{wildcards.adduct}] {output.mol2} {output.xyz} \
+        'python -m isicle.scripts.generate_adduct {input.molfile} {input.pkafile} [{wildcards.adduct}] {output.mol2} {output.xyz} \
          --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'

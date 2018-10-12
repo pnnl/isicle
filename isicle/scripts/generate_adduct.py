@@ -34,8 +34,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     import pybel
-    from isicle.core import geometry
-    from isicle.core.utils import read_pka
+    from isicle.resources import geometry
+    from isicle.utils import read_pka
 
     args.adduct = args.adduct[1:-1]
 
