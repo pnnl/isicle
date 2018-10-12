@@ -27,7 +27,7 @@ rule createShieldingConfig:
     output:
         join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw')
     version:
-        'python isicle/generateNW.py --version'
+        'python -m isicle.generateNW --version'
     log:
         join(config['path'], 'output', 'shielding', 'logs', '{id}_{cycle}_{selected}.create.log')
     benchmark:
@@ -35,7 +35,7 @@ rule createShieldingConfig:
     # group:
     #     'shielding'
     shell:
-        'python isicle/generateNW.py {input} --template {config[nwchem][shielding_template]} &> {log}'
+        'python -m isicle.generateNW {input} --template {config[nwchem][shielding_template]} &> {log}'
 
 
 # run NWChem
@@ -71,6 +71,6 @@ rule parseShielding:
     #     'dft'
     # run:
     #     outdir = dirname(output.geom2)
-    #     shell('python isicle/parse_nwchem.py {input} %s --mode shielding &> {log}' % outdir)
+    #     shell('python -m isicle.parse_nwchem {input} %s --mode shielding &> {log}' % outdir)
     shell:
         'touch {output}'

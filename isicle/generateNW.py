@@ -49,10 +49,11 @@ if __name__ == '__main__':
 
     from os.path import *
     from string import Template
+    from pkg_resources import resource_filename
 
     # if template not specified, pass default template
     if args.template == '-1':
-        args.template = 'isicle/resources/nwchem/dft.template'
+        args.template = resource_filename('isicle', 'resources/nwchem/dft.template')
 
     nwc = NWChemHelper(args.file)
     nwc.generateNWChemFile(args.template)

@@ -1,7 +1,13 @@
 from os.path import *
+from pkg_resources import resource_filename
 
 # snakemake configuration
 include: 'molecular_dynamics.snakefile'
+
+if config['nwchem']['dft_template'] == 'default':
+    DFTCONFIG = resource_filename('isicle', 'resources/nwchem/dft.template')
+else:
+    DFTCONFIG = config['nwchem']['dft_template']
 
 
 rule copyOver:
@@ -26,7 +32,7 @@ rule createDFTConfig:
     output:
         join(config['path'], 'output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw')
     version:
-        'python isicle/generateNW.py --version'
+        'python -m isicle.generateNW --version'
     log:
         join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log')
     benchmark:
@@ -34,7 +40,7 @@ rule createDFTConfig:
     # group:
     #     'dft'
     shell:
-        'python isicle/generateNW.py {input} --template {config[nwchem][dft_template]} &> {log}'
+        'python -m isicle.generateNW {input} --template {DFTCONFIG} &> {log}'
 
 
 # run NWChem
@@ -65,7 +71,7 @@ rule parseDFT:
         charge1 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
         charge2 = join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
     version:
-        'python isicle/parse_nwchem.py --version'
+        'python -m isicle.parse_nwchem --version'
     log:
         join(config['path'], 'output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log')
     benchmark:
@@ -74,4 +80,4 @@ rule parseDFT:
     #     'dft'
     run:
         outdir = dirname(output.geom2)
-        shell('python isicle/parse_nwchem.py {input} %s --mode dft &> {log}' % outdir)
+        shell('python -m isicle.parse_nwchem {input} %s --mode dft &> {log}' % outdir)

@@ -18,9 +18,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     from string import Template
+    from pkg_resources import resource_filename
 
     if args.em is True:
-        with open('isicle/resources/amber/sander_em.template', 'r') as f:
+        with open(resource_filename('isicle', 'resources/amber/sander_em.template'), 'r') as f:
             t = Template(f.read())
 
         d = {'mol2': args.mol2,
@@ -37,7 +38,7 @@ if __name__ == '__main__':
             f.write(t.substitute(d))
 
     elif args.iter0 is True:
-        with open('isicle/resources/amber/sander_md0.template', 'r') as f:
+        with open(resource_filename('isicle', 'resources/amber/sander_md0.template'), 'r') as f:
             t = Template(f.read())
 
         d = {'mol2': args.mol2,
@@ -63,7 +64,7 @@ if __name__ == '__main__':
             f.write(t.substitute(d))
 
     elif args.sa is True:
-        with open('isicle/resources/amber/sander_anneal.template', 'r') as f:
+        with open(resource_filename('isicle', 'resources/amber/sander_anneal.template'), 'r') as f:
             t = Template(f.read())
 
         d = {'mol2': args.mol2}

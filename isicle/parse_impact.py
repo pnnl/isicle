@@ -29,7 +29,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     import pandas as pd
-    from core.utils import read_mass, write_string
+    from isicle.core.utils import read_mass, write_string
 
     # read inputs
     ccs_He = read_impact(args.infile)

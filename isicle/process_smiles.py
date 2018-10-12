@@ -169,7 +169,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     import subprocess
-    from core.utils import read_string, write_string
+    from isicle.core.utils import read_string, write_string
     import sys
     from rdkit import Chem
     from rdkit.Chem import AllChem

@@ -1,9 +1,11 @@
 from os.path import *
 from helpers import getOS
+from pkg_resources import resource_filename
+
 
 # snakemake configuration
 include: 'adducts.snakefile'
-OS = getOS()
+IMPACT = resource_filename('isicle', 'resources/IMPACT/%s/impact' % getOS())
 
 
 rule impact:
@@ -12,7 +14,7 @@ rule impact:
     output:
         join(config['path'], 'output', 'mobility', 'impact', 'runs', '{id}_{adduct}.txt')
     version:
-        'isicle/resources/IMPACT/osx/impact -version -nocite'
+        '{IMPACT} -version -nocite'
     log:
         join(config['path'], 'output', 'mobility', 'impact', 'runs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -21,7 +23,7 @@ rule impact:
     #     'mobility_alt'
     shell:
         # run impact on adducts
-        'IMPACT_RANDSEED={config[impact][seed]} isicle/resources/IMPACT/{OS}/impact {input} -o {output} -H \
+        'IMPACT_RANDSEED={config[impact][seed]} {IMPACT} {input} -o {output} -H \
          -shotsPerRot {config[impact][shotsPerRot]} -convergence {config[impact][convergence]} \
          -nRuns {config[impact][nRuns]} -nocite &> {log}'
 
@@ -34,7 +36,7 @@ rule postprocess:
         he = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
         n2 = join(config['path'], 'output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs')
     version:
-        'python isicle/parse_impact.py --version'
+        'python -m isicle.parse_impact --version'
     log:
         join(config['path'], 'output', 'mobility', 'impact', 'ccs', 'logs', '{id}_{adduct}.benchmark')
     benchmark:
@@ -42,7 +44,7 @@ rule postprocess:
     # group:
     #     'mobility_alt'
     shell:
-        'python isicle/parse_impact.py {input.ccs} {input.mass} {output.he} {output.n2} \
+        'python -m isicle.parse_impact {input.ccs} {input.mass} {output.he} {output.n2} \
          --alpha {config[ccs][alpha]} --beta {config[ccs][beta]} &> {log}'
 
 # # for report

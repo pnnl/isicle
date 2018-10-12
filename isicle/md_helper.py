@@ -39,7 +39,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     import numpy as np
-    from core.utils import pop_atom, push_atom
+    from isicle.core.utils import pop_atom, push_atom
     import shutil
     from os.path import *
 

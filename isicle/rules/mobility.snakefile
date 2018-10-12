@@ -1,7 +1,20 @@
 from os.path import *
+from pkg_resources import resource_filename
+
 
 # snakemake configuration
 include: 'dft.snakefile'
+MOBCAL = resource_filename('isicle', 'resources/mobcal/%s' % config['mobcal']['exe'])
+
+if config['mobcal']['params'] == 'default':
+    PARAMS = resource_filename('isicle', 'resources/mobcal/mobcal.params')
+else:
+    PARAMS = config['mobcal']['params']
+
+if config['mobcal']['atomtypes'] == 'default':
+    ATOMS = resource_filename('isicle', 'resources/mobcal/atomtype_parameters.in')
+else:
+    ATOMS = config['mobcal']['atomtypes']
 
 
 # run mobcal on geom+charge nwchem output
@@ -17,7 +30,7 @@ rule mobcal:
     # group:
     #     'mobility'
     shell:
-        '{config[mobcal][exe]} {config[mobcal][params]} {config[mobcal][atomtypes]} {input} {output} &> {log}'
+        '{MOBCAL} {PARAMS} {ATOMS} {input} {output} &> {log}'
 
 
 # parse mobcal output
@@ -30,7 +43,7 @@ rule parseMobcal:
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
     version:
-        'python isicle/parse_mobcal.py --version'
+        'python -m isicle.parse_mobcal --version'
     log:
         join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -38,7 +51,7 @@ rule parseMobcal:
     # group:
     #     'mobility'
     shell:
-        'python isicle/parse_mobcal.py {input.geom} {input.energy} {output} &> {log}'
+        'python -m isicle.parse_mobcal {input.geom} {input.energy} {output} &> {log}'
 
 
 # boltzmann averaging
@@ -48,7 +61,7 @@ rule boltzmannAverage:
     output:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
     version:
-        'python isicle/boltzmann.py --version'
+        'python -m isicle.boltzmann --version'
     log:
         join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -56,4 +69,4 @@ rule boltzmannAverage:
     # group:
     #     'mobility'
     shell:
-        'python isicle/boltzmann.py {input} {output} &> {log}'
+        'python -m isicle.boltzmann {input} {output} &> {log}'

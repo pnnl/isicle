@@ -15,11 +15,14 @@ if __name__ == '__main__':
 
     from string import Template
     from os.path import *
+    from pkg_resources import resource_filename
 
-    with open('isicle/resources/amber/tleap.template', 'r') as f:
+    with open(resource_filename('isicle', 'resources/amber/tleap.template'), 'r') as f:
         t = Template(f.read())
 
-    d = {'frcmod': args.frcmod,
+    d = {'gaff': resource_filename('isicle', 'resources/amber/leaprc.gaff'),
+         'ff': resource_filename('isicle', 'resources/amber/leaprc.ff14SB'),
+         'frcmod': args.frcmod,
          'mol2': args.mol2,
          'prmtop': splitext(args.outfile)[0] + '.top',
          'inpcrd': splitext(args.outfile)[0] + '.crd',

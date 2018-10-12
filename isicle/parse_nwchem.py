@@ -6,7 +6,8 @@ __version__ = '0.1.0'
 
 def XYZtoMFJ(resfile, outpath):
     # atomic masses
-    masses = pd.read_csv('isicle/resources/mobcal/atomic_mass.tsv', sep='\t', usecols=['Number', 'Mass'])
+    masses = pd.read_csv(resource_filename('isicle', 'resources/mobcal/atomic_mass.tsv'),
+                         sep='\t', usecols=['Number', 'Mass'])
 
     # read NWChem output file
     with open(resfile, 'r') as f:
@@ -111,6 +112,7 @@ if __name__ == '__main__':
     import glob
     import pandas as pd
     import shutil
+    from pkg_resources import resource_filename
 
     if args.mode.lower() == 'dft':
         XYZtoMFJ(args.infile, args.outdir)
