@@ -1,6 +1,11 @@
 import argparse
 from multiprocessing import cpu_count
 import isicle
+from os.path import *
+
+
+def loc(snakefile):
+    return join(dirname(abspath(__file__)), 'rules', snakefile)
 
 
 def cli():
@@ -29,13 +34,13 @@ def cli():
 
     if args.ccs is True:
         if args.standard is True:
-            cmd = 'snakemake --snakefile isicle/rules/ccs_standard.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
+            cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('ccs_standard.snakefile'), args.cores, args.config)
         elif args.lite is True:
-            cmd = 'snakemake --snakefile isicle/rules/ccs_lite.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
+            cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('ccs_lite.snakefile'), args.cores, args.config)
         else:
             parser.error('Please select a CCS calculation mode.')
     elif args.chem_shifts is True:
-        cmd = 'snakemake --snakefile isicle/rules/chemshifts.snakefile --cores %s --configfile %s -k --rerun-incomplete' % (args.cores, args.config)
+        cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('chemshifts.snakefile'), args.cores, args.config)
 
     if args.cluster_config is not None:
         cmd += ' --cluster-config %s' % args.cluster_config
