@@ -22,7 +22,7 @@ def XYZtoMFJ(resfile, outpath):
     elif len(files) == 1:
         idx = [0]
         geoms = [files[0].rsplit('_', 1)[0] + '_charge.xyz']
-        shutil.copyfile(files[0], geom[0])
+        shutil.copyfile(files[0], geoms[0])
     else:
         files.sort()
 
