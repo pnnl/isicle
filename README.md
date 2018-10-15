@@ -14,6 +14,7 @@ Installation
 Simply clone ISiCLE to your workstation or cluster, ensuring the following Python 3 packages are installed:
 * snakemake
 * openbabel, pybel
+* rdkit
 * numpy
 * pandas
 * yaml
@@ -22,12 +23,11 @@ Simply clone ISiCLE to your workstation or cluster, ensuring the following Pytho
 
 If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment (however, [``chembl_ikey``](https://github.com/mnowotka/chembl_ikey) must be installed manually or by using [``pip``](https://pypi.org/project/pip/)):
 ```bash
-conda create -n isicle -c bioconda -c openbabel python=3.6.1 openbabel pybel snakemake numpy pandas yaml pathlib statsmodels
+conda create -n isicle -c bioconda -c openbabel -c rdkit -c ambermd python=3.6.1 openbabel rdkit ambertools snakemake numpy pandas yaml pathlib statsmodels
 ```
 
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
 * [cxcalc](https://chemaxon.com/marvin-archive/5_2_0/marvin/help/applications/calc.html)
-* [ambertools](http://ambermd.org/GetAmber.php#ambertools)
 * [NWChem](http://www.nwchem-sw.org/index.php/Download)
 
 Getting Started
