@@ -1,4 +1,5 @@
 from os.path import *
+from isicle.utils import cycles
 
 # snakemake configuration
 include: 'shielding.snakefile'
@@ -13,4 +14,6 @@ if len(IDS) == 0:
 
 rule all:
     input:
-        expand(join(config['path'], 'output', 'chemical_shifts', '{id}.tsv'), id=IDS)
+        # expand(join(config['path'], 'output', 'chemical_shifts', '{id}.tsv'), id=IDS)
+        expand(join(config['path'], 'output', 'shielding', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out'),
+               id=IDS, cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])

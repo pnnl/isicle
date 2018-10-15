@@ -4,11 +4,6 @@ from pkg_resources import resource_filename
 # snakemake configuration
 include: 'molecular_dynamics.snakefile'
 
-if config['nwchem']['dft_template'] == 'default':
-    DFTCONFIG = resource_filename('isicle', 'resources/nwchem/dft.template')
-else:
-    DFTCONFIG = config['nwchem']['dft_template']
-
 
 rule copyOver:
     input:
@@ -40,7 +35,7 @@ rule createDFTConfig:
     # group:
     #     'dft'
     shell:
-        'python -m isicle.scripts.generateNW {input} --template {DFTCONFIG} &> {log}'
+        'python -m isicle.scripts.generateNW {input} --dft --template {config[nwchem][dft_template]} &> {log}'
 
 
 # run NWChem
@@ -80,4 +75,4 @@ rule parseDFT:
     #     'dft'
     run:
         outdir = dirname(output.geom2)
-        shell('python -m isicle.scripts.parse_nwchem {input} %s --mode dft &> {log}' % outdir)
+        shell('python -m isicle.scripts.parse_nwchem {input} %s --dft &> {log}' % outdir)

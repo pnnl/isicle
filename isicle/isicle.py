@@ -22,7 +22,7 @@ def cli():
     prop = parser.add_argument_group('Property calculation')
     mprop = prop.add_mutually_exclusive_group(required=True)
     mprop.add_argument('--ccs', action='store_true', help='Calculate collision cross section.')
-    mprop.add_argument('--chem-shifts', action='store_true', help='Calculate NMR chemical shifts.')
+    mprop.add_argument('--shifts', action='store_true', help='Calculate NMR chemical shifts.')
 
     mode = parser.add_argument_group('Calculation mode (CCS only)')
     mmode = mode.add_mutually_exclusive_group()
@@ -40,7 +40,7 @@ def cli():
             cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('ccs_lite.snakefile'), args.cores, args.config)
         else:
             parser.error('Please select a CCS calculation mode.')
-    elif args.chem_shifts is True:
+    elif args.shifts is True:
         cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('chemshifts.snakefile'), args.cores, args.config)
 
     if args.cluster_config is not None:

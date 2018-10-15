@@ -35,7 +35,8 @@ rule createShieldingConfig:
     # group:
     #     'shielding'
     shell:
-        'python -m isicle.scripts.generateNW {input} --template {config[nwchem][shielding_template]} &> {log}'
+        'python -m isicle.scripts.generateNW {input} --shielding --shifts {config[nwchem][shifts]} \
+         --template {config[nwchem][shielding_template]} &> {log}'
 
 
 # run NWChem

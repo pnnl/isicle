@@ -103,8 +103,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse NWChem DFT output.')
     parser.add_argument('infile', help='Path to NWChem .out file.')
     parser.add_argument('outdir', help='Path to output directory.')
-    parser.add_argument('--mode', '-m', default='dft', help='Specify NWChem output modality [dft, shielding].')
     parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--dft', action='store_true', help='DFT mode.')
+    mode.add_argument('--shielding', action='store_true', help='Shielding mode.')
 
     args = parser.parse_args()
 
@@ -114,5 +117,7 @@ if __name__ == '__main__':
     import shutil
     from pkg_resources import resource_filename
 
-    if args.mode.lower() == 'dft':
+    if args.dft is True:
         XYZtoMFJ(args.infile, args.outdir)
+    elif args.shielding is True:
+        pass

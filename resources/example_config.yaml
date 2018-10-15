@@ -26,6 +26,7 @@ amber:
 nwchem:
   dft_template: default
   shielding_template: default
+  shifts: ['H', 'C']
 
 mobcal:
   params: default

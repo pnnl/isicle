@@ -14,7 +14,6 @@ geometry noautoz noautosym
  load ${dir}/${filename}.xyz
 end
 
-
 basis spherical
  * library 3-21G
 end
@@ -73,7 +72,7 @@ cosmo
 end
 
 property
-  shielding N#ofnuclei A#1 A#2 A#3 A#4 A#5 A#6 ... A#N
+  shielding ${ncount} ${nuclei}
 end
 
 task dft ignore
