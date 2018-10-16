@@ -123,4 +123,4 @@ rule shifts:
     benchmark:
         join(config['path'], 'output', 'shifts', 'benchmarks', '{id}.benchmark')
     shell:
-        'echo'
+        'python -m isicle.scripts.calculate_shifts {input.shielding} {input.ref} {output}'

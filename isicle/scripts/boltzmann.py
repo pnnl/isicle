@@ -35,7 +35,7 @@ def shielding(infile, outfile):
         ws = DescrStatsW(group['Shielding'], weights=w, ddof=0)
         data.append([name[0], name[1], ws.mean, ws.std, ws.std_mean, ws.var, len(group.index)])
 
-    df2 = pd.DataFrame(data, columns=['Index', 'Atom', 'mean', 'std', 'std_mean', 'var', 'N'])
+    df2 = pd.DataFrame(data, columns=['index', 'atom', 'mean', 'std', 'std_mean', 'var', 'N'])
     df2.to_csv(outfile, sep='\t', index=False)
 
 
