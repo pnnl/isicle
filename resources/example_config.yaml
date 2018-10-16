@@ -1,6 +1,6 @@
 path: ''
 
-adducts: ['+Na', '+H', '-H']
+adducts: ['+Na', '+H', '-H', 'Ne']
 charges: {'+Na': 1, '+H': 1, '-H': -1, 'Ne': 0}
 
 forcefield:
@@ -24,10 +24,11 @@ amber:
   high: 1.45e+06
 
 nwchem:
-  runscript: isicle/resources/nwchem/cascade.sh
-  template: isicle/resources/nwchem/template.nw
+  dft_template: default
+  shielding_template: default
+  shifts: ['H', 'C']
 
 mobcal:
-  params: isicle/resources/mobcal/mobcal.params
-  atomtypes: isicle/resources/mobcal/atomtype_parameters.in
-  runscript: isicle/resources/mobcal/cascade.sh
+  params: default
+  atomtypes: default
+  exe: mobcal_cascade

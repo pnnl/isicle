@@ -1,12 +1,13 @@
-from os.path import *
-import glob
-import pandas as pd
-import shutil
+import argparse
+
+
+__version__ = '0.1.0'
 
 
 def XYZtoMFJ(resfile, outpath):
     # atomic masses
-    masses = pd.read_csv('isicle/resources/mobcal/atomic_mass.tsv', sep='\t', usecols=['Number', 'Mass'])
+    masses = pd.read_csv(resource_filename('isicle', 'resources/mobcal/atomic_mass.tsv'),
+                         sep='\t', usecols=['Number', 'Mass'])
 
     # read NWChem output file
     with open(resfile, 'r') as f:
@@ -96,3 +97,27 @@ def parseOutput(res, idx=0):
 
     natoms = int(res[indices[1] - 1].split()[0])
     return natoms, lowdinIdx, energies
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Parse NWChem DFT output.')
+    parser.add_argument('infile', help='Path to NWChem .out file.')
+    parser.add_argument('outdir', help='Path to output directory.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--dft', action='store_true', help='DFT mode.')
+    mode.add_argument('--shielding', action='store_true', help='Shielding mode.')
+
+    args = parser.parse_args()
+
+    from os.path import *
+    import glob
+    import pandas as pd
+    import shutil
+    from pkg_resources import resource_filename
+
+    if args.dft is True:
+        XYZtoMFJ(args.infile, args.outdir)
+    elif args.shielding is True:
+        pass

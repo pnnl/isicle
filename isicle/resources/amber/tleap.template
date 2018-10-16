@@ -1,8 +1,6 @@
 logFile ${log}
-source leaprc.gaff
-logFile ${log}
-source oldff/leaprc.ff14SB
-logFile ${log}
+source ${gaff}
+source ${ff}
 loadAmberParams ${frcmod}
 loadAmberParams frcmod.ionsjc_spce
 TP = loadMol2 ${mol2}

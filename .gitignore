@@ -1,4 +1,5 @@
 # custom
+config.yaml
 tmp/
 *.out
 *.sbatch
