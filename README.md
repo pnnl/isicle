@@ -11,14 +11,15 @@ ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) wo
 
 Installation
 ------------
-Simply clone ISiCLE to your workstation or cluster, ensuring the following Python 3 packages are installed:
-* snakemake
-* openbabel, pybel
-* rdkit
-* numpy
-* pandas
-* yaml
-* statsmodels
+Simply clone ISiCLE to your workstation or cluster, ensuring the following packages are installed:
+* [snakemake](https://snakemake.readthedocs.io)
+* [openbabel](http://openbabel.org/wiki/Main_Page), [pybel](https://openbabel.org/docs/dev/UseTheLibrary/Python_Pybel.html)
+* [rdkit](https://www.rdkit.org/)
+* [numpy](http://www.numpy.org/)
+* [pandas](https://pandas.pydata.org/)
+* [yaml](https://pyyaml.org/wiki/LibYAML)
+* [statsmodels](https://www.statsmodels.org)
+* [ambertools](http://ambermd.org/)
 
 If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment:
 ```bash
