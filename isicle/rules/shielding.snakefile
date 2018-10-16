@@ -75,7 +75,7 @@ rule parseShielding:
         shell('python -m isicle.scripts.parse_nwchem {input} %s --shielding &> {log}' % outdir)
 
 
-rules combine:
+rule combine:
     input:
         shifts = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{cycle}_{selected}.shifts'),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
