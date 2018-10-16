@@ -7,7 +7,9 @@ ISiCLE, or the _in silico_ chemical library engine, is a pipeline for high-accur
 
 ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) workflow management system, enabling scalability, portability, provenance, fault tolerance, and automatic job restarting. Snakemake provides a readable Python-based workflow definition language and execution environment that scales, without modification, from single-core workstations to compute clusters through as-available job queuing based on a task dependency graph.
 
-<img src="resources/schematic.svg" width="40%" height="40%">
+<p align="center">
+  <img align="center" src="resources/schematic.svg" width="40%" height="40%">
+</p>
 
 Installation
 ------------
