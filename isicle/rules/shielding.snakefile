@@ -62,12 +62,12 @@ rule parseShielding:
     input:
         rules.shielding.output
     output:
-        shifts = join(config['path'], 'output', 'shifts', 'runs', '{id}_{adduct}_{cycle}_{selected}.shifts'),
-        energy = join(config['path'], 'output', 'shifts', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy')
+        shifts = join(config['path'], 'output', 'shifts', 'runs', '{id}_{cycle}_{selected}.shifts'),
+        energy = join(config['path'], 'output', 'shifts', 'runs', '{id}_{cycle}_{selected}.energy')
     log:
-        join(config['path'], 'output', 'shifts', 'runs', 'logs', '{id}.log')
+        join(config['path'], 'output', 'shifts', 'runs', 'logs', '{id}_{cycle}_{selected}.log')
     benchmark:
-        join(config['path'], 'output', 'shifts', 'runs', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', 'shifts', 'runs', 'benchmarks', '{id}_{cycle}_{selected}.benchmark')
     # group:
     #     'shielding'
     run:
@@ -77,18 +77,18 @@ rule parseShielding:
 
 rules combine:
     input:
-        shifts = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.shifts'),
+        shifts = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{cycle}_{selected}.shifts'),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.energy'),
+        energy = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{cycle}_{selected}.energy'),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        join(config['path'], 'output', 'shifts', 'conformer_shifts', '{id}_{adduct}.tsv')
+        join(config['path'], 'output', 'shifts', 'conformer_shifts', '{id}.tsv')
     version:
         'python -m isicle.scripts.combine_shifts --version'
     log:
-        join(config['path'], 'output', 'shifts', 'conformer_shifts', 'logs', '{id}_{adduct}.log')
+        join(config['path'], 'output', 'shifts', 'conformer_shifts', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'shifts', 'conformer_shifts', 'benchmarks', '{id}_{adduct}.benchmark')
+        join(config['path'], 'output', 'shifts', 'conformer_shifts', 'benchmarks', '{id}.benchmark')
     # group:
     #     'shielding'
     shell:
@@ -100,13 +100,13 @@ rule boltzmannAverage:
     input:
         rules.combine.output
     output:
-        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', '{id}_{adduct}.tsv')
+        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', '{id}.tsv')
     version:
         'python -m isicle.scripts.boltzmann --version'
     log:
-        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', 'logs', '{id}_{adduct}.log')
+        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', 'benchmarks', '{id}_{adduct}.benchmark')
+        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', 'benchmarks', '{id}.benchmark')
     # group:
     #     'shielding'
     shell:
