@@ -1,16 +1,12 @@
 import argparse
 from multiprocessing import cpu_count
-import isicle
+from isicle import __version__
 from os.path import *
-
-
-def loc(snakefile):
-    return join(dirname(abspath(__file__)), 'rules', snakefile)
 
 
 def cli():
     parser = argparse.ArgumentParser(description='Execute ISiCLE simulations.')
-    parser.add_argument('--version', '-v', action='version', version=isicle.__version__, help='Print version and exit.')
+    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     config = parser.add_argument_group('Snakemake configuration')
     config.add_argument('--config', required=True, help='Path to ISiCLE configuration file.')
@@ -35,16 +31,20 @@ def cli():
     args = parser.parse_args()
 
     import subprocess
+    from pkg_resources import resource_filename
 
     if args.ccs is True:
         if args.standard is True:
-            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % (loc('ccs_standard.snakefile'), args.config)
+            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
+                  (resource_filename('isicle', 'rules/ccs_standard.snakefile'), args.config)
         elif args.lite is True:
-            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % (loc('ccs_lite.snakefile'), args.config)
+            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
+                  (resource_filename('isicle', 'rules/ccs_lite.snakefile'), args.config)
         else:
             parser.error('Please select a CCS calculation mode.')
     elif args.shifts is True:
-        cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % (loc('chemshifts.snakefile'), args.config)
+        cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
+              (resource_filename('isicle', 'rules/chemshifts.snakefile'), args.config)
 
     if args.cluster_config is not None:
         cmd += ' --cluster-config %s' % args.cluster_config
