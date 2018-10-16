@@ -119,7 +119,7 @@ def shielding(resfile, outdir):
     with open(efile, 'w') as f:
         f.write(str(energies[-1]))
 
-    sfile = join(outdir, splitext(basename(resfile))[0] + '.shifts')
+    sfile = join(outdir, splitext(basename(resfile))[0] + '.shielding')
     with open(sfile, 'w') as f:
             f.write(str(shield_values[-1]))
 
