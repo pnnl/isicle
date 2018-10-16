@@ -42,7 +42,7 @@ class NWChemHelper:
         with open(template, 'r') as t:
             orig = Template(t.read())
 
-        d = {'filename': None, 'dir': self.dir, 'charge': None}
+        d = {'filename': None, 'dir': self.dir}
         d['filename'] = splitext(basename(self.file))[0]
 
         idx = self.nuclei(atoms)
@@ -54,7 +54,7 @@ class NWChemHelper:
             outf.write(orig.substitute(d))
 
     def nuclei(self, atoms):
-        mol = next(pybel.readfile("xyz", args.file))
+        mol = next(pybel.readfile("xyz", self.file))
         idx = []
         for a in mol.atoms:
             if a.atomicnum in atoms:
@@ -64,7 +64,7 @@ class NWChemHelper:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Perform the proper preparation steps for an NWChem job.')
-    parser.add_argument('file', help='Path to input .xyz file.')
+    parser.add_argument('infile', help='Path to input .xyz file.')
     parser.add_argument('--template', help='Path to template .nw file.', default='default')
     parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     import pybel
     from pkg_resources import resource_filename
 
-    nwc = NWChemHelper(args.file)
+    nwc = NWChemHelper(args.infile)
 
     if args.dft is True:
         if args.template == 'default':
