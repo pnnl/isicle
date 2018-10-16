@@ -69,4 +69,4 @@ rule boltzmannAverage:
     # group:
     #     'mobility'
     shell:
-        'python -m isicle.scripts.boltzmann {input} {output} &> {log}'
+        'python -m isicle.scripts.boltzmann {input} {output} --ccs &> {log}'

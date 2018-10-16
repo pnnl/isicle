@@ -17,4 +17,5 @@ if __name__ == '__main__':
     dfs = [pd.read_csv(x, sep='\t') for x in args.infiles]
 
     df = pd.concat(dfs, axis=0, ignore_index=True)
+
     df.to_csv(args.outfile, sep='\t', index=False)

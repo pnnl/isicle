@@ -107,7 +107,7 @@ rule boltzmannAverage:
     # group:
     #     'shielding'
     shell:
-        'python -m isicle.scripts.boltzmann {input} {output} &> {log}'
+        'python -m isicle.scripts.boltzmann {input} {output} --shielding &> {log}'
 
 
 rule shifts:
