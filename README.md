@@ -18,10 +18,9 @@ Simply clone ISiCLE to your workstation or cluster, ensuring the following Pytho
 * numpy
 * pandas
 * yaml
-* chembl_ikey
 * statsmodels
 
-If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment (however, [``chembl_ikey``](https://github.com/mnowotka/chembl_ikey) must be installed manually or by using [``pip``](https://pypi.org/project/pip/)):
+If using [``conda``](https://www.anaconda.com/download/), this can be achieved by creating a new virtual environment:
 ```bash
 conda create -n isicle -c bioconda -c openbabel -c rdkit -c ambermd python=3.6.1 openbabel rdkit ambertools snakemake numpy pandas yaml pathlib statsmodels
 ```
@@ -37,17 +36,33 @@ First, if using ``conda``, activate the virtual environment by executing:
 source activate isicle
 ```
 
-ISiCLE assumes a user starts with a text file with an InChI string on each line. Use ``generate_input.py`` to prepare inputs for Snakemake:
+Install ISiCLE using [``pip``](https://pypi.org/project/pip/):
 ```bash
-python generate_input.py /path/to/inchi_list.txt
+# local
+pip install /path/to/isicle/
+# git
+pip install git+https://github.com/pnnl/isicle
 ```
-Additional options can be accessed through the help flag (``--help`` or ``-h``).
 
-To begin simulations, simply execute ``snakemake`` in the ISiCLE respository directory, with desired configuration flags (``snakemake -h`` for help). Default [workflow](isicle/config.yaml) and [cluster](isicle/cluster.yaml) configurations are provided, but these may be modified and/or supplied by the user. 
-
-An example usage for ``slurm`` cluster environments:
+ISiCLE assumes a user starts with a text file with an InChI string on each line. Use ``isicle-input`` to prepare inputs for Snakemake, specifying an ISiCLE config file and operation mode (SMILES versus InChI):
 ```bash
-snakemake -j 999 -k --cluster-config isicle/cluster.yaml --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"
+# SMILES input
+isicle-input /path/to/smi_list.txt --config /path/to/isicle_config.yaml --smi
+# InChI input
+isicle-input /path/to/inchi_list.txt --config /path/to/isicle_config.yaml --inchi
+```
+Detailed instructions can be accessed through the help flag (``--help`` or ``-h``).
+
+To begin simulations, simply execute ``isicle`` with desired configuration flags (``isicle -h`` for help). Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs. 
+
+An example dryrun for desktop use (CCS module, Lite mode):
+```bash
+isicle --config /path/to/config.yaml --cores 4 --ccs --lite --dryrun
+```
+
+An example dryrun for ``slurm`` cluster environments (CCS module, Standard mode):
+```bash
+isicle --config /path/to/config.yaml --cluster-config /path/to/cluster.yaml --jobs 999 --ccs --standard --dryrun
 ```
 
 Citing ISiCLE
