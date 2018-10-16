@@ -23,9 +23,11 @@ def inchi2smi(inchi):
 
 def smi2inchi(smi):
     '''Converts SMILES string to InChI string.'''
-
-    res = subprocess.check_output('obabel -:"%s" -oinchi' % smi,
-                                  stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    try:
+        res = subprocess.check_output('obabel -:"%s" -oinchi' % smi,
+                                      stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    except:
+        return None
 
     res = [x.strip() for x in res.split('\n') if x is not '']
 
