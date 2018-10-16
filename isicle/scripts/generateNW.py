@@ -99,4 +99,4 @@ if __name__ == '__main__':
         if args.template == 'default':
             args.template = resource_filename('isicle', 'resources/nwchem/shielding.template')
 
-        nwc.shielding(args.template, args.shifts)
+        nwc.shielding(args.template, shifts)
