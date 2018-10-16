@@ -109,19 +109,23 @@ def shielding(resfile, outdir):
     for i, row in enumerate(res):
         if "Total DFT energy" in row:
             energies.append(float(row.rstrip().split('=')[-1]))
-        elif "Total Shielding Tensor" in row:
+        elif "Atom:" in row:
+            idx = int(row.split()[1])
+            atom = row.split()[2]
             ready = True
         elif "isotropic" in row and ready is True:
-            shield_values.append(row)
+            shield = float(row.split()[-1])
+            shield_values.append([idx, atom, shield])
             ready = False
+        elif 'SHIELDING' in row:
+            true_idx = [int(x) for x in row.split()[2:]]
 
-    efile = join(outdir, splitext(basename(resfile))[0] + '.energy')
-    with open(efile, 'w') as f:
-        f.write(str(energies[-1]))
+    df = pd.DataFrame(shield_values, columns=['Index', 'Atom', 'Shielding'])
+    df['DFT Energy'] = energies[-1]
+    df['Index'] = true_idx
 
     sfile = join(outdir, splitext(basename(resfile))[0] + '.shielding')
-    with open(sfile, 'w') as f:
-            f.write(str(shield_values[-1]))
+    df.to_csv(sfile, sep='\t', index=False)
 
 
 if __name__ == '__main__':
@@ -144,5 +148,6 @@ if __name__ == '__main__':
 
     if args.dft is True:
         XYZtoMFJ(args.infile, args.outdir)
+
     elif args.shielding is True:
         shielding(args.infile, args.outdir)

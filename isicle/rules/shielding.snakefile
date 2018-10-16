@@ -62,8 +62,7 @@ rule parseShielding:
     input:
         rules.shielding.output
     output:
-        shielding = join(config['path'], 'output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding'),
-        energy = join(config['path'], 'output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.energy')
+        shielding = join(config['path'], 'output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding')
     log:
         join(config['path'], 'output', 'shielding', 'parsed', 'logs', '{id}_{cycle}_{selected}.log')
     benchmark:
@@ -77,10 +76,8 @@ rule parseShielding:
 
 rule combine:
     input:
-        shielding = expand(join(config['path'], 'output', 'shileding', 'parsed', '{{id}}_{cycle}_{selected}.shielding'),
-                           cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(join(config['path'], 'output', 'shielding', 'parsed', '{{id}}_{cycle}_{selected}.energy'),
-                        cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
+        expand(join(config['path'], 'output', 'shielding', 'parsed', '{{id}}_{cycle}_{selected}.shielding'),
+               cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
         join(config['path'], 'output', 'shielding', 'conformer_shielding', '{id}.tsv')
     version:
@@ -92,7 +89,7 @@ rule combine:
     # group:
     #     'shielding'
     shell:
-        'python -m isicle.scripts.combine_shifts {output} --infiles {input.shielding} --efiles {input.energy}  &> {log}'
+        'python -m isicle.scripts.combine_shielding {input} {output} &> {log}'
 
 
 # boltzmann averaging

@@ -72,7 +72,7 @@ cosmo
 end
 
 property
-  shielding ${ncount} ${nuclei}
+  SHIELDING ${ncount} ${nuclei}
 end
 
 task dft ignore
