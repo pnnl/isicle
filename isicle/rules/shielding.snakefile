@@ -69,7 +69,7 @@ rule parseShielding:
     benchmark:
         join(config['path'], 'output', 'chemical_shifts', 'benchmarks', '{id}.benchmark')
     # group:
-    #     'dft'
+    #     'shielding'
     # run:
     #     outdir = dirname(output.geom2)
     #     shell('python -m isicle.scripts.parse_nwchem {input} %s --mode shielding &> {log}' % outdir)
