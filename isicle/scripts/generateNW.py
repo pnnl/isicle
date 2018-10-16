@@ -47,7 +47,7 @@ class NWChemHelper:
 
         idx = self.nuclei(atoms)
         d['ncount'] = len(idx)
-        d['nuclei'] = ' '.join(['A#%s' % x for x in idx])
+        d['nuclei'] = ' '.join(['%s' % x for x in idx])
 
         outfile = splitext(self.file)[0] + '.nw'
         with open(outfile, 'w') as outf:
