@@ -40,9 +40,9 @@ def batch(ccsfiles, efiles, output):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse MOBCAL output.')
-    parser.add_argument('infiles', nargs='+', help='Paths to MOBCAL .out files.')
-    parser.add_argument('efiles', nargs='+', help='Paths to .energy files.')
     parser.add_argument('outfile', help='Path to output file.')
+    parser.add_argument('--infiles', nargs='+', required=True, help='Paths to MOBCAL .out files.')
+    parser.add_argument('--efiles', nargs='+', required=True, help='Paths to .energy files.')
     parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
@@ -53,6 +53,6 @@ if __name__ == '__main__':
     assert len(args.infiles) == len(args.efiles), 'Number of output and energy files must be equal.'
 
     args.infiles.sort()
-    args.outfiles.sort()
+    args.efiles.sort()
 
-    batch(args.infile, args.outfile, args.output)
+    batch(args.infiles, args.efiles, args.output)

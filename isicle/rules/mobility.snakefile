@@ -51,7 +51,7 @@ rule parseMobcal:
     # group:
     #     'mobility'
     shell:
-        'python -m isicle.scripts.parse_mobcal {input.geom} {input.energy} {output} &> {log}'
+        'python -m isicle.scripts.parse_mobcal {output} --infiles {input.geom} --efiles {input.energy} &> {log}'
 
 
 # boltzmann averaging

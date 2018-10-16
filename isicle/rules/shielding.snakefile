@@ -60,18 +60,54 @@ rule shielding:
 # placeholder until shielding is done
 rule parseShielding:
     input:
-        expand(join(config['path'], 'output', 'shielding', '{{id}}', 'cycle_{cycle}_{selected}', '{{id}}_{cycle}_{selected}.out'),
-               selected=['s', 'd1', 'd2'], cycle=cycles(config['amber']['cycles']))
+        rules.shielding.output
     output:
-        join(config['path'], 'output', 'chemical_shifts', '{id}.tsv')
+        shifts = join(config['path'], 'output', 'shifts', 'runs', '{id}_{adduct}_{cycle}_{selected}.shifts'),
+        energy = join(config['path'], 'output', 'shifts', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy')
     log:
-        join(config['path'], 'output', 'chemical_shifts', 'logs', '{id}.log')
+        join(config['path'], 'output', 'shifts', 'runs', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'chemical_shifts', 'benchmarks', '{id}.benchmark')
+        join(config['path'], 'output', 'shifts', 'runs', 'benchmarks', '{id}.benchmark')
     # group:
     #     'shielding'
-    # run:
-    #     outdir = dirname(output.geom2)
-    #     shell('python -m isicle.scripts.parse_nwchem {input} %s --mode shielding &> {log}' % outdir)
+    run:
+        outdir = dirname(output.shifts)
+        shell('python -m isicle.scripts.parse_nwchem {input} %s --mode shielding &> {log}' % outdir)
+
+
+rules combine:
+    input:
+        shifts = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.shifts'),
+                        cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
+        energy = expand(join(config['path'], 'output', 'shifts', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.energy'),
+                        cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
+    output:
+        join(config['path'], 'output', 'shifts', 'conformer_shifts', '{id}_{adduct}.tsv')
+    version:
+        'python -m isicle.scripts.combine_shifts --version'
+    log:
+        join(config['path'], 'output', 'shifts', 'conformer_shifts', 'logs', '{id}_{adduct}.log')
+    benchmark:
+        join(config['path'], 'output', 'shifts', 'conformer_shifts', 'benchmarks', '{id}_{adduct}.benchmark')
+    # group:
+    #     'shielding'
     shell:
-        'touch {output}'
+        'python -m isicle.scripts.combine_shifts {output} --infiles {input.shifts} --efiles {input.energy}  &> {log}'
+
+
+# boltzmann averaging
+rule boltzmannAverage:
+    input:
+        rules.combine.output
+    output:
+        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', '{id}_{adduct}.tsv')
+    version:
+        'python -m isicle.scripts.boltzmann --version'
+    log:
+        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', 'logs', '{id}_{adduct}.log')
+    benchmark:
+        join(config['path'], 'output', 'shifts', 'boltzmann_shifts', 'benchmarks', '{id}_{adduct}.benchmark')
+    # group:
+    #     'shielding'
+    shell:
+        'python -m isicle.scripts.boltzmann {input} {output} &> {log}'
