@@ -44,7 +44,7 @@ def cli():
             parser.error('Please select a CCS calculation mode.')
     elif args.shifts is True:
         cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-              (resource_filename('isicle', 'rules/chemshifts.snakefile'), args.config)
+              (resource_filename('isicle', 'rules/shifts.snakefile'), args.config)
 
     if args.cluster_config is not None:
         cmd += ' --cluster-config %s' % args.cluster_config
