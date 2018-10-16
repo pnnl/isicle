@@ -27,6 +27,7 @@ nwchem:
   dft_template: default
   shielding_template: default
   shifts: ['H', 'C']
+  reference: ''
 
 mobcal:
   params: default
