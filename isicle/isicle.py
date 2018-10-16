@@ -15,9 +15,12 @@ def cli():
     config = parser.add_argument_group('Snakemake configuration')
     config.add_argument('--config', required=True, help='Path to ISiCLE configuration file.')
     config.add_argument('--cluster-config', help='Path to cluster execution configuration file.')
-    config.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (ignored for cluster execution).')
     config.add_argument('--dryrun', action='store_true', help='Perform a dry run.')
     config.add_argument('--unlock', action='store_true', help='Unlock directory.')
+
+    parallel = config.add_mutually_exclusive_group()
+    parallel.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (local execution only).')
+    parallel.add_argument('--jobs', type=int, default=1000, help='Number of simultaneous jobs to submit to a slurm queue (cluster execution only).')
 
     prop = parser.add_argument_group('Property calculation')
     mprop = prop.add_mutually_exclusive_group(required=True)
@@ -35,17 +38,20 @@ def cli():
 
     if args.ccs is True:
         if args.standard is True:
-            cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('ccs_standard.snakefile'), args.cores, args.config)
+            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % (loc('ccs_standard.snakefile'), args.config)
         elif args.lite is True:
-            cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('ccs_lite.snakefile'), args.cores, args.config)
+            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % (loc('ccs_lite.snakefile'), args.config)
         else:
             parser.error('Please select a CCS calculation mode.')
     elif args.shifts is True:
-        cmd = 'snakemake --snakefile %s --cores %s --configfile %s -k --rerun-incomplete' % (loc('chemshifts.snakefile'), args.cores, args.config)
+        cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % (loc('chemshifts.snakefile'), args.config)
 
     if args.cluster_config is not None:
         cmd += ' --cluster-config %s' % args.cluster_config
         cmd += ' --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"'
+        cmd += ' -j %s' % args.jobs
+    else:
+        cmd += ' --cores %s' % args.cores
 
     if args.dryrun:
         cmd += ' --dryrun'
