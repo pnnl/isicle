@@ -54,7 +54,7 @@ isicle-input /path/to/smi_list.txt --config /path/to/isicle_config.yaml --smi
 isicle-input /path/to/inchi_list.txt --config /path/to/isicle_config.yaml --inchi
 ```
 
-To begin simulations, simply execute ``isicle`` with desired configuration flags (``isicle -h`` or ``--help`` for help). Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs. 
+To begin simulations, simply execute ``isicle`` with desired configuration flags (``isicle --help`` or ``-h`` for help). Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs. 
 
 An example dryrun for desktop use (CCS module, Lite mode):
 ```bash
