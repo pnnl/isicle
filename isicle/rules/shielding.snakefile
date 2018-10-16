@@ -72,7 +72,7 @@ rule parseShielding:
     #     'shielding'
     run:
         outdir = dirname(output.shifts)
-        shell('python -m isicle.scripts.parse_nwchem {input} %s --mode shielding &> {log}' % outdir)
+        shell('python -m isicle.scripts.parse_nwchem {input} %s --shielding &> {log}' % outdir)
 
 
 rules combine:

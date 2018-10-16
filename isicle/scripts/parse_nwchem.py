@@ -4,7 +4,7 @@ import argparse
 __version__ = '0.1.0'
 
 
-def XYZtoMFJ(resfile, outpath):
+def XYZtoMFJ(resfile, outdir):
     # atomic masses
     masses = pd.read_csv(resource_filename('isicle', 'resources/mobcal/atomic_mass.tsv'),
                          sep='\t', usecols=['Number', 'Mass'])
@@ -53,7 +53,7 @@ def XYZtoMFJ(resfile, outpath):
 
         # write mfj file
         outname = basename(splitext(geom)[0] + '.mfj')
-        with open(join(outpath, outname), 'w') as f:
+        with open(join(outdir, outname), 'w') as f:
             f.write(outname + '\n')
             f.write('1\n')
             f.write(str(natoms) + '\n')
@@ -66,7 +66,7 @@ def XYZtoMFJ(resfile, outpath):
 
         # write energy
         ename = splitext(outname)[0] + '.energy'
-        with open(join(outpath, ename), 'w') as f:
+        with open(join(outdir, ename), 'w') as f:
             f.write(str(energies[i]))
 
 
@@ -99,6 +99,31 @@ def parseOutput(res, idx=0):
     return natoms, lowdinIdx, energies
 
 
+def shielding(resfile, outdir):
+    with open(resfile, 'r') as f:
+        res = f.readlines()
+
+    energies = []
+    shield_values = []
+    ready = False
+    for i, row in enumerate(res):
+        if "Total DFT energy" in row:
+            energies.append(float(row.rstrip().split('=')[-1]))
+        elif "Total Shielding Tensor" in row:
+            ready = True
+        elif "isotropic" in row and ready is True:
+            shield_values.append(row)
+            ready = False
+
+    efile = join(outdir, splitext(basename(resfile))[0] + '.energy')
+    with open(efile, 'w') as f:
+        f.write(str(energies[-1]))
+
+    sfile = join(outdir, splitext(basename(resfile))[0] + '.shifts')
+    with open(sfile, 'w') as f:
+            f.write(str(shield_values[-1]))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse NWChem DFT output.')
     parser.add_argument('infile', help='Path to NWChem .out file.')
@@ -120,4 +145,4 @@ if __name__ == '__main__':
     if args.dft is True:
         XYZtoMFJ(args.infile, args.outdir)
     elif args.shielding is True:
-        pass
+        shielding(args.infile, args.outdir)
