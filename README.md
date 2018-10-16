@@ -74,7 +74,7 @@ Citing ISiCLE
 If you would like to reference ISiCLE in an academic paper, we ask you include the following references:
 
 * Colby, S.M., Thomas, D.G., Nunez, J.R., Baxter, D.J., Glaesemann, K.R., Brown, J.M., Pirrung, M.A., Govind, N., Teeguarden, J.G., Metz, T.O., and Renslow, R.S., 2018. ISiCLE: A molecular collision cross section calculation pipeline for establishing large in silico reference libraries for compound identification. arXiv preprint arXiv:1809.08378.
-* Yesiltepe, Y., Nunez, J.R., Colby, S.M., Thomas, D.G., Borkum, M.I., Reardon, P.N., Washton, N.M., Metz, T.O., Teeguarden, J.T., Govind, N., and Renslow, R.S., 2018. "An automated framework for NMR chemical shift calculations of small organic molecules." Journal of Cheminformatics. In press.
+* Yesiltepe, Y., Nunez, J.R., Colby, S.M., Thomas, D.G., Borkum, M.I., Reardon, P.N., Washton, N.M., Metz, T.O., Teeguarden, J.T., Govind, N., and Renslow, R.S., 2018. An automated framework for NMR chemical shift calculations of small organic molecules. Journal of Cheminformatics. In press.
 * ISiCLE, version 0.1.0 http://github.com/pnnl/isicle (accessed Oct 2018)
 
 The first is a [preprint paper](https://arxiv.org/abs/1809.08378) describing ISiCLE for CCS, the second describes ISiCLE for NMR chemical shifts, and the third is to cite the software package (update version and access date appropriately).
