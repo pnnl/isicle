@@ -18,8 +18,8 @@ if __name__ == '__main__':
     df = pd.read_tsv(args.infile, sep='\t')
     ref = pd.read_tsv(args.ref, sep='\t')
 
-    df['mean'] = ref['mean'].values - df['mean'].values
-    df['std'] = (ref['std'].values ** 2 + df['std'].values ** 2) ** 0.5
-    df = df['index', 'atom', 'mean', 'std', 'N']
+    df['shift'] = ref['shielding'].values - df['shielding'].values
+    df['shift_std'] = (ref['shielding_std'].values ** 2 + df['shielding_std'].values ** 2) ** 0.5
+    df = df['index', 'atom', 'shift', 'shift_std', 'shielding', 'shielding_std', 'n']
 
     df.to_csv(args.outfile, sep='\t', index=False)

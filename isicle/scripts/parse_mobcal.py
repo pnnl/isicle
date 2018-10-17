@@ -34,7 +34,7 @@ def batch(ccsfiles, efiles, output):
             tmp.append(e)
             res.append(tmp)
 
-    df = pd.DataFrame(res, columns=['Mobility', 'Mean CCS', 'Stdev CCS', 'DFT Energy'])
+    df = pd.DataFrame(res, columns=['mobility', 'ccs', 'ccs_std', 'dft_energy'])
     df.to_csv(output, sep='\t', index=False)
 
 

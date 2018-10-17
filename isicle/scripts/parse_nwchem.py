@@ -120,9 +120,9 @@ def shielding(resfile, outdir):
         elif 'SHIELDING' in row:
             true_idx = [int(x) for x in row.split()[2:]]
 
-    df = pd.DataFrame(shield_values, columns=['Index', 'Atom', 'Shielding'])
-    df['DFT Energy'] = energies[-1]
-    df['Index'] = true_idx
+    df = pd.DataFrame(shield_values, columns=['index', 'atom', 'shielding'])
+    df['dft_energy'] = energies[-1]
+    df['index'] = true_idx
 
     sfile = join(outdir, splitext(basename(resfile))[0] + '.shielding')
     df.to_csv(sfile, sep='\t', index=False)
