@@ -53,8 +53,9 @@ rule shielding:
         join(config['path'], 'output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.nwchem.benchmark')
     # group:
     #     'shielding'
-    shell:
-        'srun --mpi=pmi2 nwchem {input} > {output} 2> {log}'
+    run:
+        shell('cd /scratch')
+        shell('srun --mpi=pmi2 nwchem {input} > {output} 2> {log}')
 
 
 # placeholder until shielding is done
