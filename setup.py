@@ -39,6 +39,7 @@ setup(
                              'isicle/resources/mobcal/atomic_mass.tsv',
                              'isicle/resources/mobcal/atomtype_parameters.in',
                              'isicle/resources/IMPACT/linux/impact',
-                             'isicle/resources/IMPACT/osx/impact']},
+                             'isicle/resources/IMPACT/osx/impact',
+                             'isicle/resources/nwchem/TMS.mol2']},
     include_package_data=True
 )
