@@ -120,36 +120,67 @@ rule tleap:
         shell('tleap -s -f {output.config} &> {log}')
 
 
+rule sanderEMconfig:
+    input:
+        rules.restore.output.mol2
+    output:
+        join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.mdin')
+    version:
+        'python -m isicle.scripts.prepare_sander --version'
+    log:
+        join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.config.log')
+    benchmark:
+        join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.config.benchmark')
+    # group:
+    #     'md'
+    run:
+        shell('python -m isicle.scripts.prepare_sander {input} {output} --em &> {log}')
+
+
 rule sanderEM:
     input:
-        mol2 = rules.restore.output.mol2,
         prmtop = rules.tleap.output.prmtop,
-        inpcrd = rules.tleap.output.inpcrd
+        inpcrd = rules.tleap.output.inpcrd,
+        config = rules.sanderEMconfig.output
     output:
-        config = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.mdin'),
         rst = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.rst'),
         out = join(config['path'], 'output', 'md', 'em', '{id}_{adduct}.out')
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.log')
+        join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log')
     benchmark:
-        join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.benchmark')
+        join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.sander.benchmark')
     # group:
     #     'md'
     run:
-        shell('python -m isicle.scripts.prepare_sander {input.mol2} {output.config} --em &> {log}')
-        shell('sander -O -i {output.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}')
+        shell('sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}')
+
+
+rule sander0config:
+    input:
+        rules.restore.output.mol2
+    output:
+        join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin')
+    version:
+        'python -m isicle.scripts.prepare_sander --version'
+    log:
+        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.config.log')
+    benchmark:
+        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.config.benchmark')
+    # group:
+    #     'md'
+    run:
+        shell('python -m isicle.scripts.prepare_sander {input} {output} --iter0 &> {log}')
 
 
 rule sander0:
     input:
-        mol2 = rules.restore.output.mol2,
         rst = rules.sanderEM.output.rst,
-        prmtop = rules.tleap.output.prmtop
+        prmtop = rules.tleap.output.prmtop,
+        config = rules.sander0config.output
     output:
-        config = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin'),
         rst = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
         crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
         out = join(config['path'], 'output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.out')
@@ -157,26 +188,41 @@ rule sander0:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.log')
+        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log')
     benchmark:
-        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.benchmark')
+        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.sander.benchmark')
     # group:
     #     'md'
     run:
-        shell('python -m isicle.scripts.prepare_sander {input.mol2} {output.config} --iter0 &> {log}')
-        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
+        shell('sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
+
+
+rule sanderConfig:
+    input:
+        rules.restore.output.mol2
+    output:
+        join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin')
+    version:
+        'python -m isicle.scripts.prepare_sander --version'
+    log:
+        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.config.log')
+    benchmark:
+        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.config.benchmark')
+    # group:
+    #     'md'
+    run:
+        shell('python -m isicle.scripts.prepare_sander {input} {output} --sa &> {log}')
 
 
 rule sander:
     input:
-        mol2 = rules.restore.output.mol2,
         # s0 required to disambiguate, but not used
         rst0 = rules.sander0.output.rst,
         rst = lambda wildcards: join(config['path'], 'output', 'md', 'anneal', 'cycle_%03d', '%s_%s.rst') % \
                                     (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
-        prmtop = rules.tleap.output.prmtop
+        prmtop = rules.tleap.output.prmtop,
+        config = rules.sanderConfig.output
     output:
-        config = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin'),
         rst = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
         crd = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
         out = join(config['path'], 'output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
@@ -184,14 +230,13 @@ rule sander:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.log')
+        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log')
     benchmark:
-        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
+        join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.sander.benchmark')
     # group:
     #     'md'
     run:
-        shell('python -m isicle.scripts.prepare_sander {input.mol2} {output.config} --sa &> {log}')
-        shell('sander -O -p {input.prmtop} -c {input.rst} -i {output.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
+        shell('sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
 
 
 rule selectFrames:
