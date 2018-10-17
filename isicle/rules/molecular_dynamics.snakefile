@@ -98,12 +98,28 @@ rule restore:
         'python -m isicle.scripts.md_helper {input.mol2} {output.mol2} [{wildcards.adduct}] --restore &> {log}'
 
 
-rule tleap:
+rule tleapConfig:
     input:
         mol2 = rules.restore.output.mol2,
         frcmod = rules.parmchk2.output.frcmod
     output:
-        config = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.config'),
+        join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.config')
+    version:
+        'python -m isicle.scripts.prepare_tleap --version'
+    log:
+        join(config['path'], 'output', 'md', 'tleap', 'logs', '{id}_{adduct}.config.log')
+    benchmark:
+        join(config['path'], 'output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.config.benchmark')
+    # group:
+    #     'md'
+    shell:
+        'python -m isicle.scripts.prepare_tleap {input.mol2} {input.frcmod} {output.config} &> {log}'
+
+
+rule tleap:
+    input:
+        rules.tleapConfig.output
+    output:
         prmtop = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.top'),
         inpcrd = join(config['path'], 'output', 'md', 'tleap', '{id}_{adduct}.crd')
     version:
@@ -115,9 +131,8 @@ rule tleap:
         join(config['path'], 'output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'md'
-    run:
-        shell('python -m isicle.scripts.prepare_tleap {input.mol2} {input.frcmod} {output.config} &> {log}')
-        shell('tleap -s -f {output.config} &> {log}')
+    shell:
+        'tleap -s -f {input} &> {log}'
 
 
 rule sanderEMconfig:
@@ -133,8 +148,8 @@ rule sanderEMconfig:
         join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.config.benchmark')
     # group:
     #     'md'
-    run:
-        shell('python -m isicle.scripts.prepare_sander {input} {output} --em &> {log}')
+    shell:
+        'python -m isicle.scripts.prepare_sander {input} {output} --em &> {log}'
 
 
 rule sanderEM:
@@ -154,8 +169,8 @@ rule sanderEM:
         join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.sander.benchmark')
     # group:
     #     'md'
-    run:
-        shell('sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}')
+    shell:
+        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}'
 
 
 rule sander0config:
@@ -171,8 +186,8 @@ rule sander0config:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.config.benchmark')
     # group:
     #     'md'
-    run:
-        shell('python -m isicle.scripts.prepare_sander {input} {output} --iter0 &> {log}')
+    shell:
+        'python -m isicle.scripts.prepare_sander {input} {output} --iter0 &> {log}'
 
 
 rule sander0:
@@ -193,8 +208,8 @@ rule sander0:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.sander.benchmark')
     # group:
     #     'md'
-    run:
-        shell('sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
+    shell:
+        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}'
 
 
 rule sanderConfig:
@@ -210,8 +225,8 @@ rule sanderConfig:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.config.benchmark')
     # group:
     #     'md'
-    run:
-        shell('python -m isicle.scripts.prepare_sander {input} {output} --sa &> {log}')
+    shell:
+        'python -m isicle.scripts.prepare_sander {input} {output} --sa &> {log}'
 
 
 rule sander:
@@ -235,8 +250,8 @@ rule sander:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.sander.benchmark')
     # group:
     #     'md'
-    run:
-        shell('sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}')
+    shell:
+        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}'
 
 
 rule selectFrames:
