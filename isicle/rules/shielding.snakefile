@@ -114,7 +114,7 @@ rule boltzmannAverage:
 rule shifts:
     input:
         shielding = rules.boltzmannAverage.output,
-        ref = join(config['path'], 'output', 'shielding', 'boltzmann_shielding', '{config[nwchem][reference]}.tsv')
+        ref = join(config['path'], 'output', 'shielding', 'boltzmann_shielding', '%s.tsv' % config['nwchem']['reference'])
     output:
         join(config['path'], 'output', 'shifts', '{id}.tsv')
     version:
