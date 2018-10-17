@@ -15,9 +15,9 @@ if len(IDS) == 0:
 
 # copy reference molecule
 if config['nwchem']['reference'] in ['TMS']:
-    if not exists(join(config['path'], 'output', 'adducts', 'geometry_Ne', '{config[nwchem][reference]}_Ne.mol2')):
-        shutil.copy2(resource_filename('isicle', 'resources/nwchem/{config[nwchem][reference]}.mol2'),
-                     join(config['path'], 'output', 'adducts', 'geometry_Ne', '{config[nwchem][reference]}_Ne.mol2'))
+    if not exists(join(config['path'], 'output', 'adducts', 'geometry_Ne', config['nwchem']['reference'] + '_Ne.mol2')):
+        shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.mol2')),
+                     join(config['path'], 'output', 'adducts', 'geometry_Ne', config['nwchem']['reference'] + '_Ne.mol2'))
     IDS.append(config['nwchem']['reference'])
 
 
