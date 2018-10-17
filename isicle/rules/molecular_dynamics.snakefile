@@ -113,7 +113,7 @@ rule tleapConfig:
     # group:
     #     'md'
     shell:
-        'python -m isicle.scripts.prepare_tleap {input.mol2} {input.frcmod} {output.config} &> {log}'
+        'python -m isicle.scripts.prepare_tleap {input.mol2} {input.frcmod} {output} &> {log}'
 
 
 rule tleap:
