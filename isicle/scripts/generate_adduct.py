@@ -41,19 +41,21 @@ if __name__ == '__main__':
 
     # read inputs
     mol = next(pybel.readfile("mol", args.infile))
-    pka = read_pka(args.pkafile)
 
-    # generate adduct
-    if '+' in args.adduct:
-        adduct = create_adduct(mol, args.adduct, pka['b1'],
-                               forcefield=args.forcefield,
-                               steps=args.steps)
-    elif '-' in args.adduct:
-        adduct = create_adduct(mol, args.adduct, pka['a1'],
-                               forcefield=args.forcefield,
-                               steps=args.steps)
-    else:
+    if args.adduct == 'Ne':
         adduct = mol
+    else:
+        pka = read_pka(args.pkafile)
+
+        # generate adduct
+        if '+' in args.adduct:
+            adduct = create_adduct(mol, args.adduct, pka['b1'],
+                                   forcefield=args.forcefield,
+                                   steps=args.steps)
+        elif '-' in args.adduct:
+            adduct = create_adduct(mol, args.adduct, pka['a1'],
+                                   forcefield=args.forcefield,
+                                   steps=args.steps)
 
     adduct.write('mol2', args.mol2, overwrite=True)
     adduct.write('xyz', args.xyz, overwrite=True)
