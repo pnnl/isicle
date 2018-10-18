@@ -2,7 +2,6 @@ from os.path import *
 from isicle.utils import cycles
 import shutil
 from pkg_resources import resource_filename
-import os
 
 # snakemake configuration
 include: 'shielding.snakefile'
@@ -15,17 +14,13 @@ if len(IDS) == 0:
     IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
 
 # copy reference molecule
-if config['nwchem']['reference'] in ['TMS']:
-    if not exists(join(config['path'], 'output', 'adducts', 'geometry_Ne')):
-        os.makedirs(join(config['path'], 'output', 'adducts', 'geometry_Ne'))
-
-    if not exists(join(config['path'], 'output', 'adducts', 'geometry_Ne', config['nwchem']['reference'] + '_Ne.mol2')):
-        shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.mol2')),
-                     join(config['path'], 'output', 'adducts', 'geometry_Ne', config['nwchem']['reference'] + '_Ne.mol2'))
+if config['nwchem']['reference'] in ['TMS', 'DSS']:
+    shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.smi')),
+                 join(config['path'], 'input'))
 
     IDS.append(config['nwchem']['reference'])
-else:
-    raise Exception('Only TMS reference molecule currently supported.')
+elif config['nwchem']['reference'] not in IDS:
+    raise Exception('Select TMS or DSS references, or ensure %s is in the input folder.' % config['nwchem']['reference'])
 
 
 rule all:

@@ -40,6 +40,6 @@ setup(
                              'isicle/resources/mobcal/atomtype_parameters.in',
                              'isicle/resources/IMPACT/linux/impact',
                              'isicle/resources/IMPACT/osx/impact',
-                             'isicle/resources/nwchem/TMS.mol2']},
+                             'isicle/resources/nwchem/*.smi']},
     include_package_data=True
 )
