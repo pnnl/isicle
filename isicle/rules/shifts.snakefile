@@ -17,10 +17,11 @@ if len(IDS) == 0:
 if config['nwchem']['reference'] in ['TMS', 'DSS']:
     shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.smi')),
                  join(config['path'], 'input'))
-
     IDS.append(config['nwchem']['reference'])
+
+# check if supplied reference is in input
 elif config['nwchem']['reference'] not in IDS:
-    raise Exception('Select TMS or DSS references, or ensure %s is in the input folder.' % config['nwchem']['reference'])
+    raise Exception('Select TMS or DSS as reference, or ensure %s is in the input folder.' % config['nwchem']['reference'])
 
 
 rule all:
