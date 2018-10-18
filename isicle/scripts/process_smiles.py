@@ -73,6 +73,8 @@ def desalt(smiles):
 
 def neutralize2(smiles):
     '''Neutralizes an canonical SMILES string.'''
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
 
     def _InitializeNeutralisationReactions():
         patts = (
@@ -173,8 +175,6 @@ if __name__ == '__main__':
     import subprocess
     from isicle.utils import read_string, write_string
     import sys
-    from rdkit import Chem
-    from rdkit.Chem import AllChem
 
     s = read_string(args.infile)
 
