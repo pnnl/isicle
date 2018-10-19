@@ -76,4 +76,4 @@ rule parseDFT:
     #     'dft'
     run:
         outdir = dirname(output.geom2)
-        shell('python -m isicle.scripts.parse_nwchem {input} %s --dft &> {log}' % outdir)
+        shell('python -m isicle.scripts.parse_nwchem {input} {outdir} --dft &> {log}')

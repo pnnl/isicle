@@ -85,5 +85,7 @@ rule calibrate:
         join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility'
-    shell:
-        'python -m isicle.scripts.calibrate {input} {output} {config[correction][{wildcards.adduct}][m]} {config[correction][{wildcards.adduct}][b]} &> {log}'
+    run:
+        m = config['calibration'][wildcards.adduct]['m']
+        b = config['calibration'][wildcards.adduct]['b']
+        shell('python -m isicle.scripts.calibrate {input} {output} {m} {b} &> {log}')

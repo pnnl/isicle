@@ -347,5 +347,5 @@ rule downselect:
     # group:
     #     'md'
     run:
-        shell('python -m isicle.scripts.downselect %s --infiles {input.xyz} --rfiles {input.rmsd} &> {log}' %
-              join(config['path'], 'output', 'md', 'downselected'))
+        outdir = join(config['path'], 'output', 'md', 'downselected')
+        shell('python -m isicle.scripts.downselect {outdir} --infiles {input.xyz} --rfiles {input.rmsd} &> {log}')
