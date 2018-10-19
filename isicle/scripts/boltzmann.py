@@ -15,8 +15,8 @@ def ccs(infile, outfile):
 
     ws = DescrStatsW(df['ccs'], weights=w, ddof=0)
 
-    res = pd.Series([ws.mean, ws.std, len(df.index)],
-                    index=['ccs', 'ccs_std', 'n'])
+    res = pd.DataFrame([[ws.mean, ws.std, len(df.index)]],
+                       columns=['ccs', 'ccs_std', 'n'])
 
     res.to_csv(outfile, sep='\t', index=False, header=True)
 
