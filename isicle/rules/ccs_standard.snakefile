@@ -13,5 +13,5 @@ if len(IDS) == 0:
 
 rule all:
     input:
-        expand(join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv'),
+        expand(join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv'),
                id=IDS, adduct=config['adducts'])

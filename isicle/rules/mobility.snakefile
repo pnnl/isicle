@@ -70,3 +70,20 @@ rule boltzmannAverage:
     #     'mobility'
     shell:
         'python -m isicle.scripts.boltzmann {input} {output} --ccs &> {log}'
+
+
+rule calibrate:
+    input:
+        rules.boltzmannAverage.output
+    output:
+        join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv')
+    version:
+        'python -m isicle.scripts.calibrate --version'
+    log:
+        join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log')
+    benchmark:
+        join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+    # group:
+    #     'mobility'
+    shell:
+        'python -m isicle.scripts.calibrate {input} {output} {config[correction][{wildcards.adduct}][m]} {config[correction][{wildcards.adduct}][b]} &> {log}'
