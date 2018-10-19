@@ -55,4 +55,4 @@ if __name__ == '__main__':
     args.infiles.sort()
     args.efiles.sort()
 
-    batch(args.infiles, args.efiles, args.output)
+    batch(args.infiles, args.efiles, args.outfile)
