@@ -39,13 +39,13 @@ pip install git+https://github.com/pnnl/isicle
 
 Getting Started
 ---------------
-ISiCLE assumes a user starts with a text file with an InChI or SMILES string on each line. Use ``isicle-input`` to prepare inputs for Snakemake, specifying an ISiCLE config file and operation mode (SMILES (``--smi``) or InChI (``--inchi``)). This ensures each input has a unique InChI key identifier. Detailed instructions can be accessed through the help flag (``--help`` or ``-h``).
+ISiCLE assumes a user starts with a text file with InChI or SMILES strings on each line. Use ``isicle-input`` to prepare inputs for Snakemake, specifying an ISiCLE config file and operation mode (``--inchi`` for InChI, ``--smi`` for SMILES). This ensures each input has a unique filname based on its InChI key identifier. We recommend using SMILES, as in some instances InChI processing can lead to unexpected results, though these occurences are rare. Detailed instructions can be accessed through the help flag (``--help`` or ``-h``).
 ```bash
-# SMILES input
-isicle-input /path/to/smi_list.txt --config /path/to/isicle_config.yaml --smi
-
 # InChI input
 isicle-input /path/to/inchi_list.txt --config /path/to/isicle_config.yaml --inchi
+
+# SMILES input
+isicle-input /path/to/smi_list.txt --config /path/to/isicle_config.yaml --smi
 ```
 
 To begin simulations, simply execute ``isicle`` with desired configuration flags (``isicle --help`` or ``-h`` for help). Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs. 
