@@ -134,3 +134,33 @@ def cycles(n):
 
 def frames(n):
     return ['%03d' % x for x in range(n)]
+
+
+def smi2key(smi):
+    try:
+        res = subprocess.check_output('obabel -:"%s" -oinchikey' % smi,
+                                      stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    except:
+        return None
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+
+    if 'molecule converted' in res[-1]:
+        return res[-2]
+
+    return None
+
+
+def inchi2key(inchi):
+    try:
+        res = subprocess.check_output('echo "%s" | obabel -iinchi -oinchikey' % inchi,
+                                      stderr=subprocess.STDOUT, shell=True).decode('ascii')
+    except:
+        return None
+
+    res = [x.strip() for x in res.split('\n') if x is not '']
+
+    if 'molecule converted' in res[-1]:
+        return res[-2]
+
+    return None

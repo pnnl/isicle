@@ -26,8 +26,7 @@ setup(
     packages=pkgs,
     install_requires=required,
     entry_points={
-        'console_scripts': ['isicle = isicle.isicle:cli',
-                            'isicle-input = isicle.generate_input:cli']
+        'console_scripts': ['isicle = isicle.isicle:cli']
     },
     package_data={'isicle': ['isicle/rules/*.snakefile',
                              'isicle/resources/amber/leaprc.ff14SB',
