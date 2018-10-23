@@ -28,81 +28,94 @@ def process(infile, outdir):
 
 
 def cli():
-    parser = argparse.ArgumentParser(description='Execute ISiCLE simulations.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    p = {}
+    p['global'] = argparse.ArgumentParser(description='execute isicle simulations')
+    p['subparsers'] = p['global'].add_subparsers(title='commands')
+    p['global'].add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
-    module = parser.add_argument_group('Module')
-    mmodule = module.add_mutually_exclusive_group(required=True)
-    mmodule.add_argument('--input', help='Path to .txt of InChI or SMILES strings.')
-    mmodule.add_argument('--ccs', action='store_true', help='Calculate collision cross section.')
-    mmodule.add_argument('--shifts', action='store_true', help='Calculate NMR chemical shifts.')
+    p['parent'] = argparse.ArgumentParser(add_help=False)
+    p['parent'].add_argument('config', help='path to isicle configuration file')
 
-    config = parser.add_argument_group('Snakemake configuration')
-    config.add_argument('--config', required=True, help='Path to ISiCLE configuration file.')
-    config.add_argument('--cluster-config', help='Path to cluster execution configuration file.')
-    config.add_argument('--dryrun', action='store_true', help='Perform a dry run.')
-    config.add_argument('--unlock', action='store_true', help='Unlock directory.')
+    p['sm'] = argparse.ArgumentParser(add_help=False)
+    p['smc'] = p['sm'].add_argument_group('snakemake configuration')
+    p['smc'].add_argument('--cluster', metavar='PATH', help='path to cluster execution configuration file')
+    p['smc'].add_argument('--dryrun', action='store_true', help='perform a dry run')
+    p['smc'].add_argument('--unlock', action='store_true', help='unlock directory')
 
-    parallel = config.add_mutually_exclusive_group()
-    parallel.add_argument('--cores', type=int, default=cpu_count(), help='Number of cores used for execution (local execution only).')
-    parallel.add_argument('--jobs', type=int, default=1000, help='Number of simultaneous jobs to submit to a slurm queue (cluster execution only).')
+    p['smp'] = p['smc'].add_mutually_exclusive_group()
+    p['smp'].add_argument('--cores', metavar='N', type=int, default=cpu_count(), help='number of cores used for execution (local execution only)')
+    p['smp'].add_argument('--jobs', metavar='N', type=int, default=1000, help='number of simultaneous jobs to submit to a slurm queue (cluster execution only)')
 
-    mode = parser.add_argument_group('Calculation mode (CCS only)')
-    mmode = mode.add_mutually_exclusive_group()
-    mmode.add_argument('--standard', action='store_true', help='Standard calculation mode.')
-    mmode.add_argument('--lite', action='store_true', help='Lite calculation mode.')
+    p['prep'] = p['subparsers'].add_parser('prep', parents=[p['parent']], help='input preparation module')
+    p['ccs'] = p['subparsers'].add_parser('ccs', parents=[p['parent'], p['sm']], help='ccs calculation module')
+    p['shifts'] = p['subparsers'].add_parser('shifts', parents=[p['parent'], p['sm']], help='nmr chemical shifts calculation module')
 
-    args = parser.parse_args()
+    p['global'].parse_args()
 
-    # input processing
-    if args.input is not None:
-        import yaml
+    # # reorder default groups
+    # optional = parser._action_groups.pop()
+    # required = parser.add_argument_group('required arguments')
+    # parser._action_groups.append(optional)
 
-        with open(args.config, 'r') as f:
-            outdir = join(yaml.load(f)['path'], 'input')
+    # required.add_argument('mode', nargs='+', help='isicle operation mode (prep, ccs-standard, ccs-lite, shifts)')
+    # required.add_argument('--config', metavar='PATH', required=True, help='path to isicle configuration file')
+    # optional.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
-        process(args.input, outdir)
+    # config = parser.add_argument_group('snakemake configuration')
+    # config.add_argument('--cluster', metavar='PATH', help='path to cluster execution configuration file')
+    # config.add_argument('--dryrun', action='store_true', help='perform a dry run')
+    # config.add_argument('--unlock', action='store_true', help='unlock directory')
 
-    else:
-        import subprocess
-        from pkg_resources import resource_filename
+    # parallel = config.add_mutually_exclusive_group()
+    # parallel.add_argument('--cores', metavar='N', type=int, default=cpu_count(), help='number of cores used for execution (local execution only)')
+    # parallel.add_argument('--jobs', metavar='N', type=int, default=1000, help='number of simultaneous jobs to submit to a slurm queue (cluster execution only)')
 
-        # ccs module
-        if args.ccs is True:
-            # standard mode
-            if args.standard is True:
-                cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-                      (resource_filename('isicle', 'rules/ccs_standard.snakefile'), args.config)
-            # lite mode
-            elif args.lite is True:
-                cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-                      (resource_filename('isicle', 'rules/ccs_lite.snakefile'), args.config)
-            # none specified
-            else:
-                parser.error('Please select a CCS calculation mode.')
+    # args = parser.parse_args()
 
-        # chemical shifts module
-        elif args.shifts is True:
-            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-                  (resource_filename('isicle', 'rules/shifts.snakefile'), args.config)
+    # import subprocess
+    # from pkg_resources import resource_filename
 
-        # cluster configuration
-        if args.cluster_config is not None:
-            cmd += ' --cluster-config %s' % args.cluster_config
-            cmd += ' --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"'
-            cmd += ' -j %s' % args.jobs
-        # local execution
-        else:
-            cmd += ' --cores %s' % args.cores
+    # # input processing
+    # if args.mode[0] == 'prep':
+    #     import yaml
 
-        # additional options
-        if args.dryrun:
-            cmd += ' --dryrun'
-        if args.unlock:
-            cmd += ' --unlock'
+    #     with open(args.config, 'r') as f:
+    #         outdir = join(yaml.load(f)['path'], 'input')
 
-        # execute
-        subprocess.call(cmd, shell=True)
+    #     process(args.mode[1], outdir)
+
+    # else:
+    #     # standard mode
+    #     if args.mode[0] == 'ccs-standard':
+    #         cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
+    #               (resource_filename('isicle', 'rules/ccs_standard.snakefile'), args.config)
+    #     # lite mode
+    #     elif args.mode[0] == 'ccs-lite':
+    #         cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
+    #               (resource_filename('isicle', 'rules/ccs_lite.snakefile'), args.config)
+
+    #     # chemical shifts module
+    #     elif args.mode[0] == 'shifts':
+    #         cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
+    #               (resource_filename('isicle', 'rules/shifts.snakefile'), args.config)
+
+    #     # cluster configuration
+    #     if args.cluster is not None:
+    #         cmd += ' --cluster-config %s' % args.cluster
+    #         cmd += ' --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"'
+    #         cmd += ' -j %s' % args.jobs
+    #     # local execution
+    #     else:
+    #         cmd += ' --cores %s' % args.cores
+
+    #     # additional options
+    #     if args.dryrun:
+    #         cmd += ' --dryrun'
+    #     if args.unlock:
+    #         cmd += ' --unlock'
+
+    #     # execute
+    #     subprocess.call(cmd, shell=True)
 
 
 if __name__ == '__main__':
