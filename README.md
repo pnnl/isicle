@@ -39,25 +39,26 @@ pip install git+https://github.com/pnnl/isicle
 
 Getting Started
 ---------------
-ISiCLE assumes a user starts with a text file with InChI or SMILES strings on each line. Use ``isicle-input`` to prepare inputs for Snakemake, specifying an ISiCLE config file and operation mode (``--inchi`` for InChI, ``--smi`` for SMILES). This ensures each input has a unique filname based on its InChI key identifier. We recommend using SMILES, as in some instances InChI processing can lead to unexpected results, though these occurences are rare. Detailed instructions can be accessed through the help flag (``--help`` or ``-h``).
-```bash
-# InChI input
-isicle-input inchi_list.txt --config config.yaml --inchi
+For usage overview, use ``isicle --help`` or ``-h``. Currently, available modules include ``prep`` for input preparation, ``ccs`` for collision cross section calculation, and ``shifts`` for NMR chemical shift calculation. For all modules, a Snakemake configuration file in [YAML](http://yaml.org/) format is required. ISiCLE will try to find ``config.yaml`` in the current directory, else a configuration file must be specified through the ``--config`` flag. Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs.
 
-# SMILES input
-isicle-input smi_list.txt --config config.yaml --smi
+For the ``prep`` module, ISiCLE assumes a user starts with a text file with InChI or SMILES strings on each line. This ensures each input has a unique filname based on its InChI key identifier. We recommend using SMILES, as in some instances InChI processing can lead to unexpected results, though these occurences are rare. Detailed instructions can be accessed through the help flag (``isicle prep --help`` or ``-h``).
+```bash
+isicle prep input_list.txt --config config.yaml
 ```
 
-To begin simulations, simply execute ``isicle`` with desired configuration flags (``isicle --help`` or ``-h`` for help). Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs. 
-
-An example dryrun for desktop use (CCS module, _Lite_ mode):
+For the ``ccs`` module, the user must specify calculation mode (``lite`` or ``standard``), followed by any additional flags (see ``isicle ccs --help`` or ``-h``). Before beginning a simulation, we recommend use of the ``--dryrun`` flag to ensure the run is configured correctly. For desktop environments, we recommend using ``lite`` mode:
 ```bash
-isicle --config config.yaml --cores 4 --ccs --lite --dryrun
+isicle ccs lite --cores 4 --dryrun
 ```
 
-An example dryrun for ``slurm`` cluster environments (CCS module, _Standard_ mode):
+For ``slurm`` cluster environments, ``standard`` mode can be used:
 ```bash
-isicle --config config.yaml --cluster-config cluster.yaml --jobs 999 --ccs --standard --dryrun
+isicle ccs standard --cluster cluster.yaml --jobs 999 --dryrun
+```
+
+The ``shifts`` module does not require selection of a calculation mode, but is otherwise configured the same way as the ``ccs`` module. See ``isicle shifts --help`` or ``-h`` for a full list of options. We recommend use of supercomputing resources for the ``shifts`` module:
+```bash
+isicle shifts --cluster cluster.yaml --jobs 999 --dryrun
 ```
 
 Citing ISiCLE
