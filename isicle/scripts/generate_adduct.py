@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # read inputs
     mol = next(pybel.readfile("mol", args.infile))
 
-    if args.adduct == 'Ne':
+    if args.adduct == 'neutral':
         adduct = mol
     else:
         pka = read_pka(args.pkafile)

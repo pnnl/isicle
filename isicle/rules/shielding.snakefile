@@ -7,7 +7,7 @@ include: 'molecular_dynamics.snakefile'
 
 rule copyOver:
     input:
-        join(config['path'], 'output', 'md', 'downselected', '{id}_Ne_{cycle}_{selected}.xyz')
+        join(config['path'], 'output', 'md', 'downselected', '{id}_neutral_{cycle}_{selected}.xyz')
     output:
         join(config['path'], 'output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz')
     log:
