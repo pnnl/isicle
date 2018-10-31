@@ -6,12 +6,9 @@ from pkg_resources import resource_filename
 # snakemake configuration
 include: 'shielding.snakefile'
 
-# default to SMILES as input
-IDS, = glob_wildcards(join(config['path'], 'input', '{id}.smi'))
-
-# if none found, check for InChIs
-if len(IDS) == 0:
-    IDS, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+SMI, = glob_wildcards(join(config['path'], 'input', '{id}.smi'))
+INCHI, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
+IDS = SMI + INCHI
 
 # copy reference molecule
 if config['nwchem']['reference'] in ['TMS', 'DSS']:
