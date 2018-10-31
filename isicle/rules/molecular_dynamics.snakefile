@@ -164,13 +164,14 @@ rule sanderEM:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log')
+        a = join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log'),
+        b = join(config['path'], 'output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log2')
     benchmark:
         join(config['path'], 'output', 'md', 'em', 'benchmarks', '{id}_{adduct}.sander.benchmark')
     # group:
     #     'md'
     shell:
-        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log}'
+        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log.a} &> {log.b}'
 
 
 rule sander0config:
@@ -203,13 +204,14 @@ rule sander0:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log')
+        a = join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log'),
+        b = join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log2')
     benchmark:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.sander.benchmark')
     # group:
     #     'md'
     shell:
-        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}'
+        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log.a} &> {log.b}'
 
 
 rule sanderConfig:
@@ -245,13 +247,14 @@ rule sander:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log')
+        a = join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log'),
+        b = join(config['path'], 'output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log2')
     benchmark:
         join(config['path'], 'output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.sander.benchmark')
     # group:
     #     'md'
     shell:
-        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log}'
+        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log.a} &> {log.b}'
 
 
 rule selectFrames:

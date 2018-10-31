@@ -113,12 +113,14 @@ rule calculateMass:
         join(config['path'], 'output', 'adducts', 'mass', '{id}.mass')
     version:
         'python -m isicle.scripts.molmass --version'
+    log:
+        join(config['path'], 'output', 'adducts', 'mass', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', 'adducts', 'mass', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.molmass `cat {input}` &> {output}'
+        'python -m isicle.scripts.molmass `cat {input}` > {output} 2> {log}'
 
 
 rule generateGeometry:
@@ -149,12 +151,14 @@ rule calculatepKa:
         join(config['path'], 'output', 'adducts', 'pKa', '{id}.pka')
     version:
         "cxcalc --help | grep 'version ' | awk '{print $2}'"
+    log:
+        join(config['path'], 'output', 'adducts', 'pKa', 'logs', '{id}.log')
     benchmark:
         join(config['path'], 'output', 'adducts', 'pKa', 'benchmarks', '{id}.benchmark')
     # group:
     #     'adducts'
     shell:
-        'cxcalc pka -i -40 -x 40 -d large {input} &> {output}'
+        'cxcalc pka -i -40 -x 40 -d large {input} > {output} 2> {log}'
 
 
 rule generateAdduct:
