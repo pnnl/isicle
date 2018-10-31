@@ -3,7 +3,7 @@ ISiCLE
 
 Overview
 --------
-ISiCLE, or the _in silico_ chemical library engine, is a pipeline for high-accuracy chemical property calculation. ISiCLE takes an [InChI](https://en.wikipedia.org/wiki/International_Chemical_Identifier) or [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) string as input, generates an initial 3D conformation, and subsequently optimizes this initial structure through molecular dynamics simulations and quantum chemistry optimizations. Finally, ISiCLE simulates desired properties (e.g. collision cross section, NMR chemical shifts) for each conformer yielded during molecular dynamics simulations to produce a single value, Boltzmann-weighted by Gibb's free energy, giving emphasis to properties from highly probable conformations.
+ISiCLE, or the _in silico_ chemical library engine, is a pipeline for high-accuracy chemical property calculation. ISiCLE takes an [InChI](https://en.wikipedia.org/wiki/International_Chemical_Identifier) or [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) string as input, generates an initial 3D conformation, and subsequently optimizes this initial structure through molecular dynamics simulations and quantum chemistry optimizations. Finally, ISiCLE simulates desired properties (e.g. collision cross section, NMR chemical shifts) for each conformer yielded during molecular dynamics simulations to produce a single value, Boltzmann-weighted by relative Gibb's free energy, giving emphasis to properties from highly probable conformations.
 
 ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) workflow management system, enabling scalability, portability, provenance, fault tolerance, and automatic job restarting. Snakemake provides a readable Python-based workflow definition language and execution environment that scales, without modification, from single-core workstations to compute clusters through as-available job queuing based on a task dependency graph.
 
@@ -41,9 +41,9 @@ Getting Started
 ---------------
 For usage overview, use ``isicle --help`` or ``-h``. Currently, available modules include ``prep`` for input preparation, ``ccs`` for collision cross section calculation, and ``shifts`` for NMR chemical shift calculation. For all modules, a Snakemake configuration file in [YAML](http://yaml.org/) format is required. ISiCLE will try to find ``config.yaml`` in the current directory, else a configuration file must be specified through the ``--config`` flag. Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs.
 
-For the ``prep`` module, ISiCLE assumes a user starts with a text file with InChI or SMILES strings on each line. This ensures each input has a unique filname based on its InChI key identifier. We recommend using SMILES, as in some instances InChI processing can lead to unexpected results, though these occurences are rare. Detailed instructions can be accessed through the help flag (``isicle prep --help`` or ``-h``).
+For the ``prep`` module, ISiCLE assumes the user starts with a text file with InChI or SMILES strings on each line. This ensures each input has a unique filname based on its InChI key identifier. We recommend using SMILES, as in some instances InChI processing can lead to unexpected results, though these occurences are rare. Detailed instructions can be accessed through the help flag (``isicle prep --help`` or ``-h``).
 ```bash
-isicle prep input_list.txt --config config.yaml
+isicle prep input_list.txt
 ```
 
 For the ``ccs`` module, the user must specify calculation mode (``lite`` or ``standard``), followed by any additional flags (see ``isicle ccs --help`` or ``-h``). Before beginning a simulation, we recommend use of the ``--dryrun`` flag to ensure the run is configured correctly. For desktop environments, we recommend using ``lite`` mode:
