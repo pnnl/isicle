@@ -33,12 +33,9 @@ def cli():
     p['global'] = argparse.ArgumentParser(description='ISiCLE: in silico chemical library engine')
     p['global'].add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
-    # parent with shared args
-    p['parent'] = argparse.ArgumentParser(add_help=False)
-    p['parent'].add_argument('--config', metavar='PATH', default='config.yaml', help='path to isicle yaml configuration file')
-
     # parent with snakemake args
     p['sm'] = argparse.ArgumentParser(add_help=False)
+    p['sm'].add_argument('--config', metavar='PATH', default='config.yaml', help='path to isicle yaml configuration file')
     p['sm'].add_argument('--dryrun', action='store_true', help='perform a dry run')
     p['sm'].add_argument('--unlock', action='store_true', help='unlock directory')
     p['sm'].add_argument('--cores', metavar='N', type=int, default=cpu_count(),
@@ -58,19 +55,19 @@ def cli():
     p['subparsers'] = p['global'].add_subparsers(title='commands', dest='which')
 
     # prep mode
-    p['prep'] = p['subparsers'].add_parser('prep', parents=[p['parent']],
+    p['prep'] = p['subparsers'].add_parser('prep',
                                            description='ISiCLE input preparation module',
                                            help='input preparation module')
     p['prep'].add_argument('infile', help='path to input file containing inchi and/or smiles strings')
 
     # ccs mode
-    p['ccs'] = p['subparsers'].add_parser('ccs', parents=[p['parent'], p['sm']],
+    p['ccs'] = p['subparsers'].add_parser('ccs', parents=[p['sm']],
                                           description='ISiCLE CCS calculation module',
                                           help='ccs calculation module')
     p['ccs'].add_argument('mode', choices=['standard', 'lite'], help='ccs calculation mode')
 
     # shifts mode
-    p['shifts'] = p['subparsers'].add_parser('shifts', parents=[p['parent'], p['sm']],
+    p['shifts'] = p['subparsers'].add_parser('shifts', parents=[p['sm']],
                                              description='ISiCLE NMR chemical shifts calculation module',
                                              help='chemical shift calculation module')
 
