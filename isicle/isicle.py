@@ -132,6 +132,7 @@ def cli():
         elif args.which == 'shifts':
             snakemake(resource_filename('isicle', 'rules/shifts.snakefile'),
                       configfile=args.config,
+                      config=config,
                       cluster_config=args.cluster,
                       cluster=cluster,
                       keepgoing=True,
