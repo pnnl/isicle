@@ -39,17 +39,20 @@ def cli():
 
     # parent with snakemake args
     p['sm'] = argparse.ArgumentParser(add_help=False)
-    p['sm'].add_argument('--cluster', metavar='PATH', help='path to cluster execution yaml configuration file')
     p['sm'].add_argument('--dryrun', action='store_true', help='perform a dry run')
     p['sm'].add_argument('--unlock', action='store_true', help='unlock directory')
     p['sm'].add_argument('--cores', metavar='N', type=int, default=cpu_count(),
                          help='number of cores used for execution (local execution only)')
-    p['sm'].add_argument('--jobs', metavar='N', type=int, default=1000,
-                         help='number of simultaneous jobs to submit to a slurm queue (cluster execution only)')
-    p['sm'].add_argument('--start', metavar='N', type=int, default=0,
-                         help='starting molecule index')
     p['sm'].add_argument('--count', metavar='N', type=int,
                          help='number of molecules to run (limits DAG size)')
+    p['sm'].add_argument('--start', metavar='IDX', type=int, default=0,
+                         help='starting molecule index (for use with --count)')
+
+    # cluster-specific options
+    p['clust'] = p['sm'].add_argument_group('cluster arguments')
+    p['clust'].add_argument('--cluster', metavar='PATH', help='path to cluster execution yaml configuration file')
+    p['clust'].add_argument('--jobs', metavar='N', type=int, default=1000,
+                            help='number of simultaneous jobs to submit to a slurm queue')
 
     # subparsers
     p['subparsers'] = p['global'].add_subparsers(title='commands', dest='which')
