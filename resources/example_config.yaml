@@ -1,5 +1,3 @@
-path: ''
-
 adducts: ['+Na', '+H', '-H', 'neutral']
 charges: {'+Na': 1, '+H': 1, '-H': -1, 'neutral': 0}
 

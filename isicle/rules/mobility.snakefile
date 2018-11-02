@@ -22,11 +22,11 @@ rule mobcal:
     input:
         rules.parseDFT.output.geom2
     output:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
+        join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.out')
     log:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log')
+        join('output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log')
     benchmark:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark')
+        join('output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark')
     # group:
     #     'mobility'
     shell:
@@ -36,18 +36,18 @@ rule mobcal:
 # parse mobcal output
 rule parseMobcal:
     input:
-        geom = expand(join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.out'),
+        geom = expand(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.out'),
                       cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(join(config['path'], 'output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.energy'),
+        energy = expand(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}_geom+charge.energy'),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
+        join('output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
     version:
         'python -m isicle.scripts.parse_mobcal --version'
     log:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
+        join('output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        join('output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility'
     shell:
@@ -59,13 +59,13 @@ rule boltzmannAverage:
     input:
         rules.parseMobcal.output
     output:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
+        join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
     version:
         'python -m isicle.scripts.boltzmann --version'
     log:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
+        join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility'
     shell:
@@ -76,13 +76,13 @@ rule calibrate:
     input:
         rules.boltzmannAverage.output
     output:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv')
+        join('output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv')
     version:
         'python -m isicle.scripts.calibrate --version'
     log:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log')
+        join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
-        join(config['path'], 'output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
     # group:
     #     'mobility'
     run:

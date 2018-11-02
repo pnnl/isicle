@@ -7,13 +7,13 @@ include: 'molecular_dynamics.snakefile'
 
 rule copyOver:
     input:
-        join(config['path'], 'output', 'md', 'downselected', '{id}_neutral_{cycle}_{selected}.xyz')
+        join('output', 'md', 'downselected', '{id}_neutral_{cycle}_{selected}.xyz')
     output:
-        join(config['path'], 'output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz')
+        join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz')
     log:
-        join(config['path'], 'output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.copy.log')
+        join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.copy.log')
     benchmark:
-        join(config['path'], 'output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.copy.benchmark')
+        join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.copy.benchmark')
     # group:
     #     'shielding'
     shell:
@@ -25,13 +25,13 @@ rule createShieldingConfig:
     input:
         rules.copyOver.output
     output:
-        join(config['path'], 'output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw')
+        join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw')
     version:
         'python -m isicle.scripts.generateNW --version'
     log:
-        join(config['path'], 'output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.create.log')
+        join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.create.log')
     benchmark:
-        join(config['path'], 'output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.create.benchmark')
+        join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.create.benchmark')
     # group:
     #     'shielding'
     shell:
@@ -44,13 +44,13 @@ rule shielding:
     input:
         rules.createShieldingConfig.output
     output:
-        join(config['path'], 'output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
+        join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
     version:
         "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
-        join(config['path'], 'output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.nwchem.log')
+        join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.nwchem.log')
     benchmark:
-        join(config['path'], 'output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.nwchem.benchmark')
+        join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.nwchem.benchmark')
     # group:
     #     'shielding'
     run:
@@ -63,11 +63,11 @@ rule parseShielding:
     input:
         rules.shielding.output
     output:
-        shielding = join(config['path'], 'output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding')
+        shielding = join('output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding')
     log:
-        join(config['path'], 'output', 'shielding', 'parsed', 'logs', '{id}_{cycle}_{selected}.log')
+        join('output', 'shielding', 'parsed', 'logs', '{id}_{cycle}_{selected}.log')
     benchmark:
-        join(config['path'], 'output', 'shielding', 'parsed', 'benchmarks', '{id}_{cycle}_{selected}.benchmark')
+        join('output', 'shielding', 'parsed', 'benchmarks', '{id}_{cycle}_{selected}.benchmark')
     # group:
     #     'shielding'
     run:
@@ -77,16 +77,16 @@ rule parseShielding:
 
 rule combine:
     input:
-        expand(join(config['path'], 'output', 'shielding', 'parsed', '{{id}}_{cycle}_{selected}.shielding'),
+        expand(join('output', 'shielding', 'parsed', '{{id}}_{cycle}_{selected}.shielding'),
                cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        join(config['path'], 'output', 'shielding', 'conformer_shielding', '{id}.tsv')
+        join('output', 'shielding', 'conformer_shielding', '{id}.tsv')
     version:
         'python -m isicle.scripts.combine_shifts --version'
     log:
-        join(config['path'], 'output', 'shielding', 'conformer_shielding', 'logs', '{id}.log')
+        join('output', 'shielding', 'conformer_shielding', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'shielding', 'conformer_shielding', 'benchmarks', '{id}.benchmark')
+        join('output', 'shielding', 'conformer_shielding', 'benchmarks', '{id}.benchmark')
     # group:
     #     'shielding'
     shell:
@@ -98,13 +98,13 @@ rule boltzmannAverage:
     input:
         rules.combine.output
     output:
-        join(config['path'], 'output', 'shielding', 'boltzmann_shielding', '{id}.tsv')
+        join('output', 'shielding', 'boltzmann_shielding', '{id}.tsv')
     version:
         'python -m isicle.scripts.boltzmann --version'
     log:
-        join(config['path'], 'output', 'shielding', 'boltzmann_shielding', 'logs', '{id}.log')
+        join('output', 'shielding', 'boltzmann_shielding', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'shielding', 'boltzmann_shielding', 'benchmarks', '{id}.benchmark')
+        join('output', 'shielding', 'boltzmann_shielding', 'benchmarks', '{id}.benchmark')
     # group:
     #     'shielding'
     shell:
@@ -114,14 +114,14 @@ rule boltzmannAverage:
 rule shifts:
     input:
         shielding = rules.boltzmannAverage.output,
-        ref = join(config['path'], 'output', 'shielding', 'boltzmann_shielding', '%s.tsv' % config['nwchem']['reference'])
+        ref = join('output', 'shielding', 'boltzmann_shielding', '%s.tsv' % config['nwchem']['reference'])
     output:
-        join(config['path'], 'output', 'shifts', '{id}.tsv')
+        join('output', 'shifts', '{id}.tsv')
     version:
         ''
     log:
-        join(config['path'], 'output', 'shifts', 'logs', '{id}.log')
+        join('output', 'shifts', 'logs', '{id}.log')
     benchmark:
-        join(config['path'], 'output', 'shifts', 'benchmarks', '{id}.benchmark')
+        join('output', 'shifts', 'benchmarks', '{id}.benchmark')
     shell:
         'python -m isicle.scripts.calculate_shifts {input.shielding} {input.ref} {output} &> {log}'
