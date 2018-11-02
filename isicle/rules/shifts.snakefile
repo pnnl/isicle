@@ -12,9 +12,12 @@ IDS = SMI + INCHI
 
 # copy reference molecule
 if config['nwchem']['reference'] in ['TMS', 'DSS']:
-    shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.smi')),
-                 join('input'))
-    IDS.append(config['nwchem']['reference'])
+    if not exists('input'):
+        mkdir('input')
+    if not exists(join('input', config['nwchem']['reference'] + '.smi')):
+        shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.smi')),
+                     join('input', config['nwchem']['reference'] + '.smi'))
+        IDS.append(config['nwchem']['reference'])
 
 # check if supplied reference is in input
 elif config['nwchem']['reference'] not in IDS:
