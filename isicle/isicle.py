@@ -47,6 +47,10 @@ def cli():
                          help='number of cores used for execution (local execution only)')
     p['sm'].add_argument('--jobs', metavar='N', type=int, default=1000,
                          help='number of simultaneous jobs to submit to a slurm queue (cluster execution only)')
+    p['sm'].add_argument('--start', metavar='N', type=int, default=0,
+                         help='starting molecule index')
+    p['sm'].add_argument('--count', metavar='N', type=int,
+                         help='number of molecules to run (limits DAG size)')
 
     # subparsers
     p['subparsers'] = p['global'].add_subparsers(title='commands', dest='which')
@@ -70,8 +74,8 @@ def cli():
 
     args = p['global'].parse_args()
 
-    import subprocess
     from pkg_resources import resource_filename
+    from snakemake import snakemake
 
     # check for config
     if not isfile(args.config):
@@ -86,40 +90,61 @@ def cli():
 
         process(args.infile, outdir)
 
+    # simulation modules
     else:
+        # cluster config
+        if args.cluster is not None:
+            cluster = "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"
+        else:
+            cluster = None
+
+        # start/stop config
+        if args.count is not None:
+            config = {'start': args.start, 'stop': args.start + args.count}
+        else:
+            config = {'start': args.start, 'stop': None}
+
         # ccs module
         if args.which == 'ccs':
             # standard mode
             if args.mode == 'standard':
-                cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-                      (resource_filename('isicle', 'rules/ccs_standard.snakefile'), args.config)
+                snakemake(resource_filename('isicle', 'rules/ccs_standard.snakefile'),
+                          configfile=args.config,
+                          config=config,
+                          cluster_config=args.cluster,
+                          cluster=cluster,
+                          keepgoing=True,
+                          force_incomplete=True,
+                          cores=args.cores,
+                          nodes=args.jobs,
+                          dryrun=args.dryrun,
+                          unlock=args.unlock)
             # lite mode
             elif args.mode == 'lite':
-                cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-                      (resource_filename('isicle', 'rules/ccs_lite.snakefile'), args.config)
+                snakemake(resource_filename('isicle', 'rules/ccs_lite.snakefile'),
+                          configfile=args.config,
+                          config=config,
+                          cluster_config=args.cluster,
+                          cluster=cluster,
+                          keepgoing=True,
+                          force_incomplete=True,
+                          cores=args.cores,
+                          nodes=args.jobs,
+                          dryrun=args.dryrun,
+                          unlock=args.unlock)
 
         # chemical shifts module
         elif args.which == 'shifts':
-            cmd = 'snakemake --snakefile %s --configfile %s -k --rerun-incomplete' % \
-                  (resource_filename('isicle', 'rules/shifts.snakefile'), args.config)
-
-        # cluster configuration
-        if args.cluster is not None:
-            cmd += ' --cluster-config %s' % args.cluster
-            cmd += ' --cluster "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"'
-            cmd += ' -j %s' % args.jobs
-        # local execution
-        else:
-            cmd += ' --cores %s' % args.cores
-
-        # additional options
-        if args.dryrun:
-            cmd += ' --dryrun'
-        if args.unlock:
-            cmd += ' --unlock'
-
-        # execute
-        subprocess.call(cmd, shell=True)
+            snakemake(resource_filename('isicle', 'rules/shifts.snakefile'),
+                      configfile=args.config,
+                      cluster_config=args.cluster,
+                      cluster=cluster,
+                      keepgoing=True,
+                      force_incomplete=True,
+                      cores=args.cores,
+                      nodes=args.jobs,
+                      dryrun=args.dryrun,
+                      unlock=args.unlock)
 
 
 if __name__ == '__main__':

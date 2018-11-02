@@ -7,6 +7,8 @@ SMI, = glob_wildcards(join(config['path'], 'input', '{id}.smi'))
 INCHI, = glob_wildcards(join(config['path'], 'input', '{id}.inchi'))
 IDS = SMI + INCHI
 
+IDS = IDS[config['start']:config['stop']]
+
 
 rule all:
     input:
