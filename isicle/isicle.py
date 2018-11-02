@@ -7,11 +7,11 @@ import pandas as pd
 import os
 
 
-def process(infile, outdir):
+def process(infile):
     df = pd.read_csv(infile, sep='\n', header=None)
 
-    if not exists(outdir):
-        os.makedirs(outdir)
+    if not exists('input'):
+        os.makedirs('input')
 
     for row in df.values:
         mol = row[0]
@@ -23,7 +23,7 @@ def process(infile, outdir):
             ext = '.smi'
 
         if key is not None:
-            write_string(mol, join(outdir, key + ext))
+            write_string(mol, join('input', key + ext))
         else:
             print('Failed to hash %s.' % mol)
 
@@ -83,12 +83,7 @@ def cli():
 
     # input processing
     if args.which == 'prep':
-        import yaml
-
-        with open(args.config, 'r') as f:
-            outdir = join(yaml.load(f)['path'], 'input')
-
-        process(args.infile, outdir)
+        process(args.infile)
 
     # simulation modules
     else:
