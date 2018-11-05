@@ -4,6 +4,7 @@ from isicle import __version__
 from isicle.utils import inchi2key, smi2key, write_string
 from os.path import *
 import pandas as pd
+import os
 
 
 def process(infile):

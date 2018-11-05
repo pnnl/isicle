@@ -2,6 +2,7 @@ from os.path import *
 from isicle.utils import cycles
 import shutil
 from pkg_resources import resource_filename
+import os
 
 # snakemake configuration
 include: 'shielding.snakefile'
@@ -13,7 +14,7 @@ IDS = SMI + INCHI
 # copy reference molecule
 if config['nwchem']['reference'] in ['TMS', 'DSS']:
     if not exists('input'):
-        mkdir('input')
+        os.mkdir('input')
     if not exists(join('input', config['nwchem']['reference'] + '.smi')):
         shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.smi')),
                      join('input', config['nwchem']['reference'] + '.smi'))
