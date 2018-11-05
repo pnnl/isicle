@@ -76,16 +76,16 @@ def cli():
     from pkg_resources import resource_filename
     from snakemake import snakemake
 
-    # check for config
-    if not isfile(args.config):
-        p['global'].error('Snakemake YAML configuration file not found.')
-
     # input processing
     if args.which == 'prep':
         process(args.infile)
 
     # simulation modules
     else:
+        # check for config
+        if not isfile(args.config):
+            p['global'].error('Snakemake YAML configuration file not found.')
+
         # cluster config
         if args.cluster is not None:
             cluster = "sbatch -A {cluster.account} -N {cluster.nodes} -t {cluster.time} -J {cluster.name} --ntasks-per-node {cluster.ntasks}"
