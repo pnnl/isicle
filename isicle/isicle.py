@@ -142,6 +142,10 @@ def cli():
                       dryrun=args.dryrun,
                       unlock=args.unlock)
 
+    # no module selected
+    else:
+        p['global'].print_help()
+
 
 if __name__ == '__main__':
     cli()
