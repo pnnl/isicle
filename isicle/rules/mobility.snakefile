@@ -20,7 +20,7 @@ else:
 # run mobcal on geom+charge nwchem output
 rule mobcal:
     input:
-        rules.parseDFT.output.geom2
+        rules.parseDFT.output.mfj
     output:
         join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.out')
     log:
