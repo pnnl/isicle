@@ -1,114 +1,87 @@
-import argparse
+import pandas as pd
+from os.path import *
+import glob
+from pkg_resources import resource_filename
 
 
 __version__ = '0.1.0'
 
 
-def XYZtoMFJ(resfile, outdir):
-    # atomic masses
-    masses = pd.read_csv(resource_filename('isicle', 'resources/mobcal/atomic_mass.tsv'),
-                         sep='\t', usecols=['Number', 'Mass'])
+def parse_dft(path):
+    with open(path, 'r') as f:
+        lines = f.readlines()
 
-    # read NWChem output file
-    with open(resfile, 'r') as f:
-        res = f.readlines()
-
-    # parse output
-    natoms, lowdinIdx, energies = parseOutput(res)
-
-    # grab relevant files
-    files = glob.glob(splitext(resfile)[0] + '_geom-*.xyz')
-    if len(files) < 1:
-        raise IOError("No geometry files found.")
-    elif len(files) == 1:
-        idx = [0]
-        geoms = [files[0].rsplit('_', 1)[0] + '_charge.xyz']
-        shutil.copyfile(files[0], geoms[0])
-    else:
-        files.sort()
-
-        idx = [0, -1]
-        geoms = [files[0].rsplit('_', 1)[0] + '_charge.xyz', files[-1].rsplit('_', 1)[0] + '_geom+charge.xyz']
-        shutil.copyfile(files[0], geoms[0])
-        shutil.copyfile(files[-1], geoms[1])
-
-    # iterate through successful geometries
-    for i, geom in zip(idx, geoms):
-        # read xyz file
-        xyz = pd.read_csv(geom, skiprows=2, header=None, delim_whitespace=True, names=['Atom', 'x', 'y', 'z'])
-        xyz.drop('Atom', 1, inplace=True)
-
-        df = pd.DataFrame([x.split()[0:4] for x in res[lowdinIdx[i]:lowdinIdx[i] + natoms]],
-                          columns=['idx', 'Atom', 'Number', 'Charge'])
-
-        df.Number = df.Number.astype('int')
-        df.Charge = df.Number - df.Charge.astype('float')
-
-        # merge xyz and NWChem output
-        data = pd.merge(xyz, df, left_index=True, right_index=True)
-
-        # merge with atomic masses
-        data = pd.merge(data, masses)
-        data = data[['x', 'y', 'z', 'Mass', 'Charge']]
-
-        # write mfj file
-        outname = basename(splitext(geom)[0] + '.mfj')
-        with open(join(outdir, outname), 'w') as f:
-            f.write(outname + '\n')
-            f.write('1\n')
-            f.write(str(natoms) + '\n')
-            f.write('ang\n')
-            f.write('calc\n')
-            f.write('1.000\n')
-
-            for row in data.values:
-                f.write('\t'.join([str(x) for x in row]) + '\n')
-
-        # write energy
-        ename = splitext(outname)[0] + '.energy'
-        with open(join(outdir, ename), 'w') as f:
-            f.write(str(energies[i]))
-
-
-def parseOutput(res, idx=0):
-    indices = []
-    lowdinIdx = []
-    energies = []
-
+    energy = []
+    charges = []
     ready = False
-    for i, row in enumerate(res):
-        if 'No.' in row and len(indices) == 0:
-            indices.append(i + 2)  # 0
-        elif 'Atomic Mass' in row and len(indices) == 1:
-            indices.append(i - 1)  # 1
-            indices.append(i + 3)  # 2
-        elif 'Effective nuclear repulsion energy' in row and len(indices) == 3:
-            indices.append(i - 2)  # 3
+    for line in lines:
+        if 'Total DFT energy' in line:
+            energy.append(float(line.split()[-1]))
 
-        elif 'Lowdin Population Analysis' in row:
+        elif 'Atom       Charge   Shell Charges' in line:
             ready = True
-
-        elif 'Shell Charges' in row and ready is True:
-            lowdinIdx.append(i + 2)
+            charges = []
+        elif ready is True and line.strip() == '':
             ready = False
+        elif ready is True:
+            charges.append(line)
 
-        if "Total DFT energy" in row:
-            energies.append(float(row.rstrip().split('=')[-1]))
+    # grab last energy
+    energy = energy[-1]
 
-    natoms = int(res[indices[1] - 1].split()[0])
-    return natoms, lowdinIdx, energies
+    # process charge information
+    df = pd.DataFrame([x.split()[0:4] for x in charges[1:]],
+                      columns=['idx', 'Atom', 'Number', 'Charge'])
+    df.Number = df.Number.astype('int')
+    df.Charge = df.Number - df.Charge.astype('float')
+
+    return energy, df.Charge.values
 
 
-def shielding(resfile, outdir):
-    with open(resfile, 'r') as f:
+def extract_geometry(path):
+    search = splitext(path)[0]
+    geoms = glob.glob(search + '*.xyz')
+
+    if len(geoms) < 1:
+        raise IOError("No geometry files found.")
+
+    geoms.sort()
+
+    return geoms[-1]
+
+
+def generate_mfj(xyz, charges, outfile, masses=resource_filename('isicle', 'resources/mobcal/atomic_mass.tsv')):
+    mass = pd.read_csv(masses, sep='\t', usecols=['Number', 'Mass'])
+
+    data = pd.read_csv(xyz, skiprows=2, header=None, delim_whitespace=True, names=['Atom', 'x', 'y', 'z'])
+    data['Charge'] = charges
+
+    # merge with atomic masses
+    data = pd.merge(data, mass)
+    data = data[['x', 'y', 'z', 'Mass', 'Charge']]
+
+    with open(outfile, 'w') as f:
+        f.write(outname + '\n')
+        f.write('1\n')
+        f.write(str(natoms) + '\n')
+        f.write('ang\n')
+        f.write('calc\n')
+        f.write('1.000\n')
+
+        for row in data.values:
+            f.write('\t'.join([str(x) for x in row]) + '\n')
+
+
+def parse_shielding(path, outfile):
+    with open(path, 'r') as f:
         res = f.readlines()
 
-    energies = []
+    energy = []
     shield_values = []
     ready = False
     for i, row in enumerate(res):
         if "Total DFT energy" in row:
-            energies.append(float(row.rstrip().split('=')[-1]))
+            energy.append(float(line.split()[-1]))
         elif "Atom:" in row:
             idx = int(row.split()[1])
             atom = row.split()[2]
@@ -121,18 +94,17 @@ def shielding(resfile, outdir):
             true_idx = [int(x) for x in row.split()[2:]]
 
     df = pd.DataFrame(shield_values, columns=['index', 'atom', 'shielding'])
-    df['dft_energy'] = energies[-1]
+    df['dft_energy'] = energy[-1]
     df['index'] = true_idx
 
-    sfile = join(outdir, splitext(basename(resfile))[0] + '.shielding')
-    df.to_csv(sfile, sep='\t', index=False)
+    df.to_csv(outfile, sep='\t', index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse NWChem DFT output.')
     parser.add_argument('infile', help='Path to NWChem .out file.')
-    parser.add_argument('outdir', help='Path to output directory.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser.add_argument('outfile', help='Path to output file.')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='Print version and exit.')
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--dft', action='store_true', help='DFT mode.')
@@ -140,14 +112,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    from os.path import *
-    import glob
-    import pandas as pd
-    import shutil
-    from pkg_resources import resource_filename
-
     if args.dft is True:
-        XYZtoMFJ(args.infile, args.outdir)
+        energy, charges = parse_dft(args.infile)
+        xyz = extract_geometry(args.infile)
+        generate_mfj(xyz, charges, args.outfile)
+
+        # write .energy file
+        with open(splitext(outfile)[0] + '.energy', 'w') as f:
+            f.write(str(energy))
 
     elif args.shielding is True:
-        shielding(args.infile, args.outdir)
+        parse_shielding(args.infile, args.outfile)

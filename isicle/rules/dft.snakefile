@@ -62,10 +62,8 @@ rule parseDFT:
     input:
         rules.dft.output
     output:
-        geom1 = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.mfj'),
-        geom2 = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.mfj'),
-        charge1 = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_charge.energy'),
-        charge2 = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}_geom+charge.energy')
+        mfj = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.mfj'),
+        energy = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy')
     version:
         'python -m isicle.scripts.parse_nwchem --version'
     log:
@@ -76,4 +74,4 @@ rule parseDFT:
     #     'dft'
     run:
         outdir = dirname(output.geom2)
-        shell('python -m isicle.scripts.parse_nwchem {input} {outdir} --dft &> {log}')
+        shell('python -m isicle.scripts.parse_nwchem {input} {output.mfj} --dft &> {log}')

@@ -70,9 +70,8 @@ rule parseShielding:
         join('output', 'shielding', 'parsed', 'benchmarks', '{id}_{cycle}_{selected}.benchmark')
     # group:
     #     'shielding'
-    run:
-        outdir = dirname(output.shielding)
-        shell('python -m isicle.scripts.parse_nwchem {input} {outdir} --shielding &> {log}')
+    shell:
+        'python -m isicle.scripts.parse_nwchem {input} {output.shielding} --shielding &> {log}'
 
 
 rule combine:
