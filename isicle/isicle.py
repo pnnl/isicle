@@ -11,7 +11,7 @@ def process(infile):
     df = pd.read_csv(infile, sep='\n', header=None)
 
     if not exists('input'):
-        mkdir('input')
+        os.mkdir('input')
 
     for row in df.values:
         mol = row[0]
