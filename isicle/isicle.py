@@ -82,7 +82,7 @@ def cli():
         process(args.infile)
 
     # simulation modules
-    else:
+    elif args.which in ['ccs', 'shifts']:
         # check for config
         if not isfile(args.config):
             p['global'].error('Snakemake YAML configuration file not found.')
