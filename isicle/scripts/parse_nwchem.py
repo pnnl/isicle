@@ -22,7 +22,7 @@ def parse_dft(path):
         elif 'Atom       Charge   Shell Charges' in line:
             ready = True
             charges = []
-        elif ready is True and line.strip() == '':
+        elif ready is True and line.strip() in ['', 'Line search:']:
             ready = False
         elif ready is True:
             charges.append(line)
@@ -33,6 +33,7 @@ def parse_dft(path):
     # process charge information
     df = pd.DataFrame([x.split()[0:4] for x in charges[1:]],
                       columns=['idx', 'Atom', 'Number', 'Charge'])
+
     df.Number = df.Number.astype('int')
     df.Charge = df.Number - df.Charge.astype('float')
 
@@ -52,19 +53,19 @@ def extract_geometry(path):
 
 
 def generate_mfj(xyz, charges, outfile, masses=resource_filename('isicle', 'resources/mobcal/atomic_mass.tsv')):
-    mass = pd.read_csv(masses, sep='\t', usecols=['Number', 'Mass'])
+    mass = pd.read_csv(masses, sep='\t', usecols=['Symbol', 'Mass'])
 
     data = pd.read_csv(xyz, skiprows=2, header=None, delim_whitespace=True, names=['Atom', 'x', 'y', 'z'])
     data['Charge'] = charges
 
     # merge with atomic masses
-    data = pd.merge(data, mass)
+    data = pd.merge(data, mass, left_on='Atom', right_on='Symbol')
     data = data[['x', 'y', 'z', 'Mass', 'Charge']]
 
     with open(outfile, 'w') as f:
-        f.write(outname + '\n')
+        f.write(splitext(basename(outfile))[0] + '\n')
         f.write('1\n')
-        f.write(str(natoms) + '\n')
+        f.write(str(len(data.index)) + '\n')
         f.write('ang\n')
         f.write('calc\n')
         f.write('1.000\n')
@@ -119,7 +120,7 @@ if __name__ == '__main__':
         generate_mfj(xyz, charges, args.outfile)
 
         # write .energy file
-        with open(splitext(outfile)[0] + '.energy', 'w') as f:
+        with open(splitext(args.outfile)[0] + '.energy', 'w') as f:
             f.write(str(energy))
 
     elif args.shielding is True:
