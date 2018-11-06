@@ -15,7 +15,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     df = pd.read_csv(args.infile, sep='\t')
-    df['ccs'] = args.m * df['ccs'] + args.b
-    df['ccs_std'] = np.abs(args.m) * df['ccs_std']
+    df['ccs'] = args.slope * df['ccs'] + args.intercept
+    df['ccs_std'] = np.abs(args.slope) * df['ccs_std']
 
     df.to_csv(args.outfile, sep='\t', index=False)
