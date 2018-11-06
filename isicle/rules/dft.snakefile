@@ -71,6 +71,5 @@ rule parseDFT:
         join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark')
     # group:
     #     'dft'
-    run:
-        outdir = dirname(output.geom2)
-        shell('python -m isicle.scripts.parse_nwchem {input} {output.mfj} --dft &> {log}')
+    shell:
+        'python -m isicle.scripts.parse_nwchem {input} {output.mfj} --dft &> {log}'
