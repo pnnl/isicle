@@ -90,4 +90,4 @@ rule calibrate:
     run:
         m = config['ccs']['calibration'][wildcards.adduct]['m']
         b = config['ccs']['calibration'][wildcards.adduct]['b']
-        shell('python -m isicle.scripts.calibrate {input} {output} {m} {b} &> {log}')
+        shell('python -m isicle.scripts.calibrate {input} {output} -m {m} -b {b} &> {log}')
