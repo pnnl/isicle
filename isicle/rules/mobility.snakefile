@@ -88,6 +88,6 @@ rule calibrate:
     # group:
     #     'mobility'
     run:
-        m = config['calibration'][wildcards.adduct]['m']
-        b = config['calibration'][wildcards.adduct]['b']
+        m = config['ccs']['calibration'][wildcards.adduct]['m']
+        b = config['ccs']['calibration'][wildcards.adduct]['b']
         shell('python -m isicle.scripts.calibrate {input} {output} {m} {b} &> {log}')
