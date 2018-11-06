@@ -8,7 +8,9 @@ INCHI, = glob_wildcards(join('input', '{id}.inchi'))
 IDS = SMI + INCHI
 
 IDS.sort()
-IDS = IDS[config['start']:config['stop']]
+
+if 'stop' in config:
+    IDS = IDS[config['start']:config['stop']]
 
 
 rule all:

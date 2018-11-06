@@ -25,7 +25,8 @@ elif config['nwchem']['reference'] not in IDS:
     raise Exception('Select TMS or DSS as reference, or ensure %s is in the input folder.' % config['nwchem']['reference'])
 
 IDS.sort()
-IDS = IDS[config['start']:config['stop']]
+if 'stop' in config:
+    IDS = IDS[config['start']:config['stop']]
 
 # add reference back in
 if config['nwchem']['reference'] not in IDS:

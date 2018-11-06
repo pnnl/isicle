@@ -97,7 +97,7 @@ def cli():
         if args.count is not None:
             config = {'start': args.start, 'stop': args.start + args.count}
         else:
-            config = {'start': args.start, 'stop': None}
+            config = {}
 
         # ccs module
         if args.which == 'ccs':
