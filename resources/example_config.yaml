@@ -2,7 +2,7 @@ adducts: ['+Na', '+H', '-H', 'neutral']
 charges: {'+Na': 1, '+H': 1, '-H': -1, 'neutral': 0}
 
 forcefield:
-  type: 'gaff'
+  type: gaff
   steps: 500
 
 impact:
@@ -29,7 +29,7 @@ nwchem:
   dft_template: default
   shielding_template: default
   shifts: ['H', 'C']
-  reference: 'TMS'
+  reference: TMS
 
 mobcal:
   params: default
