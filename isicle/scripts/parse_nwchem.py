@@ -75,24 +75,24 @@ def generate_mfj(xyz, charges, outfile, masses=resource_filename('isicle', 'reso
 
 def parse_shielding(path, outfile):
     with open(path, 'r') as f:
-        res = f.readlines()
+        lines = f.readlines()
 
     energy = []
     shield_values = []
     ready = False
-    for i, row in enumerate(res):
-        if "Total DFT energy" in row:
+    for line in lines:
+        if "Total DFT energy" in line:
             energy.append(float(line.split()[-1]))
-        elif "Atom:" in row:
-            idx = int(row.split()[1])
-            atom = row.split()[2]
+        elif "Atom:" in line:
+            idx = int(line.split()[1])
+            atom = line.split()[2]
             ready = True
-        elif "isotropic" in row and ready is True:
-            shield = float(row.split()[-1])
+        elif "isotropic" in line and ready is True:
+            shield = float(line.split()[-1])
             shield_values.append([idx, atom, shield])
             ready = False
-        elif 'SHIELDING' in row:
-            true_idx = [int(x) for x in row.split()[2:]]
+        elif 'SHIELDING' in line:
+            true_idx = [int(x) for x in line.split()[2:]]
 
     df = pd.DataFrame(shield_values, columns=['index', 'atom', 'shielding'])
     df['dft_energy'] = energy[-1]
