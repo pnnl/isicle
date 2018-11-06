@@ -52,9 +52,8 @@ rule dft:
         join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.nwchem.benchmark')
     # group:
     #     'dft'
-    run:
-        shell('cd /scratch')
-        shell('srun --mpi=pmi2 nwchem {input} > {output} 2> {log}')
+    shell:
+        'srun --mpi=pmi2 nwchem {input} > {output} 2> {log}'
 
 
 # parse nwchem outputs (geometry files)
