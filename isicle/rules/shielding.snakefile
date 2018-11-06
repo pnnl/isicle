@@ -9,7 +9,7 @@ rule copyOver:
     input:
         join('output', 'md', 'downselected', '{id}_neutral_{cycle}_{selected}.xyz')
     output:
-        join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz')
+        abspath(join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz'))
     log:
         join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.copy.log')
     benchmark:
