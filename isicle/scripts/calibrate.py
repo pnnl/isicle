@@ -13,7 +13,6 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', action='version', version=__version__, help='Print version and exit.')
 
     args = parser.parse_args()
-    args.adduct = args.adduct[1:-1]
 
     df = pd.read_csv(args.infile, sep='\t')
     df['ccs'] = args.m * df['ccs'] + args.b
