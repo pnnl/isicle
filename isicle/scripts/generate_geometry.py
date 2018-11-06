@@ -1,7 +1,8 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import pybel
+from isicle.utils import read_string
+from os.path import *
+from isicle import __version__
 
 
 def inchi2geom(inchi, forcefield='mmff94', steps=500):
@@ -31,21 +32,17 @@ def smiles2geom(smiles, forcefield='mmff94', steps=500):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate geometry from InChI string.')
-    parser.add_argument('infile', help='Path to input InChI (.inchi) or canonical SMILES (.smi) file.')
-    parser.add_argument('mol', help='Path to output .mol file.')
-    parser.add_argument('mol2', help='Path to output .mol2 file.')
-    parser.add_argument('xyz', help='Path to output .xyz file.')
-    parser.add_argument('png', help='Path to output .png image.')
-    parser.add_argument('--forcefield', '-ff', type=str, default='gaff', help='Forcefield type.')
-    parser.add_argument('--steps', '-s', type=int, default=500, help='Number of forcefield optimization steps.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Generate geometry from InChI string')
+    parser.add_argument('infile', help='path to input inchi (.inchi) or smiles (.smi) file')
+    parser.add_argument('mol', help='path to output .mol file')
+    parser.add_argument('mol2', help='path to output .mol2 file')
+    parser.add_argument('xyz', help='path to output .xyz file')
+    parser.add_argument('png', help='path to output .png image')
+    parser.add_argument('-ff', '--forcefield', type=str, default='gaff', help='forcefield type')
+    parser.add_argument('-s', '--steps', type=int, default=500, help='number of forcefield optimization steps')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    import pybel
-    from isicle.utils import read_string
-    from os.path import *
 
     s = read_string(args.infile)
 

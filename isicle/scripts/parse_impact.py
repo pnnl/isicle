@@ -1,7 +1,7 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import pandas as pd
+from isicle.utils import read_mass, write_string
+from isicle import __version__
 
 
 def read_impact(path):
@@ -17,19 +17,16 @@ def read_impact(path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Parse IMPACT output.')
-    parser.add_argument('infile', help='Path to IMPACT .out files.')
-    parser.add_argument('mass', help='Path to mass files.')
-    parser.add_argument('out_He', help='Path to He CCS output file.')
-    parser.add_argument('out_N2', help='Path to N2 CCS output file.')
-    parser.add_argument('--alpha', '-a', type=float, default=27.9, help='Alpha calibration.')
-    parser.add_argument('--beta', '-b', type=float, default=0.14, help='Beta calibration.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Parse IMPACT output')
+    parser.add_argument('infile', help='path to impact .out files')
+    parser.add_argument('mass', help='path to mass files.')
+    parser.add_argument('out_He', help='path to helium ccs output file')
+    parser.add_argument('out_N2', help='path to nitrogen ccs output file')
+    parser.add_argument('-a', '--alpha', type=float, default=27.9, help='alpha calibration')
+    parser.add_argument('-b', '--beta', type=float, default=0.14, help='beta calibration')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    import pandas as pd
-    from isicle.utils import read_mass, write_string
 
     # read inputs
     ccs_He = read_impact(args.infile)

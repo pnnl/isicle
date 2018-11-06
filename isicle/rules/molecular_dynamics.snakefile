@@ -16,7 +16,7 @@ rule prepare:
         idx = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
         content = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
     version:
-        'python -m isicle.scripts.md_helper --version'
+        'isicle --version'
     log:
         join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.prepare.log')
     benchmark:
@@ -64,6 +64,9 @@ rule parmchk2:
         rules.antechamber.output.ac
     output:
         frcmod = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.frcmod')
+    version:
+        # using cpptraj as proxy for version
+        "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
         join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
     benchmark:
@@ -87,7 +90,7 @@ rule restore:
     output:
         mol2 = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
     version:
-        'python -m isicle.scripts.md_helper --version'
+        'isicle --version'
     log:
         join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.restore.log')
     benchmark:
@@ -105,7 +108,7 @@ rule tleapConfig:
     output:
         join('output', 'md', 'tleap', '{id}_{adduct}.config')
     version:
-        'python -m isicle.scripts.prepare_tleap --version'
+        'isicle --version'
     log:
         join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.config.log')
     benchmark:
@@ -141,7 +144,7 @@ rule sanderEMconfig:
     output:
         join('output', 'md', 'em', '{id}_{adduct}.mdin')
     version:
-        'python -m isicle.scripts.prepare_sander --version'
+        'isicle --version'
     log:
         join('output', 'md', 'em', 'logs', '{id}_{adduct}.config.log')
     benchmark:
@@ -180,7 +183,7 @@ rule sander0config:
     output:
         join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin')
     version:
-        'python -m isicle.scripts.prepare_sander --version'
+        'isicle --version'
     log:
         join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.config.log')
     benchmark:
@@ -220,7 +223,7 @@ rule sanderConfig:
     output:
         join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin')
     version:
-        'python -m isicle.scripts.prepare_sander --version'
+        'isicle --version'
     log:
         join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.config.log')
     benchmark:
@@ -265,7 +268,7 @@ rule selectFrames:
         expand(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin'),
                frame=frames(config['amber']['nframes']))
     version:
-        'python -m isicle.scripts.select_frames --version'
+        'isicle --version'
     log:
         join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}.select.log')
     benchmark:
@@ -302,7 +305,7 @@ rule convert:
     output:
         join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
     version:
-        'python -m isicle.scripts.standardize_mol2 --version'
+        'isicle --version'
     log:
         join('output', 'md', 'converted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
@@ -321,7 +324,7 @@ rule calculate_rmsd:
     output:
         rmsd = join('output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
     version:
-        'python -m isicle.scripts.rmsd --version'
+        'isicle --version'
     log:
         join('output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
     benchmark:
@@ -342,7 +345,7 @@ rule downselect:
         expand(join('output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
                selected=['s', 'd1', 'd2'])
     version:
-        'python -m isicle.scripts.downselect --version'
+        'isicle --version'
     log:
         join('output', 'md', 'downselected', 'logs', '{id}_{adduct}_{cycle}.log')
     benchmark:

@@ -3,9 +3,7 @@ from os.path import *
 import glob
 from pkg_resources import resource_filename
 import argparse
-
-
-__version__ = '0.1.0'
+from isicle import __version__
 
 
 def parse_dft(path):
@@ -103,14 +101,14 @@ def parse_shielding(path, outfile):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Parse NWChem DFT output.')
-    parser.add_argument('infile', help='Path to NWChem .out file.')
-    parser.add_argument('outfile', help='Path to output file.')
-    parser.add_argument('-v', '--version', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Parse NWChem DFT output')
+    parser.add_argument('infile', help='path to nwchem .out file')
+    parser.add_argument('outfile', help='path to output file')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--dft', action='store_true', help='DFT mode.')
-    mode.add_argument('--shielding', action='store_true', help='Shielding mode.')
+    mode.add_argument('--dft', action='store_true', help='dft mode')
+    mode.add_argument('--shielding', action='store_true', help='shielding mode')
 
     args = parser.parse_args()
 

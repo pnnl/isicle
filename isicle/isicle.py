@@ -1,10 +1,12 @@
 import argparse
 from multiprocessing import cpu_count
-from isicle import __version__
-from isicle.utils import inchi2key, smi2key, write_string
 from os.path import *
 import pandas as pd
 import os
+from pkg_resources import resource_filename
+from snakemake import snakemake
+from isicle.utils import inchi2key, smi2key, write_string
+from isicle import __version__
 
 
 def process(infile):
@@ -73,9 +75,6 @@ def cli():
                                              help='chemical shift calculation module')
 
     args = p['global'].parse_args()
-
-    from pkg_resources import resource_filename
-    from snakemake import snakemake
 
     # input processing
     if args.which == 'prep':

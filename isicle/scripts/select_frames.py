@@ -1,7 +1,7 @@
 import argparse
-
-
-__version__ = '0.1.0'
+from os.path import *
+import pandas as pd
+from isicle import __version__
 
 
 def select_frames(path, nframes=10, low=1.25E6, high=1.45E6):
@@ -25,19 +25,16 @@ def select_frames(path, nframes=10, low=1.25E6, high=1.45E6):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Select frames from simulated annealing.')
-    parser.add_argument('infile', help='Path to simulated annealing .out file.')
-    parser.add_argument('crdfile', help='Path to .crd file.')
-    parser.add_argument('outfiles', nargs='+', help='Paths to output .trajin files (one per frame).')
-    parser.add_argument('--nframes', type=int, default=10, help='Number of frames.')
-    parser.add_argument('--low', type=float, default=1.25e+06, help='Lower timestep bound.')
-    parser.add_argument('--high', type=float, default=1.45e+06, help='Upper timestep bound.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Select frames from simulated annealing')
+    parser.add_argument('infile', help='path to simulated annealing .out file')
+    parser.add_argument('crdfile', help='path to .crd file')
+    parser.add_argument('outfiles', nargs='+', help='paths to output .trajin files (one per frame)')
+    parser.add_argument('--nframes', type=int, default=10, help='number of frames')
+    parser.add_argument('--low', type=float, default=1.25e+06, help='lower timestep bound')
+    parser.add_argument('--high', type=float, default=1.45e+06, help='upper timestep bound')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    from os.path import *
-    import pandas as pd
 
     frames = select_frames(args.infile,
                            nframes=args.nframes,

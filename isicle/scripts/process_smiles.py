@@ -1,7 +1,8 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import subprocess
+from isicle.utils import read_string, write_string
+import sys
+from isicle import __version__
 
 
 def inchi2smi(inchi):
@@ -157,24 +158,20 @@ def smiles2formula(smiles):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process InChI/SMILES string.')
-    parser.add_argument('infile', help='Path to input InChI (.inchi) or canonical SMILES (.smi) file.')
-    parser.add_argument('outfile', help='Path to output canonical SMILES (.smi) file.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Process InChI/SMILES string')
+    parser.add_argument('infile', help='path to input inchi (.inchi) or smiles (.smi) file')
+    parser.add_argument('outfile', help='path to output smiles (.smi) file')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--inchi', action='store_true', help='InChI to SMILES mode.')
-    mode.add_argument('--desalt', action='store_true', help='Desalt mode.')
-    mode.add_argument('--neutralize', action='store_true', help='Neutralize mode.')
-    mode.add_argument('--tautomerize', action='store_true', help='Tautomerize mode.')
-    mode.add_argument('--formula', action='store_true', help='Formula mode.')
-    mode.add_argument('--canonicalize', action='store_true', help='Canonicalization mode.')
+    mode.add_argument('--inchi', action='store_true', help='inchi to smiles mode')
+    mode.add_argument('--desalt', action='store_true', help='desalt mode')
+    mode.add_argument('--neutralize', action='store_true', help='neutralize mode')
+    mode.add_argument('--tautomerize', action='store_true', help='tautomerize mode')
+    mode.add_argument('--formula', action='store_true', help='formula mode')
+    mode.add_argument('--canonicalize', action='store_true', help='canonicalization mode')
 
     args = parser.parse_args()
-
-    import subprocess
-    from isicle.utils import read_string, write_string
-    import sys
 
     s = read_string(args.infile)
 

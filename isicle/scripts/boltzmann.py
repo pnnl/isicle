@@ -1,7 +1,8 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import pandas as pd
+import numpy as np
+from statsmodels.stats.weightstats import DescrStatsW
+from isicle import __version__
 
 
 def ccs(infile, outfile):
@@ -40,20 +41,16 @@ def shielding(infile, outfile):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Perform Boltzmann weighting by energy across conformers.')
-    parser.add_argument('infile', help='Path to input .tsv file.')
-    parser.add_argument('outfile', help='Path to output .tsv file.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Perform Boltzmann weighting by energy across conformers')
+    parser.add_argument('infile', help='path to input .tsv file')
+    parser.add_argument('outfile', help='path to output .tsv file')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--ccs', action='store_true', help='CCS mode.')
-    mode.add_argument('--shielding', action='store_true', help='Shielding mode.')
+    mode.add_argument('--ccs', action='store_true', help='ccs mode')
+    mode.add_argument('--shielding', action='store_true', help='shielding mode')
 
     args = parser.parse_args()
-
-    import pandas as pd
-    import numpy as np
-    from statsmodels.stats.weightstats import DescrStatsW
 
     if args.ccs is True:
         ccs(args.infile, args.outfile)

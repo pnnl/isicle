@@ -1,21 +1,18 @@
 import argparse
-
-
-__version__ = '0.1.0'
+from string import Template
+from os.path import *
+from pkg_resources import resource_filename
+from isicle import __version__
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate tleap config.')
-    parser.add_argument('mol2', help='Path to .mol2 file.')
-    parser.add_argument('frcmod', help='Path to .frcmod file.')
-    parser.add_argument('outfile', help='Path to output .config file.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Generate tleap config')
+    parser.add_argument('mol2', help='path to .mol2 file')
+    parser.add_argument('frcmod', help='path to .frcmod file')
+    parser.add_argument('outfile', help='path to output .config file')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    from string import Template
-    from os.path import *
-    from pkg_resources import resource_filename
 
     with open(resource_filename('isicle', 'resources/amber/tleap.template'), 'r') as f:
         t = Template(f.read())

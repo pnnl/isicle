@@ -1,7 +1,9 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import numpy as np
+from isicle.utils import pop_atom, push_atom
+import shutil
+from os.path import *
+from isicle import __version__
 
 
 def prepare(infile, outfile, adduct='+H'):
@@ -26,23 +28,17 @@ def restore(infile, outfile, adduct='+H'):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Prepare molecule for MD.')
-    parser.add_argument('infile', help='Path to .mol2 file.')
-    parser.add_argument('outfile', help='Path to output .mol2 file.')
-    parser.add_argument('adduct', help='Adduct type.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Prepare molecule for MD')
+    parser.add_argument('infile', help='path to .mol2 file')
+    parser.add_argument('outfile', help='path to output .mol2 file')
+    parser.add_argument('adduct', help='adduct type')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--prepare', action='store_true', help='Prepare mode.')
-    mode.add_argument('--restore', action='store_true', help='Restore mode.')
+    mode.add_argument('--prepare', action='store_true', help='prepare mode')
+    mode.add_argument('--restore', action='store_true', help='restore mode')
 
     args = parser.parse_args()
-
-    import numpy as np
-    from isicle.utils import pop_atom, push_atom
-    import shutil
-    from os.path import *
-
     args.adduct = args.adduct[1:-1]
 
     if args.prepare is True:

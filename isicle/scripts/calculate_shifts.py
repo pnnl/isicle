@@ -1,19 +1,16 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import pandas as pd
+from isicle import __version__
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Calculate chemical shifts from shielding values.')
-    parser.add_argument('infile', help='Paths to shielding .tsv file.')
-    parser.add_argument('ref', help='Path to reference .tsv file.')
-    parser.add_argument('outfile', help='Path to output .tsv file.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Calculate chemical shifts from shielding values')
+    parser.add_argument('infile', help='path to shielding .tsv file')
+    parser.add_argument('ref', help='path to reference .tsv file')
+    parser.add_argument('outfile', help='path to output .tsv file')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    import pandas as pd
 
     df = pd.read_tsv(args.infile, sep='\t')
     ref = pd.read_tsv(args.ref, sep='\t')

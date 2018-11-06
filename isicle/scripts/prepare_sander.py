@@ -1,24 +1,21 @@
 import argparse
-
-
-__version__ = '0.1.0'
+from string import Template
+from pkg_resources import resource_filename
+from isicle import __version__
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Prepare molecule for MD.')
-    parser.add_argument('mol2', help='Path to .mol2 file.')
-    parser.add_argument('outfile', help='Path to output .mdin file.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Prepare molecule for molecular dynamics')
+    parser.add_argument('mol2', help='path to .mol2 file')
+    parser.add_argument('outfile', help='path to output .mdin file')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--em', action='store_true', help='Energy minimization mode.')
-    mode.add_argument('--iter0', action='store_true', help='First simulated annealing iteration mode.')
-    mode.add_argument('--sa', action='store_true', help='Subsequent simulated annealing iteration mode.')
+    mode.add_argument('--em', action='store_true', help='energy minimization mode')
+    mode.add_argument('--iter0', action='store_true', help='first simulated annealing iteration mode')
+    mode.add_argument('--sa', action='store_true', help='subsequent simulated annealing iteration mode')
 
     args = parser.parse_args()
-
-    from string import Template
-    from pkg_resources import resource_filename
 
     if args.em is True:
         with open(resource_filename('isicle', 'resources/amber/sander_em.template'), 'r') as f:

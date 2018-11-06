@@ -23,6 +23,8 @@ rule mobcal:
         rules.parseDFT.output.mfj
     output:
         join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.out')
+    version:
+        '0.1.0'
     log:
         join('output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log')
     benchmark:
@@ -43,7 +45,7 @@ rule parseMobcal:
     output:
         join('output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
     version:
-        'python -m isicle.scripts.parse_mobcal --version'
+        'isicle --version'
     log:
         join('output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -61,7 +63,7 @@ rule boltzmannAverage:
     output:
         join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
     version:
-        'python -m isicle.scripts.boltzmann --version'
+        'isicle --version'
     log:
         join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:
@@ -78,7 +80,7 @@ rule calibrate:
     output:
         join('output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv')
     version:
-        'python -m isicle.scripts.calibrate --version'
+        'isicle --version'
     log:
         join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log')
     benchmark:

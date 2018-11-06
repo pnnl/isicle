@@ -1,7 +1,8 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import pybel
+from isicle.resources import geometry
+from isicle.utils import read_pka
+from isicle import __version__
 
 
 def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
@@ -21,22 +22,17 @@ def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate adduct from base geometry.')
-    parser.add_argument('infile', help='Path to input .mol file.')
-    parser.add_argument('pkafile', help='Path to input .pka file.')
-    parser.add_argument('adduct', help='Adduct type.')
-    parser.add_argument('mol2', help='Path to output .mol2 file.')
-    parser.add_argument('xyz', help='Path to output .xyz file.')
-    parser.add_argument('--forcefield', '-ff', type=str, default='gaff', help='Forcefield type.')
-    parser.add_argument('--steps', '-s', type=int, default=500, help='Number of forcefield optimization steps.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Generate adduct from base geometry')
+    parser.add_argument('infile', help='path to input .mol file')
+    parser.add_argument('pkafile', help='path to input .pka file')
+    parser.add_argument('adduct', help='adduct type')
+    parser.add_argument('mol2', help='path to output .mol2 file')
+    parser.add_argument('xyz', help='path to output .xyz file')
+    parser.add_argument('-ff', '--forcefield', type=str, default='gaff', help='forcefield type')
+    parser.add_argument('-s', '--steps', type=int, default=500, help='number of forcefield optimization steps')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    import pybel
-    from isicle.resources import geometry
-    from isicle.utils import read_pka
-
     args.adduct = args.adduct[1:-1]
 
     # read inputs

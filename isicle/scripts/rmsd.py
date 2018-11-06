@@ -1,7 +1,7 @@
 import argparse
-
-
-__version__ = '0.1.0'
+import pybel
+import openbabel
+from isicle import __version__
 
 
 def rmsd(mol1, mol2):
@@ -17,16 +17,13 @@ def rmsd(mol1, mol2):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Calculate RMSD among molecules.')
-    parser.add_argument('ref', help='Reference .xyz file.')
-    parser.add_argument('outfile', help='Path to output .rmsd file.')
-    parser.add_argument('infiles', nargs='+', help='Input .xyz files.')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Calculate RMSD among molecules')
+    parser.add_argument('ref', help='reference .xyz file')
+    parser.add_argument('outfile', help='path to output .rmsd file')
+    parser.add_argument('infiles', nargs='+', help='input .xyz files')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
-
-    import pybel
-    import openbabel
 
     total = 0
     for mol in args.infiles:

@@ -1,7 +1,9 @@
 import argparse
-
-
-__version__ = '0.1.0'
+from os.path import *
+from string import Template
+import pybel
+from pkg_resources import resource_filename
+from isicle import __version__
 
 
 class NWChemHelper:
@@ -63,23 +65,18 @@ class NWChemHelper:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Perform the proper preparation steps for an NWChem job.')
-    parser.add_argument('infile', help='Path to input .xyz file.')
-    parser.add_argument('--template', help='Path to template .nw file.', default='default')
-    parser.add_argument('--version', '-v', action='version', version=__version__, help='Print version and exit.')
+    parser = argparse.ArgumentParser(description='Perform the proper preparation steps for an NWChem job')
+    parser.add_argument('infile', help='path to input .xyz file')
+    parser.add_argument('--template', help='path to template .nw file', default='default')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--dft', action='store_true', help='DFT mode.')
-    mode.add_argument('--shielding', action='store_true', help='Shielding mode.')
+    mode.add_argument('--dft', action='store_true', help='dft mode')
+    mode.add_argument('--shielding', action='store_true', help='shielding mode')
 
-    parser.add_argument('--shifts', '-s', nargs='+', help='Atomic numbers of atoms to perform shielding calcs.')
+    parser.add_argument('-s', '--shifts', nargs='+', help='atomic numbers of atoms to perform shielding calcs')
 
     args = parser.parse_args()
-
-    from os.path import *
-    from string import Template
-    import pybel
-    from pkg_resources import resource_filename
 
     nwc = NWChemHelper(args.infile)
 

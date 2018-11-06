@@ -27,7 +27,7 @@ rule createShieldingConfig:
     output:
         abspath(join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw'))
     version:
-        'python -m isicle.scripts.generateNW --version'
+        'isicle --version'
     log:
         join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.create.log')
     benchmark:
@@ -63,6 +63,8 @@ rule parseShielding:
         rules.shielding.output
     output:
         shielding = join('output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding')
+    version:
+        'isicle --version'
     log:
         join('output', 'shielding', 'parsed', 'logs', '{id}_{cycle}_{selected}.log')
     benchmark:
@@ -80,7 +82,7 @@ rule combine:
     output:
         join('output', 'shielding', 'conformer_shielding', '{id}.tsv')
     version:
-        'python -m isicle.scripts.combine_shifts --version'
+        'isicle --version'
     log:
         join('output', 'shielding', 'conformer_shielding', 'logs', '{id}.log')
     benchmark:
@@ -98,7 +100,7 @@ rule boltzmannAverage:
     output:
         join('output', 'shielding', 'boltzmann_shielding', '{id}.tsv')
     version:
-        'python -m isicle.scripts.boltzmann --version'
+        'isicle --version'
     log:
         join('output', 'shielding', 'boltzmann_shielding', 'logs', '{id}.log')
     benchmark:
@@ -116,7 +118,7 @@ rule shifts:
     output:
         join('output', 'shifts', '{id}.tsv')
     version:
-        ''
+        'isicle --version'
     log:
         join('output', 'shifts', 'logs', '{id}.log')
     benchmark:

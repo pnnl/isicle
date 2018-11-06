@@ -27,7 +27,7 @@ rule createDFTConfig:
     output:
         abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw'))
     version:
-        'python -m isicle.scripts.generateNW --version'
+        'isicle --version'
     log:
         join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log')
     benchmark:
@@ -64,7 +64,7 @@ rule parseDFT:
         mfj = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.mfj'),
         energy = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy')
     version:
-        'python -m isicle.scripts.parse_nwchem --version'
+        'isicle --version'
     log:
         join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log')
     benchmark:

@@ -10,7 +10,7 @@ rule inchi2smiles:
     output:
         join('output', 'adducts', 'canonicalized', '{id}.smi')
     version:
-        'python -m isicle.scripts.process_smiles --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:
@@ -27,7 +27,7 @@ rule canonicalize:
     output:
         join('output', 'adducts', 'canonicalized', '{id}.smi')
     version:
-        'python -m isicle.scripts.process_smiles --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'canonicalized', 'logs', '{id}.log')
     benchmark:
@@ -44,7 +44,7 @@ rule desalt:
     output:
         join('output', 'adducts', 'desalted', '{id}.smi')
     version:
-        'python -m isicle.scripts.process_smiles --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'desalted', 'logs', '{id}.log')
     benchmark:
@@ -61,7 +61,7 @@ rule neutralize:
     output:
         join('output', 'adducts', 'neutralized', '{id}.smi')
     version:
-        'python -m isicle.scripts.process_smiles --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'neutralized', 'logs', '{id}.log')
     benchmark:
@@ -78,7 +78,7 @@ rule tautomerize:
     output:
         join('output', 'adducts', 'tautomer', '{id}.smi')
     version:
-        'python -m isicle.scripts.process_smiles --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'tautomer', 'logs', '{id}.log')
     benchmark:
@@ -95,7 +95,7 @@ rule calculateFormula:
     output:
         join('output', 'adducts', 'formula', '{id}.formula')
     version:
-        'python -m isicle.scripts.process_smiles --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'formula', 'logs', '{id}.log')
     benchmark:
@@ -112,7 +112,7 @@ rule calculateMass:
     output:
         join('output', 'adducts', 'mass', '{id}.mass')
     version:
-        'python -m isicle.scripts.molmass --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'mass', 'logs', '{id}.log')
     benchmark:
@@ -132,7 +132,7 @@ rule generateGeometry:
         xyz = join('output', 'adducts', 'geometry_parent', '{id}.xyz'),
         png = join('output', 'adducts', 'geometry_parent', 'images', '{id}.png')
     version:
-        'python -m isicle.scripts.generate_geometry --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'geometry_parent', 'logs', '{id}.log')
     benchmark:
@@ -169,7 +169,7 @@ rule generateAdduct:
         xyz = join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.xyz'),
         mol2 = join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2')
     version:
-        'python -m isicle.scripts.generate_adduct --version'
+        'isicle --version'
     log:
         join('output', 'adducts', 'geometry_{adduct}', 'logs', '{id}_{adduct}.log')
     benchmark:
