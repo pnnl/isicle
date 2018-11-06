@@ -25,7 +25,7 @@ rule createShieldingConfig:
     input:
         rules.copyOver.output
     output:
-        join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw')
+        abspath(join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.nw'))
     version:
         'python -m isicle.scripts.generateNW --version'
     log:
@@ -44,7 +44,7 @@ rule shielding:
     input:
         rules.createShieldingConfig.output
     output:
-        join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out')
+        abspath(join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.out'))
     version:
         "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:

@@ -25,7 +25,7 @@ rule createDFTConfig:
     input:
         rules.copyOver.output
     output:
-        join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw')
+        abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw'))
     version:
         'python -m isicle.scripts.generateNW --version'
     log:
@@ -43,7 +43,7 @@ rule dft:
     input:
         rules.createDFTConfig.output
     output:
-        join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out')
+        abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out'))
     version:
         "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
