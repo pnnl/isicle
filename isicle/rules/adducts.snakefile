@@ -112,7 +112,7 @@ rule calculateMass:
     output:
         join('output', 'adducts', 'mass', '{id}.mass')
     version:
-        'isicle --version'
+        "python -m isicle.scripts.molmass --version | awk '{print $2}'"
     log:
         join('output', 'adducts', 'mass', 'logs', '{id}.log')
     benchmark:
