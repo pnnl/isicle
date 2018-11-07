@@ -30,6 +30,7 @@ nwchem:
   shielding_template: default
   shifts: ['H', 'C']
   reference: TMS
+  solvent: DMSO
 
 mobcal:
   params: default

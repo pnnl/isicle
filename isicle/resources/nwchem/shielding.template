@@ -44,7 +44,7 @@ end
 
 cosmo
  do_gasphase false
- solvent dmso
+ solvent ${solvent}
 end
 
 driver
@@ -68,7 +68,7 @@ end
 
 cosmo
  do_gasphase false
- solvent dmso
+ solvent ${solvent}
 end
 
 property

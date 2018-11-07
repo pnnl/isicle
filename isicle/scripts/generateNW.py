@@ -40,7 +40,7 @@ class NWChemHelper:
             with open(outfile, 'w') as outf:
                 outf.write(orig.substitute(d))
 
-    def shielding(self, template, atoms):
+    def shielding(self, template, atoms, solvent):
         with open(template, 'r') as t:
             orig = Template(t.read())
 
@@ -50,6 +50,7 @@ class NWChemHelper:
         idx = self.nuclei(atoms)
         d['ncount'] = len(idx)
         d['nuclei'] = ' '.join(['%s' % x for x in idx])
+        d['solvent'] = solvent.lower()
 
         outfile = splitext(self.file)[0] + '.nw'
         with open(outfile, 'w') as outf:
@@ -74,7 +75,8 @@ if __name__ == '__main__':
     mode.add_argument('--dft', action='store_true', help='dft mode')
     mode.add_argument('--shielding', action='store_true', help='shielding mode')
 
-    parser.add_argument('-s', '--shifts', nargs='+', help='atomic numbers of atoms to perform shielding calcs')
+    parser.add_argument('--shifts', nargs='+', help='atomic numbers of atoms to perform shielding calcs')
+    parser.add_argument('--solvent', type=str, help='solvent for shielding calcs')
 
     args = parser.parse_args()
 
@@ -96,4 +98,4 @@ if __name__ == '__main__':
         if args.template == 'default':
             args.template = resource_filename('isicle', 'resources/nwchem/shielding.template')
 
-        nwc.shielding(args.template, shifts)
+        nwc.shielding(args.template, shifts, solvent)
