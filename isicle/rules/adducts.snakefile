@@ -127,7 +127,7 @@ rule generateGeometry:
     input:
         rules.tautomerize.output
     output:
-        mol = join('output', 'adducts', 'geometry_parent', '{id}.mol'),
+        mol = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol')),
         mol2 = join('output', 'adducts', 'geometry_parent', '{id}.mol2'),
         xyz = join('output', 'adducts', 'geometry_parent', '{id}.xyz'),
         png = join('output', 'adducts', 'geometry_parent', 'images', '{id}.png')
