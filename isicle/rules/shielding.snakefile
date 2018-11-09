@@ -7,13 +7,13 @@ include: 'molecular_dynamics.snakefile'
 
 rule copyOver:
     input:
-        join('output', 'md', 'downselected', '{id}_neutral_{cycle}_{selected}.xyz')
+        abspath(join('output', 'md', 'downselected', '{id}_neutral_{cycle}_{selected}.xyz'))
     output:
         abspath(join('output', 'shielding', 'nwchem', '{id}', 'cycle_{cycle}_{selected}', '{id}_{cycle}_{selected}.xyz'))
     log:
-        join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.copy.log')
+        abspath(join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.copy.log'))
     benchmark:
-        join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.copy.benchmark')
+        abspath(join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.copy.benchmark'))
     # group:
     #     'shielding'
     shell:
@@ -29,9 +29,9 @@ rule createShieldingConfig:
     version:
         'isicle --version'
     log:
-        join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.create.log')
+        abspath(join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.create.log'))
     benchmark:
-        join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.create.benchmark')
+        abspath(join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.create.benchmark'))
     # group:
     #     'shielding'
     shell:
@@ -48,9 +48,9 @@ rule shielding:
     version:
         "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
-        join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.nwchem.log')
+        abspath(join('output', 'shielding', 'nwchem', 'logs', '{id}_{cycle}_{selected}.nwchem.log'))
     benchmark:
-        join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.nwchem.benchmark')
+        abspath(join('output', 'shielding', 'nwchem', 'benchmarks', '{id}_{cycle}_{selected}.nwchem.benchmark'))
     # group:
     #     'shielding'
     shell:
@@ -66,9 +66,9 @@ rule parseShielding:
     version:
         'isicle --version'
     log:
-        join('output', 'shielding', 'parsed', 'logs', '{id}_{cycle}_{selected}.log')
+        abspath(join('output', 'shielding', 'parsed', 'logs', '{id}_{cycle}_{selected}.log'))
     benchmark:
-        join('output', 'shielding', 'parsed', 'benchmarks', '{id}_{cycle}_{selected}.benchmark')
+        abspath(join('output', 'shielding', 'parsed', 'benchmarks', '{id}_{cycle}_{selected}.benchmark'))
     # group:
     #     'shielding'
     shell:
@@ -77,16 +77,16 @@ rule parseShielding:
 
 rule combine:
     input:
-        expand(join('output', 'shielding', 'parsed', '{{id}}_{cycle}_{selected}.shielding'),
+        expand(abspath(join('output', 'shielding', 'parsed', '{{id}}_{cycle}_{selected}.shielding')),
                cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        join('output', 'shielding', 'conformer_shielding', '{id}.tsv')
+        abspath(join('output', 'shielding', 'conformer_shielding', '{id}.tsv'))
     version:
         'isicle --version'
     log:
-        join('output', 'shielding', 'conformer_shielding', 'logs', '{id}.log')
+        abspath(join('output', 'shielding', 'conformer_shielding', 'logs', '{id}.log'))
     benchmark:
-        join('output', 'shielding', 'conformer_shielding', 'benchmarks', '{id}.benchmark')
+        abspath(join('output', 'shielding', 'conformer_shielding', 'benchmarks', '{id}.benchmark'))
     # group:
     #     'shielding'
     shell:
@@ -98,13 +98,13 @@ rule boltzmannAverage:
     input:
         rules.combine.output
     output:
-        join('output', 'shielding', 'boltzmann_shielding', '{id}.tsv')
+        abspath(join('output', 'shielding', 'boltzmann_shielding', '{id}.tsv'))
     version:
         'isicle --version'
     log:
-        join('output', 'shielding', 'boltzmann_shielding', 'logs', '{id}.log')
+        abspath(join('output', 'shielding', 'boltzmann_shielding', 'logs', '{id}.log'))
     benchmark:
-        join('output', 'shielding', 'boltzmann_shielding', 'benchmarks', '{id}.benchmark')
+        abspath(join('output', 'shielding', 'boltzmann_shielding', 'benchmarks', '{id}.benchmark'))
     # group:
     #     'shielding'
     shell:
@@ -114,14 +114,14 @@ rule boltzmannAverage:
 rule shifts:
     input:
         shielding = rules.boltzmannAverage.output,
-        ref = join('output', 'shielding', 'boltzmann_shielding', '%s.tsv' % config['nwchem']['reference'])
+        ref = abspath(join('output', 'shielding', 'boltzmann_shielding', '%s.tsv' % config['nwchem']['reference']))
     output:
-        join('output', 'shifts', '{id}.tsv')
+        abspath(join('output', 'shifts', '{id}.tsv'))
     version:
         'isicle --version'
     log:
-        join('output', 'shifts', 'logs', '{id}.log')
+        abspath(join('output', 'shifts', 'logs', '{id}.log'))
     benchmark:
-        join('output', 'shifts', 'benchmarks', '{id}.benchmark')
+        abspatch(join('output', 'shifts', 'benchmarks', '{id}.benchmark'))
     shell:
         'python -m isicle.scripts.calculate_shifts {input.shielding} {input.ref} {output} &> {log}'

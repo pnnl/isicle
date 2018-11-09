@@ -22,13 +22,13 @@ rule mobcal:
     input:
         rules.parseDFT.output.mfj
     output:
-        join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.out')
+        abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.out'))
     version:
         '0.1.0'
     log:
-        join('output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log')
+        abspath(join('output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log'))
     benchmark:
-        join('output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark')
+        abspath(join('output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark'))
     # group:
     #     'mobility'
     shell:
@@ -38,18 +38,18 @@ rule mobcal:
 # parse mobcal output
 rule parseMobcal:
     input:
-        geom = expand(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.out'),
+        geom = expand(abspath(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.out')),
                       cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.energy'),
+        energy = expand(abspath(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.energy')),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        join('output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv')
+        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv'))
     version:
         'isicle --version'
     log:
-        join('output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log')
+        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log'))
     benchmark:
-        join('output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'mobility'
     shell:
@@ -61,13 +61,13 @@ rule boltzmannAverage:
     input:
         rules.parseMobcal.output
     output:
-        join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv')
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv'))
     version:
         'isicle --version'
     log:
-        join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log')
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log'))
     benchmark:
-        join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'mobility'
     shell:
@@ -78,13 +78,13 @@ rule calibrate:
     input:
         rules.boltzmannAverage.output
     output:
-        join('output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv')
+        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv'))
     version:
         'isicle --version'
     log:
-        join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log')
+        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log'))
     benchmark:
-        join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'mobility'
     run:

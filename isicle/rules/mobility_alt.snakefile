@@ -12,13 +12,13 @@ rule impact:
     input:
         rules.generateAdduct.output.xyz
     output:
-        join('output', 'mobility', 'impact', 'runs', '{id}_{adduct}.txt')
+        abspath(join('output', 'mobility', 'impact', 'runs', '{id}_{adduct}.txt'))
     version:
         '{IMPACT} -version -nocite'
     log:
-        join('output', 'mobility', 'impact', 'runs', 'logs', '{id}_{adduct}.log')
+        abspath(join('output', 'mobility', 'impact', 'runs', 'logs', '{id}_{adduct}.log'))
     benchmark:
-        join('output', 'mobility', 'impact', 'runs', 'benchmarks', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'mobility', 'impact', 'runs', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'mobility_alt'
     shell:
@@ -33,14 +33,14 @@ rule postprocess:
         ccs = rules.impact.output,
         mass = rules.calculateMass.output
     output:
-        he = join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
-        n2 = join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs')
+        he = abspath(join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs')),
+        n2 = abspath(join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs'))
     version:
         'isicle --version'
     log:
-        join('output', 'mobility', 'impact', 'ccs', 'logs', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'mobility', 'impact', 'ccs', 'logs', '{id}_{adduct}.benchmark'))
     benchmark:
-        join('output', 'mobility', 'impact', 'ccs', 'benchmarks', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'mobility', 'impact', 'ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'mobility_alt'
     shell:

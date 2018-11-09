@@ -7,13 +7,13 @@ include: 'molecular_dynamics.snakefile'
 
 rule copyOver:
     input:
-        join('output', 'md', 'downselected', '{id}_{adduct}_{cycle}_{selected}.xyz')
+        abspath(join('output', 'md', 'downselected', '{id}_{adduct}_{cycle}_{selected}.xyz'))
     output:
         abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.xyz'))
     log:
-        join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.copy.log')
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.copy.log'))
     benchmark:
-        join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.copy.benchmark')
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.copy.benchmark'))
     # group:
     #     'dft'
     shell:
@@ -29,9 +29,9 @@ rule createDFTConfig:
     version:
         'isicle --version'
     log:
-        join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log')
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log'))
     benchmark:
-        join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.create.benchmark')
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.create.benchmark'))
     # group:
     #     'dft'
     shell:
@@ -47,9 +47,9 @@ rule dft:
     version:
         "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
-        join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.nwchem.log')
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.nwchem.log'))
     benchmark:
-        join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.nwchem.benchmark')
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.nwchem.benchmark'))
     # group:
     #     'dft'
     shell:
@@ -61,14 +61,14 @@ rule parseDFT:
     input:
         rules.dft.output
     output:
-        mfj = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.mfj'),
-        energy = join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy')
+        mfj = abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.mfj')),
+        energy = abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy'))
     version:
         'isicle --version'
     log:
-        join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log')
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log'))
     benchmark:
-        join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark')
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark'))
     # group:
     #     'dft'
     shell:

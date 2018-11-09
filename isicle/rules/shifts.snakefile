@@ -7,17 +7,17 @@ import os
 # snakemake configuration
 include: 'shielding.snakefile'
 
-SMI, = glob_wildcards(join('input', '{id}.smi'))
-INCHI, = glob_wildcards(join('input', '{id}.inchi'))
+SMI, = glob_wildcards(abspath(join('input', '{id}.smi')))
+INCHI, = glob_wildcards(abspath(join('input', '{id}.inchi')))
 IDS = SMI + INCHI
 
 # copy reference molecule
 if config['nwchem']['reference'] in ['TMS', 'DSS']:
-    if not exists('input'):
-        os.mkdir('input')
-    if not exists(join('input', config['nwchem']['reference'] + '.smi')):
+    if not exists(abspath('input')):
+        os.mkdir(abspath('input'))
+    if not exists(abspath(join('input', config['nwchem']['reference'] + '.smi'))):
         shutil.copy2(resource_filename('isicle', join('resources', 'nwchem', config['nwchem']['reference'] + '.smi')),
-                     join('input', config['nwchem']['reference'] + '.smi'))
+                     abspath(join('input', config['nwchem']['reference'] + '.smi')))
         IDS.append(config['nwchem']['reference'])
 
 # check if supplied reference is in input
@@ -35,4 +35,4 @@ if config['nwchem']['reference'] not in IDS:
 
 rule all:
     input:
-        expand(join('output', 'shifts', '{id}.tsv'), id=IDS)
+        expand(abspath(join('output', 'shifts', '{id}.tsv')), id=IDS)

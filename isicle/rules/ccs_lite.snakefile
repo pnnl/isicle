@@ -3,8 +3,8 @@ from os.path import *
 # snakemake configuration
 include: 'mobility_alt.snakefile'
 
-SMI, = glob_wildcards(join('input', '{id}.smi'))
-INCHI, = glob_wildcards(join('input', '{id}.inchi'))
+SMI, = glob_wildcards(abspath(join('input', '{id}.smi')))
+INCHI, = glob_wildcards(abspath(join('input', '{id}.inchi')))
 IDS = SMI + INCHI
 
 IDS.sort()
@@ -15,7 +15,7 @@ if 'stop' in config:
 
 rule all:
     input:
-        expand(join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs'),
+        expand(abspath(join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.He.ccs')),
                id=IDS, adduct=config['adducts']),
-        expand(join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs'),
+        expand(abspath(join('output', 'mobility', 'impact', 'ccs', '{id}_{adduct}.N2.ccs')),
                id=IDS, adduct=config['adducts'])

@@ -12,15 +12,15 @@ rule prepare:
     input:
         rules.generateAdduct.output.mol2
     output:
-        mol2 = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2'),
-        idx = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy'),
-        content = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')
+        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2')),
+        idx = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy')),
+        content = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.prepare.log')
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.prepare.log'))
     benchmark:
-        join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark')
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark'))
     # group:
     #     'md'
     shell:
@@ -35,19 +35,19 @@ rule antechamber:
         mol2 = rules.prepare.output.mol2,
         idx = rules.prepare.output.idx
     output:
-        mol2 = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2'),
-        ac = join('output', 'md', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC')
+        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2')),
+        ac = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC'))
     version:
         "antechamber | grep 'Welcome to antechamber' | awk '{print substr($4, 0, length($4) - 1)}'"
     log:
-        join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log')
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log'))
     benchmark:
-        join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.antechamber.benchmark')
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.antechamber.benchmark'))
     # group:
     #     'md'
     run:
         cwd = os.getcwd()
-        os.chdir(join('output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
+        os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s')) % (wildcards.id, wildcards.adduct))
 
         charge = config['charges'][wildcards.adduct]
         if wildcards.adduct == '+Na':
@@ -63,19 +63,19 @@ rule parmchk2:
     input:
         rules.antechamber.output.ac
     output:
-        frcmod = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.frcmod')
+        frcmod = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.frcmod'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log')
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log'))
     benchmark:
-        join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.parmchk2.benchmark')
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.parmchk2.benchmark'))
     # group:
     #     'md'
     run:
         cwd = os.getcwd()
-        os.chdir(join('output', 'md', 'antechamber', '%s_%s') % (wildcards.id, wildcards.adduct))
+        os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s')) % (wildcards.id, wildcards.adduct))
 
         shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log}')
 
@@ -88,13 +88,13 @@ rule restore:
         idx = rules.prepare.output.idx,
         content = rules.prepare.output.content
     output:
-        mol2 = join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2')
+        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.restore.log')
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.restore.log'))
     benchmark:
-        join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.restore.benchmark')
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.restore.benchmark'))
     # group:
     #     'md'
     shell:
@@ -106,13 +106,13 @@ rule tleapConfig:
         mol2 = rules.restore.output.mol2,
         frcmod = rules.parmchk2.output.frcmod
     output:
-        join('output', 'md', 'tleap', '{id}_{adduct}.config')
+        abspath(join('output', 'md', 'tleap', '{id}_{adduct}.config'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.config.log')
+        abspath(join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.config.log'))
     benchmark:
-        join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.config.benchmark')
+        abspath(join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.config.benchmark'))
     # group:
     #     'md'
     shell:
@@ -123,15 +123,15 @@ rule tleap:
     input:
         rules.tleapConfig.output
     output:
-        prmtop = join('output', 'md', 'tleap', '{id}_{adduct}.top'),
-        inpcrd = join('output', 'md', 'tleap', '{id}_{adduct}.crd')
+        prmtop = abspath(join('output', 'md', 'tleap', '{id}_{adduct}.top')),
+        inpcrd = abspath(join('output', 'md', 'tleap', '{id}_{adduct}.crd'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.log')
+        abspath(join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.log'))
     benchmark:
-        join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark')
+        abspath(join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'md'
     shell:
@@ -142,13 +142,13 @@ rule sanderEMconfig:
     input:
         rules.restore.output.mol2
     output:
-        join('output', 'md', 'em', '{id}_{adduct}.mdin')
+        abspath(join('output', 'md', 'em', '{id}_{adduct}.mdin'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'em', 'logs', '{id}_{adduct}.config.log')
+        abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}.config.log'))
     benchmark:
-        join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}.config.benchmark')
+        abspath(join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}.config.benchmark'))
     # group:
     #     'md'
     shell:
@@ -161,16 +161,16 @@ rule sanderEM:
         inpcrd = rules.tleap.output.inpcrd,
         config = rules.sanderEMconfig.output
     output:
-        rst = join('output', 'md', 'em', '{id}_{adduct}.rst'),
-        out = join('output', 'md', 'em', '{id}_{adduct}.out')
+        rst = abspath(join('output', 'md', 'em', '{id}_{adduct}.rst')),
+        out = abspath(join('output', 'md', 'em', '{id}_{adduct}.out'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        a = join('output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log'),
-        b = join('output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log2')
+        a = abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log')),
+        b = abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log2'))
     benchmark:
-        join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}.sander.benchmark')
+        abspath(join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}.sander.benchmark'))
     # group:
     #     'md'
     shell:
@@ -181,13 +181,13 @@ rule sander0config:
     input:
         rules.restore.output.mol2
     output:
-        join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin')
+        abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.config.log')
+        abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.config.log'))
     benchmark:
-        join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.config.benchmark')
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.config.benchmark'))
     # group:
     #     'md'
     shell:
@@ -200,17 +200,17 @@ rule sander0:
         prmtop = rules.tleap.output.prmtop,
         config = rules.sander0config.output
     output:
-        rst = join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.rst'),
-        crd = join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.crd'),
-        out = join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.out')
+        rst = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.rst')),
+        crd = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.crd')),
+        out = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.out'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        a = join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log'),
-        b = join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log2')
+        a = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log')),
+        b = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log2'))
     benchmark:
-        join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.sander.benchmark')
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.sander.benchmark'))
     # group:
     #     'md'
     shell:
@@ -221,13 +221,13 @@ rule sanderConfig:
     input:
         rules.restore.output.mol2
     output:
-        join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin')
+        abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.mdin'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.config.log')
+        abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.config.log'))
     benchmark:
-        join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.config.benchmark')
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.config.benchmark'))
     # group:
     #     'md'
     shell:
@@ -238,22 +238,22 @@ rule sander:
     input:
         # s0 required to disambiguate, but not used
         rst0 = rules.sander0.output.rst,
-        rst = lambda wildcards: join('output', 'md', 'anneal', 'cycle_%03d', '%s_%s.rst') % \
-                                    (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
+        rst = lambda wildcards: abspath(join('output', 'md', 'anneal', 'cycle_%03d', '%s_%s.rst')) % \
+                                (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
         prmtop = rules.tleap.output.prmtop,
         config = rules.sanderConfig.output
     output:
-        rst = join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst'),
-        crd = join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'),
-        out = join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')
+        rst = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst')),
+        crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd')),
+        out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        a = join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log'),
-        b = join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log2')
+        a = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log')),
+        b = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log2'))
     benchmark:
-        join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.sander.benchmark')
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.sander.benchmark'))
     # group:
     #     'md'
     shell:
@@ -262,17 +262,17 @@ rule sander:
 
 rule selectFrames:
     input:
-        out = join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out'),
-        crd = join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd')
+        out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')),
+        crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'))
     output:
-        expand(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin'),
-               frame=frames(config['amber']['nframes']))
+        abspath(expand(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin')),
+                frame=frames(config['amber']['nframes']))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}.select.log')
+        abspath(join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}.select.log'))
     benchmark:
-        join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}.select.benchmark')
+        abspath(join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}.select.benchmark'))
     # group:
     #     'md'
     shell:
@@ -283,15 +283,15 @@ rule selectFrames:
 rule extractFrames:
     input:
         prmtop = rules.tleap.output.prmtop,
-        trajin = join('output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.trajin')
+        trajin = abspath(join('output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.trajin'))
     output:
-        join('output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.mol2')
+        abspath(join('output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.mol2'))
     version:
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.extract.log')
+        abspath(join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.extract.log'))
     benchmark:
-        join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.extract.benchmark')
+        abspath(join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.extract.benchmark'))
     # group:
     #     'md'
     shell:
@@ -303,13 +303,13 @@ rule convert:
         mol2a = rules.extractFrames.output,
         mol2b = rules.prepare.input
     output:
-        join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')
+        abspath(join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'converted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
+        abspath(join('output', 'md', 'converted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log'))
     benchmark:
-        join('output', 'md', 'converted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
+        abspath(join('output', 'md', 'converted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark'))
     # group:
     #     'md'
     shell:
@@ -318,17 +318,17 @@ rule convert:
 
 rule calculate_rmsd:
     input:
-        ref = join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz'),
-        xyzs = expand(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'),
+        ref = abspath(join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')),
+        xyzs = expand(abspath(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz')),
                       frame=frames(config['amber']['nframes']))
     output:
-        rmsd = join('output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd')
+        rmsd = abspath(join('output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd'))
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{cycle}_{frame}.log')
+        abspath(join('output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{cycle}_{frame}.log'))
     benchmark:
-        join('output', 'md', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark')
+        abspath(join('output', 'md', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark'))
     # group:
     #     'md'
     shell:
@@ -337,21 +337,21 @@ rule calculate_rmsd:
 
 rule downselect:
     input:
-        xyz = expand(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz'),
+        xyz = expand(abspath(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz')),
                      frame=frames(config['amber']['nframes'])),
-        rmsd = expand(join('output', 'md', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd'),
+        rmsd = expand(abspath(join('output', 'md', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd')),
                       frame=frames(config['amber']['nframes']))
     output:
-        expand(join('output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz'),
+        expand(abspath(join('output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz')),
                selected=['s', 'd1', 'd2'])
     version:
         'isicle --version'
     log:
-        join('output', 'md', 'downselected', 'logs', '{id}_{adduct}_{cycle}.log')
+        abspath(join('output', 'md', 'downselected', 'logs', '{id}_{adduct}_{cycle}.log'))
     benchmark:
-        join('output', 'md', 'downselected', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark')
+        abspath(join('output', 'md', 'downselected', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark'))
     # group:
     #     'md'
     run:
-        outdir = join('output', 'md', 'downselected')
+        outdir = abspath(join('output', 'md', 'downselected'))
         shell('python -m isicle.scripts.downselect {outdir} --infiles {input.xyz} --rfiles {input.rmsd} &> {log}')
