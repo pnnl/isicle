@@ -62,7 +62,7 @@ rule parseShielding:
     input:
         rules.shielding.output
     output:
-        shielding = join('output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding')
+        shielding = abspath(join('output', 'shielding', 'parsed', '{id}_{cycle}_{selected}.shielding'))
     version:
         'isicle --version'
     log:
@@ -122,6 +122,6 @@ rule shifts:
     log:
         abspath(join('output', 'shifts', 'logs', '{id}.log'))
     benchmark:
-        abspatch(join('output', 'shifts', 'benchmarks', '{id}.benchmark'))
+        abspath(join('output', 'shifts', 'benchmarks', '{id}.benchmark'))
     shell:
         'python -m isicle.scripts.calculate_shifts {input.shielding} {input.ref} {output} &> {log}'

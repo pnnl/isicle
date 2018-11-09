@@ -265,8 +265,8 @@ rule selectFrames:
         out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')),
         crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'))
     output:
-        abspath(expand(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin')),
-                frame=frames(config['amber']['nframes']))
+        expand(abspath(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin')),
+               frame=frames(config['amber']['nframes']))
     version:
         'isicle --version'
     log:
