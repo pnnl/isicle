@@ -6,12 +6,16 @@ from pkg_resources import resource_filename
 include: 'dft.snakefile'
 MOBCAL = resource_filename('isicle', 'resources/mobcal/%s' % config['mobcal']['exe'])
 
-if config['mobcal']['params'] == 'default':
-    PARAMS = resource_filename('isicle', 'resources/mobcal/mobcal.params')
+if config['mobcal']['params'].lower() == 'default':
+    PARAMS = resource_filename('isicle', 'resources/mobcal/nitrogen.params')
+elif config['mobcal']['params'].lower() == 'nitrogen':
+    PARAMS = resource_filename('isicle', 'resources/mobcal/nitrogen.params')
+elif config['mobcal']['params'].lower() == 'helium':
+    PARAMS = resource_filename('isicle', 'resources/mobcal/helium.params')
 else:
     PARAMS = config['mobcal']['params']
 
-if config['mobcal']['atomtypes'] == 'default':
+if config['mobcal']['atomtypes'].lower() == 'default':
     ATOMS = resource_filename('isicle', 'resources/mobcal/atomtype_parameters.in')
 else:
     ATOMS = config['mobcal']['atomtypes']
