@@ -74,6 +74,11 @@ def cli():
                                              description='ISiCLE NMR chemical shifts calculation module',
                                              help='chemical shift calculation module')
 
+    # free energy mode
+    p['energy'] = p['subparsers'].add_parser('energy', parents=[p['sm']],
+                                             description="ISiCLE Gibb's Free Energy calculation module",
+                                             help="gibb's free energy alculation module")
+
     args = p['global'].parse_args()
 
     # input processing
@@ -81,7 +86,7 @@ def cli():
         process(args.infile)
 
     # simulation modules
-    elif args.which in ['ccs', 'shifts']:
+    elif args.which in ['ccs', 'shifts', 'energy']:
         # check for config
         if not isfile(args.config):
             p['global'].error('Snakemake YAML configuration file not found.')
@@ -130,6 +135,20 @@ def cli():
         # chemical shifts module
         elif args.which == 'shifts':
             snakemake(resource_filename('isicle', 'rules/shifts.snakefile'),
+                      configfile=args.config,
+                      config=config,
+                      cluster_config=args.cluster,
+                      cluster=cluster,
+                      keepgoing=True,
+                      force_incomplete=True,
+                      cores=args.cores,
+                      nodes=args.jobs,
+                      dryrun=args.dryrun,
+                      unlock=args.unlock)
+
+        # gfe module
+        elif args.which == 'energy':
+            snakemake(resource_filename('isicle', 'rules/free_energy.snakefile'),
                       configfile=args.config,
                       config=config,
                       cluster_config=args.cluster,
