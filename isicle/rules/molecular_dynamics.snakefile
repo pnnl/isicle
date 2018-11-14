@@ -174,7 +174,8 @@ rule sanderEM:
     # group:
     #     'md'
     shell:
-        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} -inf {log.a} &> {log.b}'
+        'sander -O -i {input.config} -o {output.out} -c {input.inpcrd} -p {input.prmtop} -r {output.rst} \
+         -inf {log.a} &> {log.b}'
 
 
 rule sander0config:
@@ -214,7 +215,8 @@ rule sander0:
     # group:
     #     'md'
     shell:
-        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log.a} &> {log.b}'
+        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} \
+         -x {output.crd} -inf {log.a} &> {log.b}'
 
 
 rule sanderConfig:
@@ -257,7 +259,8 @@ rule sander:
     # group:
     #     'md'
     shell:
-        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} -x {output.crd} -inf {log.a} &> {log.b}'
+        'sander -O -p {input.prmtop} -c {input.rst} -i {input.config} -o {output.out} -r {output.rst} \
+         -x {output.crd} -inf {log.a} &> {log.b}'
 
 
 rule selectFrames:
