@@ -10,7 +10,7 @@ rule inchi2smiles:
     output:
         abspath(join('output', 'adducts', 'canonicalized', '{id}.smi'))
     version:
-        'isicle --version'
+        "obabel 2> /dev/null | grep 'Open Babel' | awk '{print $3}'"
     log:
         abspath(join('output', 'adducts', 'canonicalized', 'logs', '{id}.log'))
     benchmark:
@@ -18,7 +18,7 @@ rule inchi2smiles:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.process_smiles {input} {output} --inchi &> {log}'
+        'echo `cat {input}` | obabel -iinchi -ocan > {output} 2> {log}'
 
 
 rule canonicalize:
@@ -27,7 +27,7 @@ rule canonicalize:
     output:
         abspath(join('output', 'adducts', 'canonicalized', '{id}.smi'))
     version:
-        'isicle --version'
+        "obabel 2> /dev/null | grep 'Open Babel' | awk '{print $3}'"
     log:
         abspath(join('output', 'adducts', 'canonicalized', 'logs', '{id}.log'))
     benchmark:
@@ -35,7 +35,7 @@ rule canonicalize:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.process_smiles {input} {output} --canonicalize &> {log}'
+        'echo `cat {input}` | obabel -ismi -ocan > {output} 2> {log}'
 
 
 rule desalt:
@@ -44,7 +44,7 @@ rule desalt:
     output:
         abspath(join('output', 'adducts', 'desalted', '{id}.smi'))
     version:
-        'isicle --version'
+        "obabel 2> /dev/null | grep 'Open Babel' | awk '{print $3}'"
     log:
         abspath(join('output', 'adducts', 'desalted', 'logs', '{id}.log'))
     benchmark:
@@ -52,7 +52,7 @@ rule desalt:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.process_smiles {input} {output} --desalt &> {log}'
+        'echo `cat {input}` | obabel -ican -r -ocan > {output} 2> {log}'
 
 
 rule neutralize:
@@ -78,7 +78,7 @@ rule tautomerize:
     output:
         abspath(join('output', 'adducts', 'tautomer', '{id}.smi'))
     version:
-        'isicle --version'
+        "cxcalc --help | grep 'version ' | awk '{print $2}'"
     log:
         abspath(join('output', 'adducts', 'tautomer', 'logs', '{id}.log'))
     benchmark:
@@ -86,7 +86,7 @@ rule tautomerize:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.process_smiles {input} {output} --tautomerize &> {log}'
+        'cxcalc majortautomer -f smiles `cat {input}` > {output} 2> {log}'
 
 
 rule calculateFormula:
@@ -95,7 +95,7 @@ rule calculateFormula:
     output:
         abspath(join('output', 'adducts', 'formula', '{id}.formula'))
     version:
-        'isicle --version'
+        "cxcalc --help | grep 'version ' | awk '{print $2}'"
     log:
         abspath(join('output', 'adducts', 'formula', 'logs', '{id}.log'))
     benchmark:
@@ -103,7 +103,7 @@ rule calculateFormula:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.process_smiles {input} {output} --formula &> {log}'
+        "cxcalc formula `cat {input}` | tail -n1 | awk '{{print $2}}' > {output} 2> {log}"
 
 
 rule calculateMass:
