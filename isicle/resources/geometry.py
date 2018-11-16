@@ -306,7 +306,7 @@ def addAtomToMol(mol, atom, idx, covalent=True):
         if covalent is True:
             new_atomnum = len(mol.atoms)
 
-            mol.OBMol.AddBond(idx, new_atomnum, 1)
+            mol.OBMol.AddBond(idx + 1, new_atomnum, 1)
 
             # good for single bonds. For double and triple bonds, we have to
             # the appropriate covalent radius. For our purposes, we only need
