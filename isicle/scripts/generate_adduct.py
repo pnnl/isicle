@@ -68,14 +68,14 @@ if __name__ == '__main__':
     mol.write('pdb', args.pdb, overwrite=True)
 
     # reassign charge
-    if '+' in args.adduct:
+    if args.adduct in ['+H', '+Na']:
         # tmp = splitext(args.mol2)[0] + '.tmp.mol2'
         # subprocess.call('obabel %s -O %s --partialcharge eem' % (args.mol2, tmp), shell=True)
         # subprocess.call('mv %s %s' % (tmp, args.mol2), shell=True)
         write_string('1.0', args.charge)
 
-    elif '-' in args.adduct:
+    elif args.adduct == '-H':
         write_string('-1.0', args.charge)
 
-    else:
+    elif args.adduct == 'neutral':
         write_string('0.0', args.charge)
