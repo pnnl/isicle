@@ -1,23 +1,30 @@
 import argparse
 import pybel
+import openbabel as ob
 from isicle.resources import geometry
 from isicle.utils import read_pka
 from isicle import __version__
 
 
 def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
-    if '-' in adduct:
+    if adduct == '-H':
         hidx = geometry.nearestHydrogen(mol, idx)
         adduct = geometry.removeAtomFromMol(mol, hidx)
     elif '+' in adduct:
         atom = adduct.split('+')[-1]
-        if atom.lower() == 'na':
+        if atom == 'Na':
             adduct = geometry.addAtomToMol(mol, atom, idx, covalent=False)
-        else:
+        elif atom == 'H':
             adduct = geometry.addAtomToMol(mol, atom, idx, covalent=True)
 
-    # talk to Jamie about this:
+    _builder = ob.OBBuilder()
+    _builder.Build(adduct.OBMol)
     adduct.localopt(forcefield=forcefield, steps=steps)
+
+    # adjust partial charge
+    if adduct == '-H':
+        adduct.atoms[pka['a1']].OBAtom.SetPartialCharge(adduct.atoms[idx].partialcharge - 1)
+
     return adduct
 
 

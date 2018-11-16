@@ -9,7 +9,6 @@ def inchi2geom(inchi, forcefield='mmff94', steps=500):
     '''Converts InChI string to .mol geometry and saves a 2D visualization.'''
 
     mol = pybel.readstring("inchi", inchi)
-    mol.addh()  # not necessary, because pybel make3D will add hydrogen
 
     # Optimize 3D geometry of the molecule using pybel's make3D()
     mol.make3D(forcefield=forcefield, steps=50)
@@ -22,7 +21,6 @@ def smiles2geom(smiles, forcefield='mmff94', steps=500):
     '''Converts canonical SMILES string to .mol geometry and saves a 2D visualization.'''
 
     mol = pybel.readstring("can", smiles)
-    mol.addh()  # not necessary, because pybel make3D will add hydrogen
 
     # Optimize 3D geometry of the molecule using pybel's make3D()
     mol.make3D(forcefield=forcefield, steps=50)
