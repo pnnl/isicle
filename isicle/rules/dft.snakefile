@@ -2,7 +2,7 @@ from os.path import *
 from pkg_resources import resource_filename
 
 # snakemake configuration
-include: 'molecular_dynamics.snakefile'
+include: 'molecular_dynamics.snakefile', 'adducts.snakefile'
 
 
 rule copyOver:
@@ -23,7 +23,8 @@ rule copyOver:
 # create .nw files based on template (resources/nwchem/template.nw)
 rule createDFTConfig:
     input:
-        rules.copyOver.output
+        xyz = rules.copyOver.output,
+        charge = rules.generateAdduct.output.charge
     output:
         abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw'))
     version:
@@ -35,7 +36,8 @@ rule createDFTConfig:
     # group:
     #     'dft'
     shell:
-        'python -m isicle.scripts.generateNW {input} --dft --template {config[nwchem][dft_template]} &> {log}'
+        'python -m isicle.scripts.generateNW {input.xyz} --dft --charge `cat {input.charge}` \
+         --template {config[nwchem][dft_template]} &> {log}'
 
 
 # run NWChem

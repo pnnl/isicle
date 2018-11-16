@@ -306,7 +306,7 @@ rule extractFrames:
 rule convert:
     input:
         mol2a = rules.extractFrames.output,
-        mol2b = rules.prepare.input
+        mol2b = rules.prepare.input.mol2
     output:
         abspath(join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz'))
     version:

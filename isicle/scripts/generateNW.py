@@ -11,34 +11,17 @@ class NWChemHelper:
         self.file = file
         self.dir = dirname(self.file)
 
-    def dft(self, template):
+    def dft(self, template, charge):
         with open(template, 'r') as t:
             orig = Template(t.read())
 
-        d = {'filename': None, 'dir': self.dir, 'charge': None}
-        d['filename'] = splitext(basename(self.file))[0]
+        d = {'filename': splitext(basename(self.file))[0],
+             'dir': self.dir,
+             'charge': int(charge)}
 
-        if not isfile(d['filename']):
-            if "+2h" in d['filename'].lower():
-                d['charge'] = 2
-            elif "+3h" in d['filename'].lower():
-                d['charge'] = 3
-            elif "+2na" in d['filename'].lower():
-                d['charge'] = 2
-            elif "+h+na" in d['filename'].lower():
-                d['charge'] = 2
-            elif "+h" in d['filename'].lower():
-                d['charge'] = 1
-            elif "+na" in d['filename'].lower():
-                d['charge'] = 1
-            elif "-h" in d['filename'].lower():
-                d['charge'] = -1
-            elif "_neutral_" in d['filename'].lower():
-                d['charge'] = 0
-
-            outfile = splitext(self.file)[0] + '.nw'
-            with open(outfile, 'w') as outf:
-                outf.write(orig.substitute(d))
+        outfile = splitext(self.file)[0] + '.nw'
+        with open(outfile, 'w') as outf:
+            outf.write(orig.substitute(d))
 
     def shielding(self, template, atoms, solvent):
         with open(template, 'r') as t:
@@ -76,6 +59,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--shifts', nargs='+', help='atoms to perform shielding calcs')
     parser.add_argument('--solvent', type=str, help='solvent for shielding calcs')
+    parser.add_argument('--charge', type=float, help='charge for dft calcs')
     parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
 
     args = parser.parse_args()
@@ -86,7 +70,7 @@ if __name__ == '__main__':
         if args.template == 'default':
             args.template = resource_filename('isicle', 'resources/nwchem/dft.template')
 
-        nwc.dft(args.template)
+        nwc.dft(args.template, args.charge)
 
     elif args.shielding is True:
         if args.shifts is not None:
