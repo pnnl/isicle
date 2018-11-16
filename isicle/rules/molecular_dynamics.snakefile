@@ -10,11 +10,13 @@ ruleorder: sander0 > sander
 
 rule prepare:
     input:
-        rules.generateAdduct.output.mol2
+        mol2 = rules.generateAdduct.output.mol2,
+        pdb = rules.generateAdduct.output.pdb
     output:
         mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2')),
         idx = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy')),
-        content = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy'))
+        content = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')),
+        pdb = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.pdb'))
     version:
         'isicle --version'
     log:
@@ -23,17 +25,19 @@ rule prepare:
         abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark'))
     # group:
     #     'md'
-    shell:
+    run:
         # if charges come from DFT, use them (don't override with +1/-1/0)
         # also adjust antechamber flag if using DFT partial charges so it does not
         # assign
-        'python -m isicle.scripts.md_helper {input} {output.mol2} [{wildcards.adduct}] --prepare &> {log}'
+        shell('python -m isicle.scripts.md_helper {input.mol2} {output.mol2} [{wildcards.adduct}] --prepare &> {log}')
+        shell('cp {input.pdb} {output.pdb}')
 
 
 rule antechamber:
     input:
         mol2 = rules.prepare.output.mol2,
-        idx = rules.prepare.output.idx
+        pdb = rules.prepare.output.pdb,
+        charge = rules.generateAdduct.output.charge
     output:
         mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2')),
         ac = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC'))
@@ -49,12 +53,10 @@ rule antechamber:
         cwd = os.getcwd()
         os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s')) % (wildcards.id, wildcards.adduct))
 
-        charge = config['charges'][wildcards.adduct]
-        if wildcards.adduct == '+Na':
-            idx = np.load(input.idx)
-            charge -= len(idx)
-
-        shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc %.4f &> {log}' % charge)
+        if wildcards.adduct == '-H':
+            shell('antechamber -i {input.pdb} -fi pdb -o {output.mol2} -fo mol2 -c bcc -s -du -nc `cat {input.charge}` &> {log}')
+        else:
+            shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc `cat {input.charge}` &> {log}')
 
         os.chdir(cwd)
 

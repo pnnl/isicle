@@ -167,7 +167,9 @@ rule generateAdduct:
         pkafile = rules.calculatepKa.output
     output:
         xyz = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.xyz')),
-        mol2 = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2'))
+        mol2 = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2')),
+        pdb = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.pdb')),
+        charge = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.charge'))
     version:
         'isicle --version'
     log:
@@ -178,4 +180,4 @@ rule generateAdduct:
     #     'adducts'
     shell:
         'python -m isicle.scripts.generate_adduct {input.molfile} {input.pkafile} [{wildcards.adduct}] {output.mol2} {output.xyz} \
-         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
+         {output.pdb} {output.charge} --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
