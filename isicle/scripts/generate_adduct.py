@@ -3,8 +3,8 @@ import openbabel as ob
 from isicle.resources import geometry
 from isicle.utils import read_pka, read_mol, write_string
 from isicle import __version__
-import subprocess
-from os.path import *
+# import subprocess
+# from os.path import *
 
 
 def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
@@ -22,9 +22,9 @@ def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
     _builder.Build(mol.OBMol)
     mol.localopt(forcefield=forcefield, steps=steps)
 
-    # adjust partial charge
-    if adduct == '-H':
-        mol.atoms[idx].OBAtom.SetPartialCharge(mol.atoms[idx].partialcharge - 1)
+    # # adjust partial charge
+    # if adduct == '-H':
+    #     mol.atoms[idx].OBAtom.SetPartialCharge(mol.atoms[idx].partialcharge - 1)
 
     return mol
 
@@ -69,13 +69,13 @@ if __name__ == '__main__':
 
     # reassign charge
     if '+' in args.adduct:
-        tmp = splitext(args.mol2)[0] + '.tmp.mol2'
-        subprocess.call('obabel %s -O %s --partialcharge eem' % (args.mol2, tmp), shell=True)
-        subprocess.call('mv %s %s' % (tmp, args.mol2), shell=True)
+        # tmp = splitext(args.mol2)[0] + '.tmp.mol2'
+        # subprocess.call('obabel %s -O %s --partialcharge eem' % (args.mol2, tmp), shell=True)
+        # subprocess.call('mv %s %s' % (tmp, args.mol2), shell=True)
+        write_string('1.0', args.charge)
 
-        # write charge
-        mol = read_mol(args.mol2, fmt='mol2')
-        write_string('%.4f' % mol.total_partial_charge(), args.charge)
+    elif '-' in args.adduct:
+        write_string('-1.0', args.charge)
 
     else:
-        write_string('%.4f' % mol.total_partial_charge(), args.charge)
+        write_string('0.0', args.charge)

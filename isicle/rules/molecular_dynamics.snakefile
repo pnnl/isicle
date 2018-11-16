@@ -55,6 +55,8 @@ rule antechamber:
 
         if wildcards.adduct == '-H':
             shell('antechamber -i {input.pdb} -fi pdb -o {output.mol2} -fo mol2 -c bcc -s -du -nc `cat {input.charge}` &> {log}')
+        elif wildcards.adduct == '+Na':
+            shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc 0.0 &> {log}')
         else:
             shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -nc `cat {input.charge}` &> {log}')
 
