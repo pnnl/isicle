@@ -4,7 +4,10 @@ from pkg_resources import resource_filename
 
 # snakemake configuration
 include: 'dft.snakefile'
-MOBCAL = resource_filename('isicle', 'resources/mobcal/%s' % config['mobcal']['exe'])
+if config['mobcal']['exe'] in ['mobcal_cascade', 'mobcal_constance']:
+    MOBCAL = resource_filename('isicle', 'resources/mobcal/%s' % config['mobcal']['exe'])
+else:
+    MOBCAL = config['mobcal']['exe']
 
 if config['mobcal']['params'].lower() == 'default':
     PARAMS = resource_filename('isicle', 'resources/mobcal/nitrogen.params')
