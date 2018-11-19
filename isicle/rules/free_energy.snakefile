@@ -109,7 +109,7 @@ rule copyOver:
 rule createDFTConfig:
     input:
         xyz = rules.copyOver.output,
-        charge = rules.generateAdduct.output.charge
+        charge = rules.charge.output
     output:
         abspath(join('output', 'dft', '{id}', '{id}.nw'))
     version:
