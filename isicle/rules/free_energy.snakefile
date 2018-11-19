@@ -54,7 +54,7 @@ rule canonicalize:
 
 rule generateGeometry:
     input:
-        abspath(join('output', 'adducts', 'canonicalized', '{id}.smi'))
+        canonicalize.rules.output
     output:
         mol = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol')),
         mol2 = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol2')),
@@ -68,9 +68,26 @@ rule generateGeometry:
         abspath(join('output', 'adducts', 'geometry_parent', 'benchmarks', '{id}.benchmark'))
     # group:
     #     'adducts'
+    run:
+        shell('obabel {input} -O {output.mol2} --gen3d --ff {config[forcefield][type]} --steps {config[forcefield][steps]} \
+               --partialcharge eem &> {log}')
+        shell('obabel {output.mol2} -O {output.mol} >> {log} 2>&1')
+        shell('obabel {output.mol2} -O {output.xyz} >> {log} 2>&1')
+        shell('obabel {input} -O {output.png} >> {log} 2>&1')
+
+rule charge:
+    input:
+        canonicalize.rules.output
+    output:
+        abspath(join('output', 'adducts', 'geometry_parent', '{id}.charge'))
+    version:
+        'isicle --version'
+    log:
+        abspath(join('output', 'adducts', 'geometry_parent', 'logs', '{id}.charge.log'))
+    benchmark:
+        abspath(join('output', 'adducts', 'geometry_parent', 'benchmarks', '{id}.charge.benchmark'))
     shell:
-        'python -m isicle.scripts.generate_geometry {input} {output.mol} {output.mol2} {output.xyz} {output.png} \
-         --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
+        "cxcalc formalcharge {input} | tail -n1 | awk '{print $2}' > {output} 2> {log}"
 
 
 rule copyOver:
@@ -91,7 +108,8 @@ rule copyOver:
 # create .nw files based on template (resources/nwchem/template.nw)
 rule createDFTConfig:
     input:
-        rules.copyOver.output
+        xyz = rules.copyOver.output,
+        charge = rules.generateAdduct.output.charge
     output:
         abspath(join('output', 'dft', '{id}', '{id}.nw'))
     version:
@@ -103,7 +121,8 @@ rule createDFTConfig:
     # group:
     #     'dft'
     shell:
-        'python -m isicle.scripts.generateNW {input} --dft --template {config[nwchem][dft_template]} &> {log}'
+        'python -m isicle.scripts.generateNW {input.xyz} --dft --charge `cat {input.charge}` \
+         --template {config[nwchem][dft_template]} &> {log}'
 
 
 # run NWChem
