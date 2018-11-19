@@ -77,7 +77,7 @@ rule generateGeometry:
 
 rule charge:
     input:
-        canonicalize.rules.output
+        rules.canonicalize.output
     output:
         abspath(join('output', 'adducts', 'geometry_parent', '{id}.charge'))
     version:
