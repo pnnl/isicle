@@ -87,7 +87,7 @@ rule charge:
     benchmark:
         abspath(join('output', 'adducts', 'geometry_parent', 'benchmarks', '{id}.charge.benchmark'))
     shell:
-        "cxcalc formalcharge {input} | tail -n1 | awk '{print $2}' > {output} 2> {log}"
+        "cxcalc formalcharge {input} | tail -n1 | awk '{{print $2}}' > {output} 2> {log}"
 
 
 rule copyOver:
