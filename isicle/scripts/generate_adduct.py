@@ -49,7 +49,7 @@ if __name__ == '__main__':
     mol = read_mol(args.infile, fmt='mol')
 
     if args.adduct == 'neutral':
-        adduct = mol
+        pass
     else:
         pka = read_pka(args.pkafile)
 
