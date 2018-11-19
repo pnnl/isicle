@@ -54,7 +54,7 @@ rule canonicalize:
 
 rule generateGeometry:
     input:
-        canonicalize.rules.output
+        rules.canonicalize.output
     output:
         mol = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol')),
         mol2 = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol2')),
