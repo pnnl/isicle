@@ -72,7 +72,7 @@ rule generateGeometry:
         shell('obabel {input} -O {output.mol2} --gen3d --ff {config[forcefield][type]} --steps {config[forcefield][steps]} \
                --partialcharge eem &> {log}')
         shell('obabel {output.mol2} -O {output.mol} >> {log} 2>&1')
-        shell('obabel {output.mol2} -O {output.xyz} >> {log} 2>&1')
+        shell('obabel {output.mol} -O {output.xyz} >> {log} 2>&1')
         shell('obabel {input} -O {output.png} >> {log} 2>&1')
 
 rule charge:

@@ -217,10 +217,10 @@ def addAtomToMol(mol, atom, idx, covalent=True):
     probe_radius = newatom_rad
     acc_map = box.createAtomAccessibiltyMap(probe_radius)
     logger.info("Finished creating atom accessibility map.")
-    xc = xyzr[idx - 1][0]
-    yc = xyzr[idx - 1][1]
-    zc = xyzr[idx - 1][2]
-    rc = xyzr[idx - 1][3]
+    xc = xyzr[idx][0]
+    yc = xyzr[idx][1]
+    zc = xyzr[idx][2]
+    rc = xyzr[idx][3]
 
     rdist = rc + probe_radius
     logger.info("rdist = %s", rdist)
