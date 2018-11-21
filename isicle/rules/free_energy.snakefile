@@ -56,10 +56,7 @@ rule generateGeometry:
     input:
         rules.canonicalize.output
     output:
-        mol = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol')),
-        mol2 = abspath(join('output', 'adducts', 'geometry_parent', '{id}.mol2')),
-        xyz = abspath(join('output', 'adducts', 'geometry_parent', '{id}.xyz')),
-        png = abspath(join('output', 'adducts', 'geometry_parent', 'images', '{id}.png'))
+        xyz = abspath(join('output', 'adducts', 'geometry_parent', '{id}.xyz'))
     version:
         'isicle --version'
     log:
@@ -69,11 +66,8 @@ rule generateGeometry:
     # group:
     #     'adducts'
     run:
-        shell('obabel {input} -O {output.mol2} --gen3d --ff {config[forcefield][type]} --steps {config[forcefield][steps]} \
+        shell('obabel {input} -O {output.xyz} --gen3d --ff {config[forcefield][type]} --steps {config[forcefield][steps]} \
                --partialcharge eem &> {log}')
-        shell('obabel {output.mol2} -O {output.mol} >> {log} 2>&1')
-        shell('obabel {output.mol} -O {output.xyz} >> {log} 2>&1')
-        shell('obabel {input} -O {output.png} >> {log} 2>&1')
 
 rule charge:
     input:
