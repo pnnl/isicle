@@ -26,7 +26,7 @@ dft
 end
 
 driver
- maxiter 1000
+ maxiter 150
  xyz ${filename}_geom
 end
 
