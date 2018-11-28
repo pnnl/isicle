@@ -46,7 +46,7 @@ if __name__ == '__main__':
     args.adduct = args.adduct[1:-1]
 
     # read input
-    mol = read_mol(args.infile, fmt='mol')
+    mol = read_mol(args.infile, fmt='mol2')
 
     if args.adduct == 'neutral':
         pass
