@@ -86,7 +86,7 @@ rule tautomerize:
     # group:
     #     'adducts'
     shell:
-        'cxcalc majortautomer -f smiles `cat {input}` > {output} 2> {log}'
+        'cxcalc majortautomer -f smiles {input} > {output} 2> {log}'
 
 
 rule calculateFormula:
@@ -103,7 +103,7 @@ rule calculateFormula:
     # group:
     #     'adducts'
     shell:
-        "cxcalc formula `cat {input}` | tail -n1 | awk '{{print $2}}' > {output} 2> {log}"
+        "cxcalc formula {input} | tail -n1 | awk '{{print $2}}' > {output} 2> {log}"
 
 
 rule calculateMass:
