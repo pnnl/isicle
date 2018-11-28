@@ -31,7 +31,7 @@ def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate adduct from base geometry')
-    parser.add_argument('infile', help='path to input .mol file')
+    parser.add_argument('infile', help='path to input .mol2 file')
     parser.add_argument('pkafile', help='path to input .pka file')
     parser.add_argument('adduct', help='adduct type')
     parser.add_argument('mol2', help='path to output .mol2 file')

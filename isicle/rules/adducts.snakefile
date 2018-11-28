@@ -146,7 +146,7 @@ rule generateGeometry:
 
 rule calculatepKa:
     input:
-        rules.generateGeometry.output.mol
+        rules.tautomerize.output
     output:
         abspath(join('output', 'adducts', 'pKa', '{id}.pka'))
     version:
@@ -163,8 +163,8 @@ rule calculatepKa:
 
 rule generateAdduct:
     input:
-        molfile = rules.generateGeometry.output.mol,
-        pkafile = rules.calculatepKa.output
+        mol2 = rules.generateGeometry.output.mol2,
+        pka = rules.calculatepKa.output
     output:
         xyz = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.xyz')),
         mol2 = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2')),
@@ -179,5 +179,5 @@ rule generateAdduct:
     # group:
     #     'adducts'
     shell:
-        'python -m isicle.scripts.generate_adduct {input.molfile} {input.pkafile} [{wildcards.adduct}] {output.mol2} {output.xyz} \
+        'python -m isicle.scripts.generate_adduct {input.mol2} {input.pka} [{wildcards.adduct}] {output.mol2} {output.xyz} \
          {output.pdb} {output.charge} --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
