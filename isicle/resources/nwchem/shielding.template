@@ -30,7 +30,7 @@ driver
 end
 
 task dft ignore
-task dft optimize
+task dft optimize ignore
 
 basis spherical
  * library 6-31G**
@@ -53,7 +53,7 @@ driver
 end
 
 task dft ignore
-task dft optimize
+task dft optimize ignore
 
 basis spherical
  * library 6-311+G(2d,p)

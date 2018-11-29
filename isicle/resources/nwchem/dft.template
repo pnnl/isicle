@@ -33,5 +33,5 @@ end
 set lindep:n_dep 0
 
 task dft energy ignore
-task dft optimize
+task dft optimize ignore
 task dft energy
