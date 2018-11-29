@@ -48,7 +48,7 @@ cosmo
 end
 
 driver
- maxiter 1000
+ maxiter 150
  xyz ${filename}_geom2
 end
 
