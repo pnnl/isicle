@@ -146,7 +146,7 @@ rule generateGeometry:
 
 rule calculatepKa:
     input:
-        rules.tautomerize.output
+        rules.generate_geometry.output.mol2
     output:
         abspath(join('output', 'adducts', 'pKa', '{id}.pka'))
     version:

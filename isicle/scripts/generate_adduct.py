@@ -18,8 +18,8 @@ def create_adduct(mol, adduct, idx, forcefield='mmff94', steps=500):
         elif atom == 'H':
             mol = geometry.addAtomToMol(mol, atom, idx, covalent=True)
 
-    _builder = ob.OBBuilder()
-    _builder.Build(mol.OBMol)
+    # _builder = ob.OBBuilder()
+    # _builder.Build(mol.OBMol)
     mol.localopt(forcefield=forcefield, steps=steps)
 
     # # adjust partial charge
