@@ -55,7 +55,7 @@ rule dft:
     # group:
     #     'dft'
     shell:
-        'srun --mpi=pmi2 nwchem {input} > {output} 2> {log}'
+        'nwchem {input} > {output} 2> {log}'
 
 
 # parse nwchem outputs (geometry files)

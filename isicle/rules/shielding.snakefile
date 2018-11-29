@@ -54,7 +54,7 @@ rule shielding:
     # group:
     #     'shielding'
     shell:
-        'srun --mpi=pmi2 nwchem {input} > {output} 2> {log}'
+        'nwchem {input} > {output} 2> {log}'
 
 
 # placeholder until shielding is done
