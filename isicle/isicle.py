@@ -11,6 +11,7 @@ from isicle import __version__
 
 def process(infile):
     df = pd.read_csv(infile, sep='\n', header=None)
+    df.dropna(inplace=True)
 
     if not exists('input'):
         os.mkdir('input')
