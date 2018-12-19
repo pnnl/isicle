@@ -42,6 +42,7 @@ def cli():
     p['sm'].add_argument('--config', metavar='PATH', default='config.yaml', help='path to isicle yaml configuration file')
     p['sm'].add_argument('--dryrun', action='store_true', help='perform a dry run')
     p['sm'].add_argument('--unlock', action='store_true', help='unlock directory')
+    p['sm'].add_argument('--touch', action='store_true', help='touch output files only')
     p['sm'].add_argument('--cores', metavar='N', type=int, default=cpu_count(),
                          help='number of cores used for execution (local execution only)')
     p['sm'].add_argument('--count', metavar='N', type=int,
@@ -118,7 +119,8 @@ def cli():
                           cores=args.cores,
                           nodes=args.jobs,
                           dryrun=args.dryrun,
-                          unlock=args.unlock)
+                          unlock=args.unlock,
+                          touch=args.touch)
             # lite mode
             elif args.mode == 'lite':
                 snakemake(resource_filename('isicle', 'rules/ccs_lite.snakefile'),
@@ -131,7 +133,8 @@ def cli():
                           cores=args.cores,
                           nodes=args.jobs,
                           dryrun=args.dryrun,
-                          unlock=args.unlock)
+                          unlock=args.unlock,
+                          touch=args.touch)
 
         # chemical shifts module
         elif args.which == 'shifts':
@@ -145,7 +148,8 @@ def cli():
                       cores=args.cores,
                       nodes=args.jobs,
                       dryrun=args.dryrun,
-                      unlock=args.unlock)
+                      unlock=args.unlock,
+                      touch=args.touch)
 
         # gfe module
         elif args.which == 'energy':
@@ -159,7 +163,8 @@ def cli():
                       cores=args.cores,
                       nodes=args.jobs,
                       dryrun=args.dryrun,
-                      unlock=args.unlock)
+                      unlock=args.unlock,
+                      touch=args.touch)
 
     # no module selected
     else:
