@@ -17,6 +17,6 @@ if __name__ == '__main__':
 
     df['shift'] = ref['shielding'].values - df['shielding'].values
     df['shift_std'] = (ref['shielding_std'].values ** 2 + df['shielding_std'].values ** 2) ** 0.5
-    df = df['index', 'atom', 'shift', 'shift_std', 'shielding', 'shielding_std', 'n']
+    df = df[['index', 'atom', 'shift', 'shift_std', 'shielding', 'shielding_std', 'n']]
 
     df.to_csv(args.outfile, sep='\t', index=False)
