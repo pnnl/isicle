@@ -12,8 +12,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    df = pd.read_tsv(args.infile, sep='\t')
-    ref = pd.read_tsv(args.ref, sep='\t')
+    df = pd.read_csv(args.infile, sep='\t')
+    ref = pd.read_csv(args.ref, sep='\t')
 
     df['shift'] = ref['shielding'].values - df['shielding'].values
     df['shift_std'] = (ref['shielding_std'].values ** 2 + df['shielding_std'].values ** 2) ** 0.5
