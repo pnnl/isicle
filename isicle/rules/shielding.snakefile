@@ -1,4 +1,5 @@
 from os.path import *
+import json
 from isicle.utils import cycles
 
 # snakemake configuration
@@ -122,5 +123,6 @@ rule shifts:
         abspath(join('output', 'shifts', 'logs', '{id}.log'))
     benchmark:
         abspath(join('output', 'shifts', 'benchmarks', '{id}.benchmark'))
-    shell:
-        'python -m isicle.scripts.calculate_shifts {input.shielding} {config[nwchem][reference]} {output} &> {log}'
+    run:
+        ref = json.dumps(config['nwchem']['reference'])
+        shell("python -m isicle.scripts.calculate_shifts {input.shielding} '{ref}' {output} &> {log}")

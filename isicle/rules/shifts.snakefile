@@ -33,9 +33,9 @@ IDS.sort()
 if 'stop' in config:
     IDS = IDS[config['start']:config['stop']]
 
-# add reference back in
-if config['nwchem']['reference'] not in IDS:
-    IDS.append(config['nwchem']['reference'])
+# # add reference back in
+# if config['nwchem']['reference'] not in IDS:
+#     IDS.append(config['nwchem']['reference'])
 
 
 rule all:
