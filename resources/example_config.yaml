@@ -28,7 +28,8 @@ nwchem:
   dft_template: default
   shielding_template: default
   shifts: ['H', 'C']
-  reference: TMS
+  reference: {'C': {'mean': 187.614272, 'std': 0.043953},
+              'H': {'mean': 31.694003, 'std': 0.009460}}
   solvent: DMSO
 
 mobcal:

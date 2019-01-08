@@ -113,8 +113,7 @@ rule boltzmannAverage:
 
 rule shifts:
     input:
-        shielding = rules.boltzmannAverage.output,
-        ref = abspath(join('output', 'shielding', 'boltzmann_shielding', '%s.tsv' % config['nwchem']['reference']))
+        shielding = rules.boltzmannAverage.output
     output:
         abspath(join('output', 'shifts', '{id}.tsv'))
     version:
@@ -124,4 +123,4 @@ rule shifts:
     benchmark:
         abspath(join('output', 'shifts', 'benchmarks', '{id}.benchmark'))
     shell:
-        'python -m isicle.scripts.calculate_shifts {input.shielding} {input.ref} {output} &> {log}'
+        'python -m isicle.scripts.calculate_shifts {input.shielding} {config[nwchem][reference]} {output} &> {log}'
