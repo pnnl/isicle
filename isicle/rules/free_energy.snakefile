@@ -142,10 +142,7 @@ rule parseDFT:
     input:
         rules.dft.output
     output:
-        mfj = abspath(join('output', 'dft', '{id}', '{id}.mfj')),
-        energy = abspath(join('output', 'energy', '{id}.out'))
-    version:
-        'isicle --version'
+        energy = abspath(join('output', 'energy', '{id}.energy'))
     log:
         abspath(join('output', 'dft', 'logs', '{id}.parse.log'))
     benchmark:
@@ -153,4 +150,4 @@ rule parseDFT:
     # group:
     #     'dft'
     shell:
-        'python -m isicle.scripts.parse_nwchem {input} {output.mfj} --dft &> {log}'
+        "grep 'Total DFT energy' {input} | tail -1 | awk '{{print $5}}' > {output.energy} 2> {log}"
