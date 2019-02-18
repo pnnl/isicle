@@ -15,7 +15,7 @@ if 'stop' in config:
 
 rule all:
     input:
-        expand(abspath(join('output', 'energy', '{id}.out')), id=IDS)
+        expand(abspath(join('output', 'energy', '{id}.energy')), id=IDS)
 
 
 rule inchi2smiles:
