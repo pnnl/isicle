@@ -24,7 +24,7 @@ Additionally, ensure the following third-party software is installed and added t
 
 Activate the virtual environment:
 ```
-source activate isicle
+conda activate isicle
 ```
 
 Install ISiCLE using [``pip``](https://pypi.org/project/pip/):
