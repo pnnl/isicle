@@ -1,6 +1,7 @@
 from os.path import *
 import pybel
 import pandas as pd
+import glob
 
 # snakemake configuration
 include: 'mobility.snakefile'
@@ -11,15 +12,22 @@ include: 'mobility.snakefile'
 #             selectFrames, extractFrames, convert, calculate_rmsd, downselect, copyOver,
 #             createDFTConfig, parseDFT, parseMobcal, boltzmannAverage, calibrate
 
-SMI, = glob_wildcards(abspath(join('input', '{id}.smi')))
-INCHI, = glob_wildcards(abspath(join('input', '{id}.inchi')))
-IDS = SMI + INCHI
+# SMI, = glob_wildcards(abspath(join('input', '{id}.smi')))
+# INCHI, = glob_wildcards(abspath(join('input', '{id}.inchi')))
+# IDS = SMI + INCHI
 
-mass = []
-for i in IDS:
-    mass.append(pybel.readfile(splitext(i)[-1][1:], i).next().molwt)
+# IDS.sort()
 
-df = pd.DataFrame({'id': IDS, 'mass': mass})
+filepaths = glob.glob(abspath(join('input', '*.*')))
+filepaths.sort()
+
+d = {'mass': [], 'id': []}
+for f in filepaths:
+    ikey, ext = splitext(basename(f))
+    d['mass'].append(pybel.readfile(ext[1:], f).next().molwt)
+    d['id'].append(ikey)
+
+df = pd.DataFrame(d)
 df.sort_values(by='mass', inplace=True)
 
 IDS = df['id'].values
