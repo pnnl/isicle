@@ -17,7 +17,7 @@ IDS = SMI + INCHI
 
 mass = []
 for i in IDS:
-    mass.append(readfile(splitext(i)[-1][1:], i).next().molwt)
+    mass.append(pybel.readfile(splitext(i)[-1][1:], i).next().molwt)
 
 df = pd.DataFrame({'id': IDS, 'mass': mass})
 df.sort_values(by='mass', inplace=True)
