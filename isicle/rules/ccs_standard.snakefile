@@ -1,4 +1,6 @@
 from os.path import *
+import pybel
+import pandas as pd
 
 # snakemake configuration
 include: 'mobility.snakefile'
@@ -13,7 +15,14 @@ SMI, = glob_wildcards(abspath(join('input', '{id}.smi')))
 INCHI, = glob_wildcards(abspath(join('input', '{id}.inchi')))
 IDS = SMI + INCHI
 
-IDS.sort()
+mass = []
+for i in IDS:
+    mass.append(readfile(splitext(i)[-1][1:], i).next().molwt)
+
+df = pd.DataFrame({'id': IDS, 'mass': mass})
+df.sort_values(by='mass', inplace=True)
+
+IDS = df['id'].values
 
 if 'stop' in config:
     IDS = IDS[config['start']:config['stop']]
