@@ -24,7 +24,7 @@ filepaths.sort()
 d = {'mass': [], 'id': []}
 for f in filepaths:
     ikey, ext = splitext(basename(f))
-    d['mass'].append(pybel.readfile(ext[1:], f).next().molwt)
+    d['mass'].append(next(pybel.readfile(ext[1:], f)).molwt)
     d['id'].append(ikey)
 
 df = pd.DataFrame(d)
