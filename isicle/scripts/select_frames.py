@@ -1,6 +1,7 @@
 import argparse
 from os.path import *
 import pandas as pd
+import re
 from isicle import __version__
 
 
@@ -9,10 +10,10 @@ def select_frames(path, nframes=10, low=1.25E6, high=1.45E6):
     with open(path, 'r') as f:
         for line in f:
             if 'NSTEP' in line:
-                props = [x for x in line.split() if x is not '=']
-                d = {'step': int(props[1]),
-                     'time': float(props[3]),
-                     'temp': float(props[5])}
+                props = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+                d = {'step': int(props[0]),
+                     'time': float(props[1]),
+                     'temp': float(props[2])}
                 tmp.append(d)
 
     df = pd.DataFrame(tmp)
