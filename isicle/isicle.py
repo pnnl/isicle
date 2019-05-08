@@ -43,7 +43,7 @@ def cli():
     p['sm'].add_argument('--dryrun', action='store_true', help='perform a dry run')
     p['sm'].add_argument('--unlock', action='store_true', help='unlock directory')
     p['sm'].add_argument('--touch', action='store_true', help='touch output files only')
-    p['sm'].add_argument('--latency', metavar='N', type=int, help='specify filesystem latency (seconds)')
+    p['sm'].add_argument('--latency', metavar='N', type=int, default=3, help='specify filesystem latency (seconds)')
     p['sm'].add_argument('--cores', metavar='N', type=int, default=cpu_count(),
                          help='number of cores used for execution (local execution only)')
     p['sm'].add_argument('--count', metavar='N', type=int,
