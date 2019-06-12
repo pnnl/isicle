@@ -7,6 +7,7 @@ from pkg_resources import resource_filename
 from snakemake import snakemake
 from isicle.utils import inchi2key, smi2key, write_string
 from isicle import __version__
+from isicle import export
 
 
 def process(infile):
@@ -82,11 +83,60 @@ def cli():
                                              description="ISiCLE Gibb's Free Energy calculation module",
                                              help="gibb's free energy alculation module")
 
+    # export
+    p['export'] = p['subparsers'].add_parser('export',
+                                             description="ISiCLE export module",
+                                             help="result export module")
+    # export subparser
+    p['export_subp'] = p['export'].add_subparsers(title='commands', dest='exportmode')
+
+    # ccs
+    p['export_ccs'] = p['export_subp'].add_parser('ccs',
+                                                  description='Export CCS',
+                                                  help='export ccs')
+    p['export_ccs'].add_argument('mode', choices=['standard', 'lite'], help='ccs calculation mode')
+    p['export_ccs'].add_argument('path', help='path to .tsv file for exported results')
+
+    # shifts
+    p['export_shifts'] = p['export_subp'].add_parser('shifts',
+                                                     description='Export NMR chemical shifts',
+                                                     help='export nmr chemical shifts')
+    p['export_shifts'].add_argument('path', help='path to folder for exported results')
+
+    # energy
+    p['export_energy'] = p['export_subp'].add_parser('energy',
+                                                     description="Export Gibb's free energy values",
+                                                     help='export free energy values')
+    p['export_energy'].add_argument('path', help='path to .tsv for exported results')
+
     args = p['global'].parse_args()
 
     # input processing
     if args.which == 'prep':
         process(args.infile)
+
+    elif args.which == 'export':
+        # ccs
+        if args.exportmode == 'ccs':
+            # standard
+            if args.mode == 'standard':
+                export.ccs(args.path, mode='standard')
+
+            # lite
+            elif args.mode == 'lite':
+                export.ccs(args.path, mode='lite')
+
+        # shifts
+        elif args.exportmode == 'shifts':
+            export.shifts(args.path)
+
+        # free energy
+        elif args.exportmode == 'energy':
+            export.energy(args.path)
+
+        # none selected
+        else:
+            p['export'].print_help()
 
     # simulation modules
     elif args.which in ['ccs', 'shifts', 'energy']:
