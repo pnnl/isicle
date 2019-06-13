@@ -13,7 +13,7 @@ def gather_inputs():
         raise IndexError('No input files found')
 
     # parse input file content
-    ikey_in = [splitext(basename(x))[0].split('_')[0] for x in files_in]
+    ikey_in = [splitext(basename(x))[0] for x in files_in]
     fmt_in = [splitext(basename(x))[1][1:] for x in files_in]
     content_in = []
     for file_in in files_in:
