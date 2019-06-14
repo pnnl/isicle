@@ -61,6 +61,8 @@ The ``shifts`` module does not require selection of a calculation mode, but is o
 isicle shifts --cluster cluster.yaml --jobs 999 --dryrun
 ```
 
+Finally, results can be saved in a user-friendly format using the ``export`` module. See ``isicle export --help`` or ``-h`` for a full list of options, noting that the export command differs by ISiCLE module.
+
 Citing ISiCLE
 -------------
 If you would like to reference ISiCLE in an academic paper, we ask you include the following references:
