@@ -118,13 +118,7 @@ def cli():
     elif args.which == 'export':
         # ccs
         if args.exportmode == 'ccs':
-            # standard
-            if args.mode == 'standard':
-                export.ccs(args.path, mode='standard')
-
-            # lite
-            elif args.mode == 'lite':
-                export.ccs(args.path, mode='lite')
+            export.ccs(args.path, mode=args.mode)
 
         # shifts
         elif args.exportmode == 'shifts':
