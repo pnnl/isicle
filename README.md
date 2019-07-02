@@ -15,7 +15,7 @@ Installation
 ------------
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
-conda create -n isicle -c bioconda -c openbabel -c rdkit -c ambermd python=3.6.1 openbabel rdkit ambertools snakemake numpy pandas yaml statsmodels
+conda create -n isicle -c conda-forge -c bioconda -c ambermd python=3 openbabel rdkit ambertools snakemake numpy pandas yaml statsmodels
 ```
 
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
