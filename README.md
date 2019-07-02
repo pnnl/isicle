@@ -20,7 +20,7 @@ conda create -n isicle -c conda-forge -c bioconda -c ambermd python=3 openbabel 
 
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
 * [cxcalc](https://chemaxon.com/products/marvin/download) (license required)
-* [NWChem](http://www.nwchem-sw.org/index.php/Download) (not required for CCS _Lite_)
+* [NWChem](http://www.nwchem-sw.org/index.php/Download) (not required for ``ccs lite``)
 
 Activate the virtual environment:
 ```
