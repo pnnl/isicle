@@ -80,7 +80,7 @@ rule parseMobcal:
     # group:
     #     'mobility'
     shell:
-        'python -m resources.scripts.parse_mobcal {output} --infiles {input.geom} --efiles {input.energy}  &> {log}'
+        'python -m isicle.scripts.parse_mobcal {output} --infiles {input.geom} --efiles {input.energy}  &> {log}'
 
 
 # boltzmann averaging
@@ -88,17 +88,17 @@ rule boltzmannAverage:
     input:
         rules.parseMobcal.output
     output:
-        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_energy', '{id}_{adduct}.tsv'))
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_energy', 'logs', '{id}_{adduct}.log'))
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log'))
     benchmark:
-        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_energy', 'benchmarks', '{id}_{adduct}.benchmark'))
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
     # group:
     #     'mobility'
     shell:
-        'python -m resources.scripts.boltzmann {input} {output} --ccs &> {log}'
+        'python -m isicle.scripts.boltzmann {input} {output} --ccs &> {log}'
 
 rule calibrate:
     input:
