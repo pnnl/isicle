@@ -93,7 +93,7 @@ def cli():
                                               description="ISiCLE input processing module",
                                               help="input processing module")
     p['process'].add_argument('infile', help='path to input .tsv file containing smiles strings')
-    p['process'].add_argument('infile', help='path to output .tsv file')
+    p['process'].add_argument('outfile', help='path to output .tsv file')
 
     # export subparser
     p['export_subp'] = p['export'].add_subparsers(title='commands', dest='exportmode')
@@ -143,7 +143,7 @@ def cli():
     elif args.which == 'process':
         df = pd.read_csv(args.infile, sep='\t')
         df['Processed'] = preprocess.process(df['SMILES'].values)
-        df.to_csv(args.outfile, sep='\t')
+        df.to_csv(args.outfile, sep='\t', index=False)
 
     # simulation modules
     elif args.which in ['ccs', 'shifts', 'energy']:
