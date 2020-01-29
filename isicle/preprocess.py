@@ -61,5 +61,4 @@ def _process(smiles):
 
 
 def process(smiles):
-    with mp.Pool(processes=mp.cpu_count()) as p:
-        return p.map(_process, smiles)
+    return [_process(x) for x in smiles]
