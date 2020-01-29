@@ -1,3 +1,4 @@
+from openbabel import pybel
 import subprocess
 import multiprocessing as mp
 
@@ -5,51 +6,24 @@ import multiprocessing as mp
 def inchi2smi(inchi):
     '''Converts InChI string to SMILES string.'''
 
-    try:
-        res = subprocess.check_output('obabel -iinchi -:"%s" -ocan' % inchi,
-                                      stderr=subprocess.DEVNULL, shell=True).decode('ascii')
-    except:
-        print(inchi, 'failed.')
-        return None
-
-    return res.strip()
+    return pybel.readstring('inchi', inchi).write('can').strip()
 
 
 def smi2inchi(smi):
     '''Converts SMILES string to InChI string.'''
 
-    try:
-        res = subprocess.check_output('obabel -ismi -:"%s" -oinchi' % smi,
-                                      stderr=subprocess.DEVNULL, shell=True).decode('ascii')
-    except:
-        print(smi, 'failed.')
-        return None
-
-    return res.strip()
+    return pybel.readstring('smi', smi).write('inchi').strip()
 
 
 def canonicalize(smi):
     '''Canonicalizes SMILES string.'''
-
-    try:
-        res = subprocess.check_output('obabel -ismi -:"%s" -ocan' % smi,
-                                      stderr=subprocess.DEVNULL, shell=True).decode('ascii')
-    except:
-        print(smi, 'failed.')
-        return None
-
-    return res.strip()
+    return pybel.readstring('smi', smi).write('can').strip()
 
 
 def desalt(smi):
-    try:
-        res = subprocess.check_output('obabel -ismi -:"%s" -r -ocan' % smi,
-                                      stderr=subprocess.DEVNULL, shell=True).decode('ascii')
-    except:
-        print(smi, 'failed.')
-        return None
-
-    return res.strip()
+    mol = pybel.readstring('smi', smi)
+    mol.OBMol.StripSalts()
+    return mol.write('can').strip()
 
 
 def neutralize(smi):
