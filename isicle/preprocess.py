@@ -1,6 +1,9 @@
-from openbabel import pybel
+try:
+    from openbabel import pybel
+except:
+    import pybel
+
 import subprocess
-import multiprocessing as mp
 
 
 def inchi2smi(inchi):
