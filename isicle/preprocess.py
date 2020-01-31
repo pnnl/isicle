@@ -50,7 +50,7 @@ def neutralize(smi):
 
 def tautomerize(smi):
     try:
-        res = subprocess.check_output('cxcalc majortautomer -f smiles %s' % smi,
+        res = subprocess.check_output('cxcalc majortautomer -f smiles "%s"' % smi,
                                       stderr=subprocess.DEVNULL, shell=True).decode('ascii')
     except:
         print(smi, 'failed.')
