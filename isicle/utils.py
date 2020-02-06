@@ -1,6 +1,6 @@
 import subprocess
 import pandas as pd
-import pybel
+from openbabel import pybel
 import numpy as np
 import platform
 
