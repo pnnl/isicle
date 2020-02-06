@@ -8,6 +8,7 @@ from snakemake import snakemake
 from isicle.utils import inchi2key, smi2key, write_string
 from isicle import __version__
 from isicle import export
+from isicle import preprocess
 
 
 def process(infile):
@@ -87,6 +88,13 @@ def cli():
     p['export'] = p['subparsers'].add_parser('export',
                                              description="ISiCLE export module",
                                              help="result export module")
+
+    p['process'] = p['subparsers'].add_parser('process',
+                                              description="ISiCLE input processing module",
+                                              help="input processing module")
+    p['process'].add_argument('infile', help='path to input .tsv file containing smiles strings')
+    p['process'].add_argument('outfile', help='path to output .tsv file')
+
     # export subparser
     p['export_subp'] = p['export'].add_subparsers(title='commands', dest='exportmode')
 
@@ -131,6 +139,11 @@ def cli():
         # none selected
         else:
             p['export'].print_help()
+
+    elif args.which == 'process':
+        df = pd.read_csv(args.infile, sep='\t')
+        df['Processed'] = preprocess.process(df['SMILES'].values)
+        df.to_csv(args.outfile, sep='\t', index=False)
 
     # simulation modules
     elif args.which in ['ccs', 'shifts', 'energy']:
