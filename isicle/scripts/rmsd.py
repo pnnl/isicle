@@ -1,6 +1,6 @@
 import argparse
-from openbabel import pybel
-from openbabel import openbabel
+import pybel
+import openbabel
 from isicle import __version__
 
 

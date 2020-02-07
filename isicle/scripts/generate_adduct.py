@@ -1,5 +1,5 @@
 import argparse
-from openbabel import openbabel as ob
+import openbabel as ob
 from isicle.resources import geometry
 from isicle.utils import read_pka, read_mol, write_string
 from isicle import __version__
