@@ -1,7 +1,7 @@
 import argparse
 from os.path import *
 from string import Template
-import pybel
+from openbabel import pybel
 from pkg_resources import resource_filename
 from isicle import __version__
 

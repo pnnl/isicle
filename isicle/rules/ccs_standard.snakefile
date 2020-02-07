@@ -1,5 +1,5 @@
 from os.path import *
-import pybel
+from openbabel import pybel
 import pandas as pd
 import glob
 

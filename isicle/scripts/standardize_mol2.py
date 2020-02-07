@@ -1,5 +1,5 @@
 import argparse
-import pybel
+from openbabel import pybel
 from isicle import __version__
 
 

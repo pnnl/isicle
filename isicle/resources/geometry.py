@@ -1,5 +1,5 @@
-import pybel
-import openbabel
+from openbabel import pybel
+from openbabel import openbabel
 import numpy as np
 import logging
 
