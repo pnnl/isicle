@@ -168,7 +168,7 @@ def cli():
             # standard mode
             if args.mode == 'standard':
                 snakemake(resource_filename('isicle', 'rules/ccs_standard.snakefile'),
-                          configfile=args.config,
+                          configfiles=[args.config],
                           config=config,
                           cluster_config=args.cluster,
                           cluster=cluster,
@@ -183,7 +183,7 @@ def cli():
             # lite mode
             elif args.mode == 'lite':
                 snakemake(resource_filename('isicle', 'rules/ccs_lite.snakefile'),
-                          configfile=args.config,
+                          configfiles=[args.config],
                           config=config,
                           cluster_config=args.cluster,
                           cluster=cluster,
@@ -199,7 +199,7 @@ def cli():
         # chemical shifts module
         elif args.which == 'shifts':
             snakemake(resource_filename('isicle', 'rules/shifts.snakefile'),
-                      configfile=args.config,
+                      configfiles=[args.config],
                       config=config,
                       cluster_config=args.cluster,
                       cluster=cluster,
@@ -215,7 +215,7 @@ def cli():
         # gfe module
         elif args.which == 'energy':
             snakemake(resource_filename('isicle', 'rules/free_energy.snakefile'),
-                      configfile=args.config,
+                      configfiles=[args.config],
                       config=config,
                       cluster_config=args.cluster,
                       cluster=cluster,
