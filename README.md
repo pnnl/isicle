@@ -37,35 +37,6 @@ pip install isicle/
 pip install git+https://github.com/pnnl/isicle
 ```
 
-Getting Started
----------------
-For usage overview, use ``isicle --help`` or ``-h``. Currently, available modules include ``prep`` for input preparation, ``ccs`` for collision cross section calculation, ``shifts`` for NMR chemical shift calculation, and ``export`` to save results. For all modules (except ``export``), a Snakemake configuration file in [YAML](http://yaml.org/) format is required. ISiCLE will try to find ``config.yaml`` in the current directory, else a configuration file must be specified through the ``--config`` flag. Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs.
-
-For the ``prep`` module, ISiCLE assumes the user starts with a text file with InChI or SMILES strings on each line. This ensures each input has a unique filname based on its InChI key identifier. We recommend using SMILES, as in some instances InChI processing can lead to unexpected results, though these occurences are rare. Detailed instructions can be accessed through the help flag (``isicle prep --help`` or ``-h``).
-```bash
-isicle prep input_list.txt
-```
-
-For the ``ccs`` module, the user must specify calculation mode (``lite`` or ``standard``), followed by any additional flags (see ``isicle ccs --help`` or ``-h``). Before beginning a simulation, we recommend use of the ``--dryrun`` flag to ensure the run is configured correctly. For desktop environments, we recommend using ``lite`` mode:
-```bash
-isicle ccs lite --cores 4 --dryrun
-```
-
-For ``slurm`` cluster environments, ``standard`` mode can be used:
-```bash
-isicle ccs standard --cluster cluster.yaml --jobs 999 --dryrun
-```
-
-The ``shifts`` module does not require selection of a calculation mode, but is otherwise configured the same way as the ``ccs`` module. See ``isicle shifts --help`` or ``-h`` for a full list of options. We recommend use of supercomputing resources for the ``shifts`` module:
-```bash
-isicle shifts --cluster cluster.yaml --jobs 999 --dryrun
-```
-
-Finally, results can be saved in a user-friendly format using the ``export`` module. See ``isicle export --help`` or ``-h`` for a full list of options, noting that the export command differs by ISiCLE module. For example, to export ``ccs standard`` results:
-```bash
-isicle export ccs standard results.tsv
-```
-
 Citing ISiCLE
 -------------
 If you would like to reference ISiCLE in an academic paper, we ask you include the following references:

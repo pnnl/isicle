@@ -1,8 +1,0 @@
-logFile ${log}
-source ${gaff}
-source ${ff}
-loadAmberParams ${frcmod}
-loadAmberParams frcmod.ionsjc_spce
-TP = loadMol2 ${mol2}
-saveAmberParm TP ${prmtop} ${inpcrd}
-quit
