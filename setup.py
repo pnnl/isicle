@@ -25,21 +25,4 @@ setup(
     license=license,
     packages=pkgs,
     install_requires=required,
-    entry_points={
-        'console_scripts': ['isicle = isicle.isicle:cli']
-    },
-    package_data={'': ['rules/*.snakefile',
-                       'resources/amber/leaprc.ff14SB',
-                       'resources/amber/leaprc.gaff',
-                       'resources/amber/*.template',
-                       'resources/mobcal/mobcal_cascade',
-                       'resources/mobcal/mobcal_constance',
-                       'resources/mobcal/*.params',
-                       'resources/mobcal/atomic_mass.tsv',
-                       'resources/mobcal/atomtype_parameters.in',
-                       'resources/IMPACT/linux/impact',
-                       'resources/IMPACT/osx/impact',
-                       'resources/nwchem/*.smi',
-                       'resources/nwchem/*.template']},
-    include_package_data=True
 )
