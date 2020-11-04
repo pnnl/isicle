@@ -1,7 +1,6 @@
 from isicle.interfaces import FileParserInterface
 import pandas as pd
 
-
 class NWChemParser(FileParserInterface):
     """Extract text from an NWChem simulation output file."""
 
@@ -11,6 +10,9 @@ class NWChemParser(FileParserInterface):
 
     def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin']):
         """Extract relevant information from data"""
+        done = True  # TODO: check for error file (need example)
+        for line in self.contents:
+            pass
         raise NotImplementedError
 
     def save(self, path: str):
@@ -21,17 +23,56 @@ class NWChemParser(FileParserInterface):
 class ImpactParser(FileParserInterface):
     """Extract text from an Impact mobility calculation output file."""
 
+    def __init__(self):
+        self.contents = None
+        self.result = None
+
     def load(self, path: str):
         """Load in the data file"""
-        raise NotImplementedError
+        with open(path, 'r') as f:
+            self.contents = f.readlines()
+
+        return self.contents
 
     def parse(self):
         """Extract relevant information from data"""
-        raise NotImplementedError
 
-    def save(self, path: str):
+        # Check CCS results == 1
+        count = 0
+        for line in self.contents:
+            l = line.split(' ')
+            if 'CCS' in l[0]:
+                count += 1
+        if count != 1:
+            return self.result
+
+        # Assume values in second line
+        l = self.contents[1].split(' ')
+        l = [x for x in l if len(x) > 0]
+        
+        # Pull values of interest - may be error prone
+        data = []
+        try:
+            data.append(float(l[3]))
+            data.append(float(l[5][:-1]))
+            data.append(float(l[6]))
+            data.append(int(l[7]))
+        except (ValueError, IndexError) as e:
+            print('Could not parse file: ', e)
+            return None
+        
+        # Add to dataframe to return
+        columns = ['CCS_PA', 'SEM_rel', 'CCS_TJM', 'n_iter']
+        result = pd.DataFrame([data], columns=columns)
+        
+        # Save and return results
+        self.result = result
+        return result['CCS_TJM'].loc[0]
+
+    def save(self, path: str, sep='\t'):
         """Write parsed object to file"""
-        raise NotImplementedError
+        pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
+        return
 
 
 class MobcalParser(FileParserInterface):
@@ -67,6 +108,7 @@ class MobcalParser(FileParserInterface):
     def save(self, path: str, sep='\t'):
         """Write parsed object to file"""
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
+        return
 
 
 class SanderParser(FileParserInterface):
