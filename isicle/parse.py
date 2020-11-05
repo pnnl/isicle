@@ -1,4 +1,4 @@
-from isicle.interfaces import FileParserInterface
+#from isicle.interfaces import FileParserInterface
 import pandas as pd
 
 class NWChemParser(FileParserInterface):
@@ -49,25 +49,27 @@ class ImpactParser(FileParserInterface):
         # Assume values in second line
         l = self.contents[1].split(' ')
         l = [x for x in l if len(x) > 0]
-        
+
         # Pull values of interest - may be error prone
-        data = []
+        values = []
         try:
-            data.append(float(l[3]))
-            data.append(float(l[5][:-1]))
-            data.append(float(l[6]))
-            data.append(int(l[7]))
+            values.append(float(l[-5]))
+            values.append(float(l[-3][:-1]))
+            values.append(float(l[-2]))
+            values.append(int(l[-1]))
         except (ValueError, IndexError) as e:
             print('Could not parse file: ', e)
             return None
-        
-        # Add to dataframe to return
-        columns = ['CCS_PA', 'SEM_rel', 'CCS_TJM', 'n_iter']
-        result = pd.DataFrame([data], columns=columns)
-        
+
+        # Add to dictionary to return
+        result = {}
+        keys = ['CCS_PA', 'SEM_rel', 'CCS_TJM', 'n_iter']
+        for key, val in zip(keys, values):
+            result[key] = [val]
+
         # Save and return results
         self.result = result
-        return result['CCS_TJM'].loc[0]
+        return result # TODO: return CCS?
 
     def save(self, path: str, sep='\t'):
         """Write parsed object to file"""
