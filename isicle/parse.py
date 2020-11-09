@@ -1,5 +1,50 @@
-#from isicle.interfaces import FileParserInterface
+from isicle.interfaces import FileParserInterface
 import pandas as pd
+
+class NWChemResult():
+
+    def __init__(self):
+        self.energy = None  # Dictionary, keys: energy, charges
+        self.geometry = None  # String, filename (for now)
+        self.shielding = None  # DataFrame
+        self.spin = None  # Not set
+
+    def set_energy(energy):
+        result = {'energy':[energy[0]], 'charges':energy[1]}
+        self.energy = energy
+        return self.energy
+
+    def set_geometry(geometry_filename):
+        # TODO: save geometry object instead
+        self.geometry = geometry_filename
+        return self.geometry
+
+    def set_shielding(shielding):
+
+        shield_values, dft_energy, index = shielding
+
+        # TODO: change how this info is stored?
+        df = pd.DataFrame(shield_values, columns=['index', 'atom', 'shielding'])
+        df['dft_energy'] = energy[-1]
+        df['index'] = true_idx
+        return self.shielding
+
+    def set_spin(spin):
+        self.spin = spin
+        return self.spin
+
+    def get_energy():
+        return self.energy
+
+    def get_geometry():
+        return self.geometry
+
+    def get_shielding():
+        return self.shielding
+
+    def get_spin():
+        return self.spin()
+
 
 class NWChemParser(FileParserInterface):
     """Extract text from an NWChem simulation output file."""
@@ -58,10 +103,7 @@ class NWChemParser(FileParserInterface):
         df.Number = df.Number.astype('int')
         df.Charge = df.Number - df.Charge.astype('float')
 
-        # Create final dict to return
-        result = {'energy':[energy], 'charges':df.Charge.tolist()}
-
-        return result
+        return energy, df.Charge.tolist()
 
     def _parse_shielding(self):
 
@@ -89,42 +131,57 @@ class NWChemParser(FileParserInterface):
             elif 'SHIELDING' in line:
                 true_idx = [int(x) for x in line.split()[2:]]
 
-        #df = pd.DataFrame(shield_values, columns=['index', 'atom', 'shielding'])
-        #df['dft_energy'] = energy[-1]
-        #df['index'] = true_idx
-
-        # Creare final dict to return
-        result = {}
-        # TODO: what is needed?
-        result['shields'] = shields
-        result['shield_atoms'] = shield_atoms
-        result['shield_idxs'] = shield_idxs
-        result['shielding_dft_energy'] = energy[-1]
-        result['shielding_index'] = true_idx
-
-        return result
+        return shield_values, energy[-1], true_idx
 
     def _parse_spin(self):
-        return
+        return None
 
+    def _parse_frequency(self):
+        return None
+
+    # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin'], geom_path=self.path):
         """Extract relevant information from data"""
 
-        result = {}
+        result = NWChemResult()
 
         if 'geometry' in to_parse:
-            result.update(_parse_geometry(geom_path))
+
+            try:
+                geometry_filename = _parse_geometry_filename(geom_path)
+                result.set_geometry(geometry_filename)  # Store as filename
+
+            except IndexError:
+                pass
 
         if 'energy' in to_parse:
-            result.update(_parse_energy())
+
+            try:
+                energy = _parse_energy()
+                result.set_energy(energy)  # Stored as dictionary
+            except IndexError:
+                pass
 
         if 'shielding' in to_parse:
-            result.update(_parse_shielding())
+            try:
+                shielding = _parse_shielding()
+                result.set_shielding(shielding)  # Stored as dictionary
+            except IndexError:
+                pass
 
         if 'spin' in to_parse:  # N2S
-            result.update(_parse_spin())
+            try:
+                spin = _parse_spin()
+                result.set_spin(spin)
+            except IndexError:
+                pass
 
-        # Add frequency parser
+        if 'frequency' in to_parse:
+            try:
+                frequency = _parse_frequency()
+                result.set_frequency(frequency)
+            except IndexError:
+                pass
 
         return result
 
