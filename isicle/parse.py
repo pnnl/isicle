@@ -134,7 +134,71 @@ class NWChemParser(FileParserInterface):
         return shield_values, energy[-1], true_idx
 
     def _parse_spin(self):
-        return None
+        coor_substr='Output coordinates in angstroms'
+        cst_substr='Total Shielding Tensor'
+
+        # Extracting Number of Isotopes/Atoms
+        # Must sit alone due to pulling number of atoms for later parsing
+        natoms = 0
+        for i in range(length(self.contents) - 1):  # Minus one since always looking one ahead
+           currentline = self.contents[i]
+           nextline = self.contents[i + 1]
+           if 'property' in currentline and 'SHIELDING' in nextline:
+               natoms=int(nextline.split(' ')[-1])
+
+        # Check that natoms was found, exit otherwise
+        if natoms == 0:
+            print('Number of atoms not found or equal to zero')
+            return None
+
+        # Declaring couplings
+        coup_freqs = np.zeros((natoms, natoms))
+
+        cst = []
+        # Search for spin-spin couplings and populate matrix
+        for ii in range(length(self.contents)):
+            currentline = self.contents[ii]
+            temp = currentline.split(' ')
+
+            # Extracting Isotopes/Atoms & Coordinates
+            if coor_substr in currentline:
+                # Indexing ii+3+natoms; up to and including
+                coor_cellarr = self.contents[ii + 4: ii + 3 + natoms]
+
+            # Extracting Full Chemical Shielding Tensors
+            # NOTE: Shielding Tensors only calculated for C&H; must match in
+            # handle_parsed.m
+            elif cst_substr in currentline:
+                cst.append(self.contents[ii + 1])
+                cst.append(self.contents[ii + 2])
+                cst.append(self.contents[ii + 3])
+
+            # Extracting Coupling Frequencies matrix
+            elif temp[0] == 'Atom' and temp[4] == 'Atom':
+                col_idx = int(temp[1].replace(':', '')) # Needs to be int
+                row_idx = int(temp[5].replace(':', '')) # Needs to be int
+                temp_freq = nwctext[ii+41].split(' ')
+                if 'Spin-Spin' not in temp_freq[1]:
+                    print('Exact line for coupling frequencies not found: Change search parameters in line above.')
+                    return None
+                temp_freq = float(temp_freq[4])
+
+                # Accounting for symmetry by switching row/column index
+                coup_freqs[row_idx, col_idx] += temp_freq
+                coup_freqs[col_idx, row_idx] += temp_freq
+
+        # Assert size of coordinate cell array matches number of atoms
+        if length(coor_cellarr) != natoms:
+            print('Coordinate cell array size does not match number of atoms.')
+            return None
+
+        # Ensuring diaganolized zeros
+        for ii in range(natoms):
+            if coup_freqs[ii, ii]!=0:
+                print('Extracted Coupling Frequency incorrect: overwriting to zero.')
+                coup_freqs[ii, ii] = 0
+
+        return coup_freqs
 
     def _parse_frequency(self):
         return None
