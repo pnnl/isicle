@@ -2,24 +2,27 @@ from isicle.interfaces import FileParserInterface
 import pandas as pd
 
 class NWChemResult():
+    """Organize parsed results from NWChem outputs"""
 
     def __init__(self):
         self.energy = None  # Dictionary, keys: energy, charges
         self.geometry = None  # String, filename (for now)
         self.shielding = None  # DataFrame
         self.spin = None  # Not set
+        self.frequency = None # Dictionary, see function for keys
+        self.molden = None  # String, filename (for now)
 
-    def set_energy(energy):
+    def set_energy(self, energy):
         result = {'energy':[energy[0]], 'charges':energy[1]}
         self.energy = energy
         return self.energy
 
-    def set_geometry(geometry_filename):
+    def set_geometry(self, geometry_filename):
         # TODO: save geometry object instead
         self.geometry = geometry_filename
         return self.geometry
 
-    def set_shielding(shielding):
+    def set_shielding(self, shielding):
 
         shield_values, dft_energy, index = shielding
 
@@ -29,21 +32,56 @@ class NWChemResult():
         df['index'] = true_idx
         return self.shielding
 
-    def set_spin(spin):
+    def set_spin(self, spin):
         self.spin = spin
         return self.spin
 
-    def get_energy():
+    def set_frequency(self, frequency):
+        '''
+        Create dictionary from results and save as attribute.
+
+        Keys: 'natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
+               'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe'
+        '''
+
+        # Make dictionary with results
+        frequency_d = {}
+        names = ['natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
+                'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe']
+        for i, name in enumerate(names):
+            frequency_d[name] = frequency[i]
+
+        self.frequency = frequency_d
+        return self.frequency
+
+    def set_molden(self, molden_filename):
+        # TODO: any processing on file contents?
+        self.molden = molden_filename
+        return self.molden
+
+    def get_energy(self):
         return self.energy
 
-    def get_geometry():
+    def get_geometry(self):
         return self.geometry
 
-    def get_shielding():
+    def get_shielding(self):
         return self.shielding
 
-    def get_spin():
+    def get_spin(self):
         return self.spin()
+
+    def get_frequency(self):
+        '''
+        Return dictionary with frequency-related results
+
+        Keys: 'natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
+               'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe'
+        '''
+        return self.frequency
+
+    def get_molden(self):
+        return self.molden
 
 
 class NWChemParser(FileParserInterface):
@@ -71,10 +109,7 @@ class NWChemParser(FileParserInterface):
 
         geoms.sort()
 
-        # Create final dict to return
-        result = {'geometry':geoms[-1]]}
-
-        return result
+        return geoms[-1]
 
     def _parse_energy(self):
 
@@ -201,10 +236,107 @@ class NWChemParser(FileParserInterface):
         return coup_freqs
 
     def _parse_frequency(self):
+
+        # Init
+        indices = []
+        lowdinIdx = []
+        energies = []
+        zpe = []
+        enthalpies = []
+        entropies = []
+        capacities = []
+        preoptTime = 0
+        geomoptTime = 0
+        freqTime = 0
+        cpuTime = 0
+        wallTime = 0
+        ready = False
+        opt = False
+        freq = False
+
+        for i, line in enumerate(self.contents):
+
+            # ?
+            if 'No.' in line and len(indices) == 0:
+                indices.append(i + 2)  # 0
+            elif 'Atomic Mass' in line and len(indices) == 1:
+                indices.append(i - 1)  # 1
+                indices.append(i + 3)  # 2
+            elif 'Effective nuclear repulsion energy' in line and len(indices) == 3:
+                indices.append(i - 2)  # 3
+            elif 'Optimization converged' in line:  # lowdin population
+                ready = True
+            elif 'Failed to converge in maximum number of steps or available time' in line:
+                ready=True
+            elif 'Output coordinates in angstroms' in line:  # Shell charges
+                lowdinIdx.append(i + 4)
+                ready = False
+
+            # Include? Commented or from past files
+            #elif ready is True:
+                #lowdinIdx.append(i + 2)
+                #ready = False
+            elif 'Shell Charges' in line and ready is True: ##Shell Charges
+                lowdinIdx.append(i + 2)
+                ready = False
+            elif 'Lowdin Population Analysis' in line:
+                ready = True
+
+            # Get values
+            if 'Total DFT energy' in line:
+                energies.append(float(line.rstrip().split('=')[-1]))
+
+            if 'Zero-Point correction to Energy' in line:
+                zpe.append(line.rstrip().split('=')[-1])
+
+            if 'Thermal correction to Enthalpy' in line:
+                enthalpies.append(line.rstrip().split('=')[-1])
+
+            if 'Total Entropy' in line:
+                entropies.append(line.rstrip().split('=')[-1])
+
+            if 'constant volume heat capacity' in line:
+                capacities.append(line.rstrip().split('=')[-1])
+
+            # Check for optimization and frequency calcs
+            if 'NWChem Geometry Optimization' in line:
+                opt = True
+            elif 'NWChem Nuclear Hessian and Frequency Analysis' in line:
+                freq = True
+
+            # Get timing
+            if 'Total iterative time' in line and opt is False:
+                preoptTime += float(line.rstrip().split('=')[1].split('s')[0])
+            elif 'Total iterative time' in line and opt is True and freq is False:
+                geomoptTime += float(line.rstrip().split('=')[1].split('s')[0])
+            elif 'Total iterative time' in line and freq is True:
+                freqTime += float(line.rstrip().split('=')[1].split('s')[0])
+
+            if 'Total times' in line:
+                cpuTime = float(line.rstrip().split(':')[1].split('s')[0])
+                wallTime = float(line.rstrip().split(':')[2].split('s')[0])
+                freqTime = (cpuTime - geomoptTime - preoptTime)
+
+        natoms = int(self.contents[indices[1] - 1].split()[0])
+
+        return natoms, lowdinIdx, energies, enthalpies, entropies, capacities, \
+               preoptTime, geomoptTime, cpuTime, zpe
+
+    def _parse_mulliken(self, path):
+
+        # search = splitext(path)[0]
+        # m = glob.glob(search + '*.molden')
+        #
+        # if len(m) != 1:
+        #     raise IOError('Incorrect number of molden files found.')
+        #
+        # return m
+
         return None
 
     # TODO: what should default to_parse be?
-    def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin'], geom_path=self.path):
+    def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin', 'frequency'],
+              geom_path=self.path):
         """Extract relevant information from data"""
 
         result = NWChemResult()
@@ -244,6 +376,13 @@ class NWChemParser(FileParserInterface):
             try:
                 frequency = _parse_frequency()
                 result.set_frequency(frequency)
+            except IndexError:
+                pass
+
+        if 'mulliken' in to_parse:
+            try:
+                mulliken = _parse_mulliken()
+                result.set_mulliken(mulliken)
             except IndexError:
                 pass
 
