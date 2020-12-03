@@ -336,7 +336,7 @@ class NWChemParser(FileParserInterface):
 
     # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin', 'frequency'],
-              geom_path=self.path):
+              geom_path=None):
         """Extract relevant information from data"""
 
         result = NWChemResult()
@@ -344,6 +344,8 @@ class NWChemParser(FileParserInterface):
         if 'geometry' in to_parse:
 
             try:
+                if geom_path is None:
+                    geom_path = self.path
                 geometry_filename = _parse_geometry_filename(geom_path)
                 result.set_geometry(geometry_filename)  # Store as filename
 

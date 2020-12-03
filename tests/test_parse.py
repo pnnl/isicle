@@ -13,6 +13,9 @@ def localfile(path):
 def mparser(path):
     return isicle.parse.MobcalParser()
 
+@pytest.fixture()
+def iparser(path):
+    return isicle.parse.ImpactParser()
 
 class TestMobcalParser:
     @pytest.mark.parametrize('path',
@@ -73,31 +76,31 @@ class TestMobcalParser:
 class TestImpactParser:
     @pytest.mark.parametrize('path',
                              ['resources/impact_output.txt'])
-    def test_init(self, parser, path):
-        assert isinstance(parser, isicle.parse.ImpactParser)
+    def test_init(self, iparser, path):
+        assert isinstance(iparser, isicle.parse.ImpactParser)
 
     @pytest.mark.parametrize('path,expected',
                              [('resources/impact_output.txt', 2)])
-    def test_load(self, parser, path, expected):
+    def test_load(self, iparser, path, expected):
         # initialize
-        contents = parser.load(localfile(path))
+        contents = iparser.load(localfile(path))
 
         # test attribute
-        assert len(parser.contents) == expected
+        assert len(iparser.contents) == expected
 
         # test return
         assert len(contents) == expected
 
     @pytest.mark.parametrize('path,expected_ccs,expected_semrel',
                              [('resources/impact_output.txt', [128.1511], [0.0013])])
-    def test_parse(self, parser, path, expected_ccs, expected_semrel):
+    def test_parse(self, iparser, path, expected_ccs, expected_semrel):
         # initialize
-        parser.load(localfile(path))
-        result = parser.parse()
+        iparser.load(localfile(path))
+        result = iparser.parse()
 
         # test attribute
-        assert parser.result['CCS_TJM'] == expected_ccs
-        assert parser.result['SEM_rel'] == expected_semrel
+        assert iparser.result['CCS_TJM'] == expected_ccs
+        assert iparser.result['SEM_rel'] == expected_semrel
 
         # test return
         assert result['CCS_TJM'] == expected_ccs
@@ -106,12 +109,12 @@ class TestImpactParser:
     # currently only tests success case
     @pytest.mark.parametrize('path,sep,nrows',
                              [('resources/impact_output.txt', '\t', 1)])
-    def test_save(self, parser, path, sep, nrows):
+    def test_save(self, iparser, path, sep, nrows):
         # initialize
         output = localfile('resources/impact_save.txt')
-        parser.load(localfile(path))
-        parser.parse()
-        parser.save(output, sep=sep)
+        iparser.load(localfile(path))
+        iparser.parse()
+        iparser.save(output, sep=sep)
 
         # file exists
         assert os.path.exists(output)
