@@ -1,5 +1,7 @@
 from isicle.interfaces import FileParserInterface
 import pandas as pd
+from os.path import splitext
+import glob
 
 class NWChemResult():
     """Organize parsed results from NWChem outputs"""
@@ -14,7 +16,7 @@ class NWChemResult():
 
     def set_energy(self, energy):
         result = {'energy':[energy[0]], 'charges':energy[1]}
-        self.energy = energy
+        self.energy = result
         return self.energy
 
     def set_geometry(self, geometry_filename):
@@ -69,7 +71,7 @@ class NWChemResult():
         return self.shielding
 
     def get_spin(self):
-        return self.spin()
+        return self.spin
 
     def get_frequency(self):
         '''
@@ -99,8 +101,7 @@ class NWChemParser(FileParserInterface):
         self.path = path
         return self.contents
 
-    # TODO: use Amy's load_geom to generate object
-    def _parse_geometry(self, path):
+    def _parse_geometry_filename(self, path):
         search = splitext(path)[0]
         geoms = glob.glob(search + '*.xyz')
 
@@ -113,30 +114,40 @@ class NWChemParser(FileParserInterface):
 
     def _parse_energy(self):
 
-        energy = []
-        charges = []
+        # Init
+        energy = None
         ready = False
+        charges = []
+
+        # Cycle through file
         for line in self.contents:
             if 'Total DFT energy' in line:
-                energy.append(float(line.split()[-1]))
+                # Overwrite last saved energy
+                energy = float(line.split()[-1])
 
+            # Load charges from table
             elif 'Atom       Charge   Shell Charges' in line:
+                # Table header found. Overwrite anything saved previously
                 ready = True
                 charges = []
             elif ready is True and line.strip() in ['', 'Line search:']:
+                # Table end found
                 ready = False
             elif ready is True:
+                # Still reading from charges table
                 charges.append(line)
 
-        # grab last energy
-        energy = energy[-1]
+        # Process table if one was found
+        if len(charges) > 0:
 
-        # process charge information
-        df = pd.DataFrame([x.split()[0:4] for x in charges[1:]],
-                          columns=['idx', 'Atom', 'Number', 'Charge'])
+            # Remove blank line in charges (table edge)
+            charges = charges[1:]
 
-        df.Number = df.Number.astype('int')
-        df.Charge = df.Number - df.Charge.astype('float')
+            # Process charge information
+            df = pd.DataFrame([x.split()[0:4] for x in charges],
+                              columns=['idx', 'Atom', 'Number', 'Charge'])
+            df.Number = df.Number.astype('int')
+            df.Charge = df.Number - df.Charge.astype('float')
 
         return energy, df.Charge.tolist()
 
@@ -175,7 +186,7 @@ class NWChemParser(FileParserInterface):
         # Extracting Number of Isotopes/Atoms
         # Must sit alone due to pulling number of atoms for later parsing
         natoms = 0
-        for i in range(length(self.contents) - 1):  # Minus one since always looking one ahead
+        for i in range(len(self.contents) - 1):  # Minus one since always looking one ahead
            currentline = self.contents[i]
            nextline = self.contents[i + 1]
            if 'property' in currentline and 'SHIELDING' in nextline:
@@ -191,7 +202,7 @@ class NWChemParser(FileParserInterface):
 
         cst = []
         # Search for spin-spin couplings and populate matrix
-        for ii in range(length(self.contents)):
+        for ii in range(len(self.contents)):
             currentline = self.contents[ii]
             temp = currentline.split(' ')
 
@@ -223,7 +234,7 @@ class NWChemParser(FileParserInterface):
                 coup_freqs[col_idx, row_idx] += temp_freq
 
         # Assert size of coordinate cell array matches number of atoms
-        if length(coor_cellarr) != natoms:
+        if len(coor_cellarr) != natoms:
             print('Coordinate cell array size does not match number of atoms.')
             return None
 
@@ -346,7 +357,7 @@ class NWChemParser(FileParserInterface):
             try:
                 if geom_path is None:
                     geom_path = self.path
-                geometry_filename = _parse_geometry_filename(geom_path)
+                geometry_filename = self._parse_geometry_filename(geom_path)
                 result.set_geometry(geometry_filename)  # Store as filename
 
             except IndexError:
@@ -355,35 +366,35 @@ class NWChemParser(FileParserInterface):
         if 'energy' in to_parse:
 
             try:
-                energy = _parse_energy()
+                energy = self._parse_energy()
                 result.set_energy(energy)  # Stored as dictionary
             except IndexError:
                 pass
 
         if 'shielding' in to_parse:
             try:
-                shielding = _parse_shielding()
+                shielding = self._parse_shielding()
                 result.set_shielding(shielding)  # Stored as dictionary
-            except IndexError:
+            except UnboundLocalError:  # Must be no shielding info
                 pass
 
         if 'spin' in to_parse:  # N2S
             try:
-                spin = _parse_spin()
+                spin = self._parse_spin()
                 result.set_spin(spin)
             except IndexError:
                 pass
 
         if 'frequency' in to_parse:
             try:
-                frequency = _parse_frequency()
+                frequency = self._parse_frequency()
                 result.set_frequency(frequency)
             except IndexError:
                 pass
 
         if 'mulliken' in to_parse:
             try:
-                mulliken = _parse_mulliken()
+                mulliken = self._parse_mulliken()
                 result.set_mulliken(mulliken)
             except IndexError:
                 pass
