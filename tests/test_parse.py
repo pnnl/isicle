@@ -10,18 +10,20 @@ def localfile(path):
 
 
 @pytest.fixture()
-def mparser(path):
+def mparser():
     return isicle.parse.MobcalParser()
 
 @pytest.fixture()
-def iparser(path):
+def iparser():
     return isicle.parse.ImpactParser()
 
+@pytest.fixture()
+def nparser():
+    return isicle.parse.NWChemParser()
+
 class TestMobcalParser:
-    @pytest.mark.parametrize('path',
-                             ['resources/mobcal_output.txt',
-                              'resources/mobcal_incomplete.txt'])
-    def test_init(self, mparser, path):
+
+    def test_init(self, mparser):
         assert isinstance(mparser, isicle.parse.MobcalParser)
 
     @pytest.mark.parametrize('path,expected',
@@ -74,9 +76,8 @@ class TestMobcalParser:
         os.remove(output)
 
 class TestImpactParser:
-    @pytest.mark.parametrize('path',
-                             ['resources/impact_output.txt'])
-    def test_init(self, iparser, path):
+
+    def test_init(self, iparser):
         assert isinstance(iparser, isicle.parse.ImpactParser)
 
     @pytest.mark.parametrize('path,expected',
