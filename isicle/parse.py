@@ -2,6 +2,7 @@ from isicle.interfaces import FileParserInterface
 import pandas as pd
 from os.path import splitext
 import glob
+import pickle
 
 class NWChemResult():
     """Organize parsed results from NWChem outputs"""
@@ -84,6 +85,23 @@ class NWChemResult():
 
     def get_molden(self):
         return self.molden
+
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        return
+
+    def compare(self, other):
+
+        if \
+        self.get_geometry().split('/')[-1] == other.get_geometry().split('/')[-1] and \
+        self.get_energy() == other.get_energy() and \
+        self.get_shielding() == other.get_shielding() and \
+        self.get_spin() == other.get_spin() and \
+        self.get_frequency() == other.get_frequency() and \
+        self.get_molden() == other.get_molden():
+            return True
+        return False
 
 
 class NWChemParser(FileParserInterface):
@@ -399,11 +417,12 @@ class NWChemParser(FileParserInterface):
             except IndexError:
                 pass
 
+        self.result = result
         return result
 
     def save(self, path: str):
         """Write parsed object to file"""
-        pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
+        self.result.save(path)
         return
 
 

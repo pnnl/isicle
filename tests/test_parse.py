@@ -148,51 +148,41 @@ class TestNWChemParser:
         # test return
         assert len(contents) == expected
 
-    @pytest.mark.parametrize('path,expected',
+    @pytest.mark.parametrize('path,expected_filename',
                              [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out',
                              'resources/nwchem_output/1R3R_difenacoum_+H_001_s.pickle')])
-    def test_parse(self, nparser, path, expected):
+    def test_parse(self, nparser, path, expected_filename):
         # initialize
         nparser.load(localfile(path))
         result = nparser.parse()
 
-        # test attribute - geometry
-        assert result.get_geometry().split('/')[-1] == '1R3R_difenacoum_+H_001_s_geom-150.xyz'
+        # Load previoud NWChemResult class
+        with open(expected_filename, 'rb') as f:
+            expected = pickle.load(f)
 
-        # test attribute - energy
-        assert result.get_energy()['energy'][0] == -1421.745225660900
-        assert len(result.get_energy()['charges']) == 59
+        # check against previously saved file
+        assert result.compare(expected)
 
-        # test attribute - shielding
-        assert result.get_shielding() == None
+    # currently only tests success case
+    @pytest.mark.parametrize('path',
+                             [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out')])
+    def test_save(self, nparser, path, temp_path='dummy.pickle'):
 
-        # test attribute - spin
-        assert result.get_spin() == None
+        # initialize
+        nparser.load(localfile(path))
+        result = nparser.parse()
+        nparser.save(temp_path)
 
-        # test attribute - frequency
-        #assert result.get_frequency() == None
+        # file exists
+        assert os.path.exists(temp_path)
 
-        # test attribute - molden
-        assert result.get_molden() == None
+        # read back in
+        # Load previoud NWChemResult class
+        with open(temp_path, 'rb') as f:
+            saved_result = pickle.load(f)
 
-    # # currently only tests success case
-    # @pytest.mark.parametrize('path,sep,nrows',
-    #                          [('resources/impact_output.txt', '\t', 1)])
-    # def test_save(self, nparser, path, sep, nrows):
-    #     # initialize
-    #     output = localfile('resources/impact_save.txt')
-    #     nparser.load(localfile(path))
-    #     nparser.parse()
-    #     nparser.save(output, sep=sep)
-    #
-    #     # file exists
-    #     assert os.path.exists(output)
-    #
-    #     # read back in
-    #     df = pd.read_csv(output, sep=sep)
-    #
-    #     # check length
-    #     assert len(df.index) == nrows
-    #
-    #     # clean up
-    #     os.remove(output)
+        # check against newly saved file
+        assert result.compare(saved_result)
+
+        # clean up
+        os.remove(temp_path)
