@@ -91,17 +91,23 @@ class NWChemResult():
             pickle.dump(self, f)
         return
 
-    def compare(self, other):
+    def load(self, path):
+        '''
+        Load saved class data to this (overwrites all variables)
+        '''
 
-        if \
-        self.get_geometry().split('/')[-1] == other.get_geometry().split('/')[-1] and \
-        self.get_energy() == other.get_energy() and \
-        self.get_shielding() == other.get_shielding() and \
-        self.get_spin() == other.get_spin() and \
-        self.get_frequency() == other.get_frequency() and \
-        self.get_molden() == other.get_molden():
-            return True
-        return False
+        # Load existing file
+        with open(path, 'rb') as f:
+            saved_result = pickle.load(f)
+
+        # Overwrite the variables in this object
+        self.geometry = saved_result.get_geometry()
+        self.energy = saved_result.get_energy()
+        self.shielding = saved_result.get_shielding()
+        self.spin = saved_result.get_spin()
+        self.frequency = saved_result.get_frequency()
+        self.molden = saved_result.get_molden()
+        return
 
 
 class NWChemParser(FileParserInterface):

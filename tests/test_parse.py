@@ -8,6 +8,20 @@ def localfile(path):
     "Returns path relative to this file."
     return os.path.join(os.path.dirname(__file__), path)
 
+def compare(nwcr1, nwcr2):
+    '''
+    Compares two NWChemResult objects and returns if they are equivalent
+    '''
+    if \
+    nwcr1.get_geometry().split('/')[-1] == nwcr2.get_geometry().split('/')[-1] and \
+    nwcr1.get_energy() == nwcr2.get_energy() and \
+    nwcr1.get_shielding() == nwcr2.get_shielding() and \
+    nwcr1.get_spin() == nwcr2.get_spin() and \
+    nwcr1.get_frequency() == nwcr2.get_frequency() and \
+    nwcr1.get_molden() == nwcr2.get_molden():
+        return True
+    return False
+
 @pytest.fixture()
 def mparser():
     return isicle.parse.MobcalParser()
@@ -150,23 +164,23 @@ class TestNWChemParser:
 
     @pytest.mark.parametrize('path,expected_filename',
                              [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out',
-                             'resources/nwchem_output/1R3R_difenacoum_+H_001_s.pickle')])
+                             'resources/nwchem_output/1R3R_difenacoum_+H_001_s.pkl')])
     def test_parse(self, nparser, path, expected_filename):
         # initialize
         nparser.load(localfile(path))
         result = nparser.parse()
 
-        # Load previoud NWChemResult class
-        with open(expected_filename, 'rb') as f:
-            expected = pickle.load(f)
+        # Load previous NWChemResult class
+        expected = isicle.parse.NWChemResult()
+        expected.load(expected_filename)
 
         # check against previously saved file
-        assert result.compare(expected)
+        assert compare(result, expected)
 
     # currently only tests success case
     @pytest.mark.parametrize('path',
                              [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out')])
-    def test_save(self, nparser, path, temp_path='dummy.pickle'):
+    def test_save(self, nparser, path, temp_path='dummy.pkl'):
 
         # initialize
         nparser.load(localfile(path))
@@ -178,11 +192,11 @@ class TestNWChemParser:
 
         # read back in
         # Load previoud NWChemResult class
-        with open(temp_path, 'rb') as f:
-            saved_result = pickle.load(f)
+        saved_result = isicle.parse.NWChemResult()
+        saved_result.load(temp_path)
 
         # check against newly saved file
-        assert result.compare(saved_result)
+        assert compare(result, saved_result)
 
         # clean up
         os.remove(temp_path)
