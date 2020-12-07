@@ -357,17 +357,15 @@ class NWChemParser(FileParserInterface):
         return natoms, lowdinIdx, energies, enthalpies, entropies, capacities, \
                preoptTime, geomoptTime, cpuTime, zpe
 
-    def _parse_mulliken(self, path):
+    def _parse_molden(self, path):
 
-        # search = splitext(path)[0]
-        # m = glob.glob(search + '*.molden')
-        #
-        # if len(m) != 1:
-        #     raise IOError('Incorrect number of molden files found.')
-        #
-        # return m
+        search = splitext(path)[0]
+        m = glob.glob(search + '*.molden')
 
-        return None
+        if len(m) != 1:
+            return None
+
+        return m[0]
 
     # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin', 'frequency'],
@@ -416,10 +414,10 @@ class NWChemParser(FileParserInterface):
             except IndexError:
                 pass
 
-        if 'mulliken' in to_parse:
+        if 'molden' in to_parse:
             try:
-                mulliken = self._parse_mulliken()
-                result.set_mulliken(mulliken)
+                molden = self._parse_molden()
+                result.set_molden(molden)
             except IndexError:
                 pass
 
