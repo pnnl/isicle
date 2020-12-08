@@ -168,7 +168,8 @@ class TestNWChemParser:
     def test_parse(self, nparser, path, expected_filename):
         # initialize
         nparser.load(localfile(path))
-        result = nparser.parse()
+        result = nparser.parse(to_parse=['geometry', 'energy', 'shielding',
+                                         'spin', 'frequency', 'molden'])
 
         # Load previous NWChemResult class
         expected = isicle.parse.NWChemResult()
@@ -184,7 +185,8 @@ class TestNWChemParser:
 
         # initialize
         nparser.load(localfile(path))
-        result = nparser.parse()
+        result = nparser.parse(to_parse=['geometry', 'energy', 'shielding',
+                                         'spin', 'frequency', 'molden'])
         nparser.save(temp_path)
 
         # file exists

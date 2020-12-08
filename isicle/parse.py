@@ -368,8 +368,8 @@ class NWChemParser(FileParserInterface):
         return m[0]
 
     # TODO: what should default to_parse be?
-    def parse(self, to_parse=['geometry', 'energy', 'shielding', 'spin', 'frequency'],
-              geom_path=None):
+    def parse(self, to_parse=['geometry', 'energy'],
+              geom_path=None, molden_path=None):
         """Extract relevant information from data"""
 
         result = NWChemResult()
@@ -416,8 +416,10 @@ class NWChemParser(FileParserInterface):
 
         if 'molden' in to_parse:
             try:
-                molden = self._parse_molden()
-                result.set_molden(molden)
+                if molden_path is None:
+                    molden_path = self.path
+                molden_filename = self._parse_molden(molden_path)
+                result.set_molden(molden_filename)
             except IndexError:
                 pass
 
