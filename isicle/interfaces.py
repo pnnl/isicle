@@ -31,3 +31,35 @@ class FileParserInterface(metaclass=abc.ABCMeta):
     def save(self, path: str):
         """Write parsed object to file"""
         raise NotImplementedError
+
+
+class MolecularStringInterface(metaclass=abc.ABCMeta):
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'load')
+                and callable(subclass.load)
+                and hasattr(subclass, 'desalt')
+                and callable (subclass.desalt)
+                and hasattr(subclass, 'neutralize')
+                and callable (sublcass.neutralize)
+                and hasattr(subclass, 'tautomerize')
+                and callable (subclass.tautomerize)
+                or NotImplemented)
+
+    @abc.abstractmethod
+    def load(self, path: str):
+        """Load in the molecular data file"""
+        raise NotImplementedError
+
+    def desalt(self):
+        """Desalt molecular object"""
+        raise NotImplementedError
+
+    def neutralize(self):
+        """Neutralize molecular object"""
+        raise NotImplementedError
+
+    def tautomerize(self):
+        """Tautomerize molecular object"""
+        raise NotImplementedError
