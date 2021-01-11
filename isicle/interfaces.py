@@ -31,3 +31,57 @@ class FileParserInterface(metaclass=abc.ABCMeta):
     def save(self, path: str):
         """Write parsed object to file"""
         raise NotImplementedError
+
+class GeometryGenerationInterface(metaclass=abc.ABCMeta):
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'load')
+                and callable(subclass.load)
+                and hasattr(subclass, 'convert2D')
+                and callable(subclass.convert2D)
+                and hasattr(subclass, 'convert3D')
+                and callable(subclass.convert3D)
+                and hasattr(subclass, 'save')
+                and callable(subclass.save)
+                or NotImplemented)
+    
+    @abc.abstractmethod
+    def load(self, path: str):
+        """Load in SMILES string"""
+        raise NotImplementedError
+    
+    @abc.abstractmethod
+    def convert2D(self):
+        """Convert into 2D geometry using RDKit"""
+        raise NotImplementedError
+    
+    @abc.abstractmethod
+    def convert3D(self):
+        """Convert 2D geometry into 3D geometry using RDKit"""
+        raise NotImplementedError
+    
+    @abc.abstractmethod
+    def save(self, path: str):
+        """Write 3D molecule to file (xyz and mol/mol2)"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def natoms(self):
+        """Count number of atoms"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def total_partial_charge(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def pop_atom(path, output, atom='Na'):
+        """Removes Na atoms"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def push_atom(path, output, idx, content):
+        raise NotImplementedError
+
+
+
