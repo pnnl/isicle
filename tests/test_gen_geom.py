@@ -20,7 +20,9 @@ class TestGeometryGeneration:
         assert isinstance(gengeom, isicle.generate_geom.GeometryGeneration)
 
     @pytest.mark.parametrize('path,expected',
-                             [('resources/geom_test.smi', 23)])
+                             [('resources/geom_test.smi', 23),
+                              ('resources/geom_test.inchi', 25),
+                              ('resources/geom_test.xyz', 23)])
     def test_load(self, gengeom, path, expected):
         # initialize
         contents = gengeom.load(localfile(path))
@@ -31,32 +33,10 @@ class TestGeometryGeneration:
         # test return
         assert len(contents) == expected
 
-    @pytest.mark.parametrize('path,expected',
-                             [('resources/geom_test.inchi', 25)])
-    def test_load(self, gengeom, path, expected):
-        # initialize
-        contents = gengeom.load(localfile(path))
-
-        # test attribute
-        assert len(gengeom.contents) == expected
-
-        # test return
-        assert len(contents) == expected
-
-    @pytest.mark.parametrize('path,expected',
-                             [('resources/geom_test.xyz', 23)])
-    def test_load(self, gengeom, path, expected):
-        # initialize
-        contents = gengeom.load(localfile(path))
-
-        # test attribute
-        assert len(gengeom.contents) == expected
-
-        # test return
-        assert len(contents) == expected
-
     @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_test.smi', 'resources/geom_2D_smi.mol')])
+                             [('resources/geom_test.smi', 'resources/geom_2D_smi.mol'),
+                              ('resources/geom_test.xyz', 'resources/geom_2D.mol'),
+                              ('resources/geom_test.inchi', 'resources/geom_2D.mol')])
     def test_convert2D(self, gengeom, path, expected):
         # initialize
         gengeom.load(localfile(path))
@@ -69,59 +49,9 @@ class TestGeometryGeneration:
         assert result == expected
 
     @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_test.inchi', 'resources/geom_2D.mol')])
-    def test_convert2D(self, gengeom, path, expected):
-        # initialize
-        gengeom.load(localfile(path))
-        result = gengeom.inputto2D()
-
-        # test attribute
-        assert gengeom.result == expected
-
-        # test return
-        assert result == expected
-
-    @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_test.xyz', 'resources/geom_2D.mol')])
-    def test_convert2D(self, gengeom, path, expected):
-        # initialize
-        gengeom.load(localfile(path))
-        result = gengeom.inputto2D()
-
-        # test attribute
-        assert gengeom.result == expected
-
-        # test return
-        assert result == expected
-
-    @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_2D.mol', 'resources/geom_3D_xyz.mol')])
-    def test_convert3D(self, gengeom, path, expected):
-        # initialize
-        gengeom.load(localfile(path))
-        result = gengeom.convert3D()
-
-        # test attribute
-        assert gengeom.result == expected
-
-        # test return
-        assert result == expected
-
-    @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_2D_smi.mol', 'resources/geom_3D_smi.mol')])
-    def test_convert3D(self, gengeom, path, expected):
-        # initialize
-        gengeom.load(localfile(path))
-        result = gengeom.convert3D()
-
-        # test attribute
-        assert gengeom.result == expected
-
-        # test return
-        assert result == expected
-
-    @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_2D_inchi.mol', 'resources/geom_3D_inchi.mol')])
+                             [('resources/geom_2D.mol', 'resources/geom_3D_xyz.mol'),
+                              ('resources/geom_2D_smi.mol', 'resources/geom_3D_smi.mol'),
+                              ('resources/geom_2D_inchi.mol', 'resources/geom_3D_inchi.mol')])
     def test_convert3D(self, gengeom, path, expected):
         # initialize
         gengeom.load(localfile(path))
