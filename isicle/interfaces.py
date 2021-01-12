@@ -74,12 +74,16 @@ class GeometryGenerationInterface(metaclass=abc.ABCMeta):
     def __subclasshook__(cls, subclass):
         return (hasattr(subclass, 'load')
                 and callable(subclass.load)
-                and hasattr(subclass, 'convert2D')
-                and callable(subclass.convert2D)
+                and hasattr(subclass, 'inputto2D')
+                and callable(subclass.inputto2D)
                 and hasattr(subclass, 'convert3D')
                 and callable(subclass.convert3D)
                 and hasattr(subclass, 'save')
                 and callable(subclass.save)
+                and hasattr(subclass, 'natoms')
+                and callable(subclass.natoms)
+                and hasattr(subclass, 'total_partial_charge')
+                and callable(subclass.total_partial_charge)
                 or NotImplemented)
 
     @abc.abstractmethod
@@ -88,7 +92,7 @@ class GeometryGenerationInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def convert2D(self):
+    def inputto2D(self):
         """Convert into 2D geometry using RDKit"""
         raise NotImplementedError
 
@@ -111,11 +115,3 @@ class GeometryGenerationInterface(metaclass=abc.ABCMeta):
     def total_partial_charge(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def pop_atom(path, output, atom='Na'):
-        """Removes Na atoms"""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def push_atom(path, output, idx, content):
-        raise NotImplementedError
