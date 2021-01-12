@@ -38,7 +38,7 @@ class GeometryGeneration(GeometryGenerationInterface):
             mol = xyz.write('mol', name, erwrite=True)
 
         if self.path.endswith('.mol') or self.path.endswith('.mol2'):
-            self.molecule2D = self.contenovts
+            self.molecule2D = self.contents
 
         file1 = open('geom_2D.mol', 'w+')
         file1.write(self.molecule2D)
