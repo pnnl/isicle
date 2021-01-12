@@ -1,9 +1,8 @@
 import pytest
 import isicle
-from isicle import generate_geom
 import os
 import pandas as pd
-import rdkit
+
 
 def localfile(path):
     "Returns path relative to this file."
@@ -31,7 +30,7 @@ class TestGeometryGeneration:
 
         # test return
         assert len(contents) == expected
-  
+
     @pytest.mark.parametrize('path,expected',
                              [('resources/geom_test.inchi', 25)])
     def test_load(self, gengeom, path, expected):
@@ -153,6 +152,5 @@ class TestGeometryGeneration:
         # check length
         assert len(df.index) == nrows
 
-       # clean up
+        # clean up
         os.remove(output)
-

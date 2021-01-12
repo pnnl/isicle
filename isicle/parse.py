@@ -4,6 +4,7 @@ from os.path import splitext
 import glob
 import pickle
 
+
 class NWChemResult():
     """Organize parsed results from NWChem outputs"""
 
@@ -12,11 +13,11 @@ class NWChemResult():
         self.geometry = None  # String, filename (for now)
         self.shielding = None  # DataFrame
         self.spin = None  # Not set
-        self.frequency = None # Dictionary, see function for keys
+        self.frequency = None  # Dictionary, see function for keys
         self.molden = None  # String, filename (for now)
 
     def set_energy(self, energy):
-        result = {'energy':[energy[0]], 'charges':energy[1]}
+        result = {'energy': [energy[0]], 'charges': energy[1]}
         self.energy = result
         return self.energy
 
@@ -30,7 +31,8 @@ class NWChemResult():
         shield_values, dft_energy, index = shielding
 
         # TODO: change how this info is stored?
-        df = pd.DataFrame(shield_values, columns=['index', 'atom', 'shielding'])
+        df = pd.DataFrame(shield_values, columns=[
+                          'index', 'atom', 'shielding'])
         df['dft_energy'] = energy[-1]
         df['index'] = true_idx
         return self.shielding
@@ -50,7 +52,7 @@ class NWChemResult():
         # Make dictionary with results
         frequency_d = {}
         names = ['natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
-                'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe']
+                 'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe']
         for i, name in enumerate(names):
             frequency_d[name] = frequency[i]
 
@@ -204,17 +206,18 @@ class NWChemParser(FileParserInterface):
         return shield_values, energy[-1], true_idx
 
     def _parse_spin(self):
-        coor_substr='Output coordinates in angstroms'
-        cst_substr='Total Shielding Tensor'
+        coor_substr = 'Output coordinates in angstroms'
+        cst_substr = 'Total Shielding Tensor'
 
         # Extracting Number of Isotopes/Atoms
         # Must sit alone due to pulling number of atoms for later parsing
         natoms = 0
-        for i in range(len(self.contents) - 1):  # Minus one since always looking one ahead
-           currentline = self.contents[i]
-           nextline = self.contents[i + 1]
-           if 'property' in currentline and 'SHIELDING' in nextline:
-               natoms=int(nextline.split(' ')[-1])
+        # Minus one since always looking one ahead
+        for i in range(len(self.contents) - 1):
+            currentline = self.contents[i]
+            nextline = self.contents[i + 1]
+            if 'property' in currentline and 'SHIELDING' in nextline:
+                natoms = int(nextline.split(' ')[-1])
 
         # Check that natoms was found, exit otherwise
         if natoms == 0:
@@ -245,11 +248,12 @@ class NWChemParser(FileParserInterface):
 
             # Extracting Coupling Frequencies matrix
             elif temp[0] == 'Atom' and temp[4] == 'Atom':
-                col_idx = int(temp[1].replace(':', '')) # Needs to be int
-                row_idx = int(temp[5].replace(':', '')) # Needs to be int
-                temp_freq = nwctext[ii+41].split(' ')
+                col_idx = int(temp[1].replace(':', ''))  # Needs to be int
+                row_idx = int(temp[5].replace(':', ''))  # Needs to be int
+                temp_freq = nwctext[ii + 41].split(' ')
                 if 'Spin-Spin' not in temp_freq[1]:
-                    print('Exact line for coupling frequencies not found: Change search parameters in line above.')
+                    print(
+                        'Exact line for coupling frequencies not found: Change search parameters in line above.')
                     return None
                 temp_freq = float(temp_freq[4])
 
@@ -264,7 +268,7 @@ class NWChemParser(FileParserInterface):
 
         # Ensuring diaganolized zeros
         for ii in range(natoms):
-            if coup_freqs[ii, ii]!=0:
+            if coup_freqs[ii, ii] != 0:
                 print('Extracted Coupling Frequency incorrect: overwriting to zero.')
                 coup_freqs[ii, ii] = 0
 
@@ -302,16 +306,16 @@ class NWChemParser(FileParserInterface):
             elif 'Optimization converged' in line:  # lowdin population
                 ready = True
             elif 'Failed to converge in maximum number of steps or available time' in line:
-                ready=True
+                ready = True
             elif 'Output coordinates in angstroms' in line:  # Shell charges
                 lowdinIdx.append(i + 4)
                 ready = False
 
             # Include? Commented or from past files
-            #elif ready is True:
-                #lowdinIdx.append(i + 2)
-                #ready = False
-            elif 'Shell Charges' in line and ready is True: ##Shell Charges
+            # elif ready is True:
+            #     lowdinIdx.append(i + 2)
+            #     ready = False
+            elif 'Shell Charges' in line and ready is True:  # Shell Charges
                 lowdinIdx.append(i + 2)
                 ready = False
             elif 'Lowdin Population Analysis' in line:
@@ -355,7 +359,7 @@ class NWChemParser(FileParserInterface):
         natoms = int(self.contents[indices[1] - 1].split()[0])
 
         return natoms, lowdinIdx, energies, enthalpies, entropies, capacities, \
-               preoptTime, geomoptTime, cpuTime, zpe
+            preoptTime, geomoptTime, cpuTime, zpe
 
     def _parse_molden(self, path):
 
@@ -481,7 +485,7 @@ class ImpactParser(FileParserInterface):
 
         # Save and return results
         self.result = result
-        return result # TODO: return CCS?
+        return result  # TODO: return CCS?
 
     def save(self, path: str, sep='\t'):
         """Write parsed object to file"""
@@ -491,6 +495,7 @@ class ImpactParser(FileParserInterface):
 
 class MobcalParser(FileParserInterface):
     """Extract text from a MOBCAL mobility calculation output file."""
+
     def __init__(self):
         self.contents = None
         self.result = None
