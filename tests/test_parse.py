@@ -2,33 +2,37 @@ import pytest
 import isicle
 import os
 import pandas as pd
-import pickle
+
 
 def localfile(path):
     "Returns path relative to this file."
     return os.path.join(os.path.dirname(__file__), path)
+
 
 def compare(nwcr1, nwcr2):
     '''
     Compares two NWChemResult objects and returns if they are equivalent
     '''
     if \
-    nwcr1.get_geometry().split('/')[-1] == nwcr2.get_geometry().split('/')[-1] and \
-    nwcr1.get_energy() == nwcr2.get_energy() and \
-    nwcr1.get_shielding() == nwcr2.get_shielding() and \
-    nwcr1.get_spin() == nwcr2.get_spin() and \
-    nwcr1.get_frequency() == nwcr2.get_frequency() and \
-    nwcr1.get_molden() == nwcr2.get_molden():
+            nwcr1.get_geometry().split('/')[-1] == nwcr2.get_geometry().split('/')[-1] and \
+            nwcr1.get_energy() == nwcr2.get_energy() and \
+            nwcr1.get_shielding() == nwcr2.get_shielding() and \
+            nwcr1.get_spin() == nwcr2.get_spin() and \
+            nwcr1.get_frequency() == nwcr2.get_frequency() and \
+            nwcr1.get_molden() == nwcr2.get_molden():
         return True
     return False
+
 
 @pytest.fixture()
 def mparser():
     return isicle.parse.MobcalParser()
 
+
 @pytest.fixture()
 def iparser():
     return isicle.parse.ImpactParser()
+
 
 @pytest.fixture()
 def nparser():
@@ -88,6 +92,7 @@ class TestMobcalParser:
 
         # clean up
         os.remove(output)
+
 
 class TestImpactParser:
 
@@ -164,7 +169,7 @@ class TestNWChemParser:
 
     @pytest.mark.parametrize('path,expected_filename',
                              [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out',
-                             'resources/nwchem_output/1R3R_difenacoum_+H_001_s.pkl')])
+                              'resources/nwchem_output/1R3R_difenacoum_+H_001_s.pkl')])
     def test_parse(self, nparser, path, expected_filename):
         # initialize
         nparser.load(localfile(path))

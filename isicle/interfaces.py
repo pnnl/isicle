@@ -40,11 +40,11 @@ class MolecularStringInterface(metaclass=abc.ABCMeta):
         return (hasattr(subclass, 'load')
                 and callable(subclass.load)
                 and hasattr(subclass, 'desalt')
-                and callable (subclass.desalt)
+                and callable(subclass.desalt)
                 and hasattr(subclass, 'neutralize')
-                and callable (sublcass.neutralize)
+                and callable(subclass.neutralize)
                 and hasattr(subclass, 'tautomerize')
-                and callable (subclass.tautomerize)
+                and callable(subclass.tautomerize)
                 or NotImplemented)
 
     @abc.abstractmethod
