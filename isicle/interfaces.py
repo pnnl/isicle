@@ -68,7 +68,7 @@ class MolecularStringInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class GeometryGenerationInterface(metaclass=abc.ABCMeta):
+class GeometryInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
