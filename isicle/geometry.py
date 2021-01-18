@@ -9,7 +9,35 @@ import numpy as np
 # in utils.py, read_mol, Mol, pop_aom, push_atom functions
 
 
-class Geometry2D(GeometryInterface):
+def load_pickle():
+    # return autodetect (isinstance)
+
+
+def load_xyz():
+    # return Geometry instance
+
+
+def load_mol()
+    # return Geometry instance
+
+
+def load_mol2()
+    # return Geometry instance
+
+
+class Geometry(GeometryInterface):
+
+    def to_2D(self):
+        # return Geometry2D instance
+
+    def to_3D(self):
+        # return Geomtery3D instance
+
+    def save(self):
+        # pickle save
+
+
+class Geometry2D(Geometry):
     '''
     Basic instantiation of a geometric representation of a molecule. Only include
     methods pertaining to what's possible with a 2D representation. Any methods that
@@ -20,12 +48,12 @@ class Geometry2D(GeometryInterface):
     def __init__(self):
         self.contents = None
 
-    def load(self, path: str):
-        """Load in the data file"""
-        with open(path, 'r') as f:
-            self.contents = f.readlines()
-        self.path = path
-        return self.contents
+    # def load(self, path: str):
+    #     """Load in the data file"""
+    #     with open(path, 'r') as f:
+    #         self.contents = f.readlines()
+    #     self.path = path
+    #     return self.contents
 
     def inputto2D(self, path: str):
         """Convert SMILES/INCHI into 2D geometry using RDKit"""
