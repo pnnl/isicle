@@ -8,33 +8,150 @@ import numpy as np
 # TO DO, read from xyz or mol2 to yield class
 # in utils.py, read_mol, Mol, pop_aom, push_atom functions
 
+# TODO: catch file not found errors
 
-def load_pickle():
-    # return autodetect (isinstance)
+def _load_pickle(path):
 
+    with open(path, 'rb') as f:
+        mol = pickle.load(f)
 
-def load_xyz():
-    # return Geometry instance
+    # Check for valid Geometry class type
+    if instance.__class__.__name__ in ['Geometry', 'Geometry2D', 'Geometry3D']:
+        return mol
 
+    # This is not a Geometry* instance
+    print('Error: unknown geometry loaded')
+    return None
 
-def load_mol()
-    # return Geometry instance
+def _load_string_file(self, path: str):
+    """Load in the data file"""
+    with open(path, 'r') as f:
+        contents = f.readlines()
+    return contents
 
+def _load_string(path):
+    contents = _load_string_file(path)
 
-def load_mol2()
-    # return Geometry instance
+    if contents is not None:
+        Geom = Geometry()
+        Geom.contents = contents
+        Geom.path = path
+        return Geom
 
+def load(path, pkl=False):
+    """
+    Reads in molecule information of the below supported data types
+
+    Supported file types: .smi, .inchi, .xyz, .mol, .mol2
+    """
+    if pkl or path.endswith('.pkl'):
+        return _load_pickle(path)
+
+    # Assume file with string information
+    return _load_string(path)
+
+# TODO: catch conversion error
+def smarts_to_mol(smi):
+    return Chem.MolFromSmarts(smi)
+
+# TODO: catch conversion error
+def smi_to_mol(smi):
+    mol = Chem.MolFromSmiles(smi)
+    molH = Chem.AddHs(mol)
+    mol = Chem.MolToMolBlock(molH)
+    return mol
+
+# TODO: catch conversion error
+def inchi_to_mol(inchi):
+    mol = Chem.MolFromInchi(inchi)
+    molH = Chem.AddHs(mol)
+    mol = Chem.MolToMolBlock(molH)
+    return mol
+
+# TODO: catch conversion error
+# TODO: fix, need to generate xyz from contents in memory
+def xyz_to_mol(path):
+    """Convert XYZ to Mol"""
+    xyz = next(pybel.readfile("xyz", FILE))
+    name = ((path).split('.')[0]).split('/')[-1] + '.mol'
+    mol = xyz.write('mol', name, erwrite=True)
+    return mol
+
+def to_mol(self, text, from='SMILES'):
+    """
+    Convert from given datatype to RDKit Mol object.
+
+    Can convert from smiles, smarts, inchi, or xyz.
+    """
+
+    if from.lower() in ['smiles', 'smi'] :
+        return smi_to_mol(text)
+
+    if from.lower() == 'smarts':
+        return smarts_to_mol(text)
+
+    if from.lower() == 'inchi':
+        return inchi_to_mol(text)
+
+    if from.lower() == 'xyz':
+        return xyz_to_mol(text)
+
+    # Failure
+    print('Conversion failed. Input "from" type not supported.')
+    return None
 
 class Geometry(GeometryInterface):
 
+    def __init__(self):
+        self.path = None
+        self.contents = None
+        self.mol = None
+
     def to_2D(self):
-        # return Geometry2D instance
+        Geom2 = Geometry2D()
+        Geom2.path = self.path
+        Geom2.contents = self.contents
+        Geom2.gen2D()
+        return Geom2
 
     def to_3D(self):
-        # return Geomtery3D instance
+        Geom3 = Geometry3D()
+        Geom3.path = self.path
+        Geom3.contents = self.contents
+        Geom3.gen3D()
+        return Geom3
 
-    def save(self):
-        # pickle save
+    # TODO: update
+    def total_partial_charge(self):
+        if self.mol is None:
+            return None
+        self.charge = np.array([a.partialcharge for a in self.atoms]).sum()
+        return self.charge
+
+    # TODO: update
+    def natoms(self):
+        if self.mol is None:
+            return None
+        self.number = len(self.atoms)
+        return self.number
+
+    def save_pickle(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        return
+
+    def save_mol(self, filename):
+        if self.mol is None:
+            print('A Mol object has not been generated yet.')
+            return
+
+        """Save RDKit Mol instance"""
+        f = open(filename, 'w+')
+        f.write(self.mol)
+        f.close()
+        return
+
+    return
 
 
 class Geometry2D(Geometry):
@@ -46,66 +163,35 @@ class Geometry2D(Geometry):
     '''
 
     def __init__(self):
-        self.contents = None
+        super().__init__()
 
-    # def load(self, path: str):
-    #     """Load in the data file"""
-    #     with open(path, 'r') as f:
-    #         self.contents = f.readlines()
-    #     self.path = path
-    #     return self.contents
-
-    def inputto2D(self, path: str):
+    def gen2D(self, path: str):
         """Convert SMILES/INCHI into 2D geometry using RDKit"""
-        if self.path.endswith('.inchi'):
-            mol = Chem.MolFromInchi(self.contents)
+        try:
+            extension = self.path.split('.')[-1]
+        except IndexError:
+            print('Invalid path')
+            return None
 
-        if self.path.endswith('.smi'):
-            mol = Chem.MolFromSmiles(self.contents)
+        if extension in ['smi', 'inchi', 'xyz']:
+            self.mol = to_mol(self.contents, from=extension)
+            return self.mol
 
-        molH = Chem.AddHs(mol)
-        self.molecule2D = Chem.MolToMolBlock(molH)
+        elif self.path.endswith('.mol') or self.path.endswith('.mol2'):
+            self.mol = self.contents
+            return self.mol
 
-        if self.path.endswith('.xyz'):
-            """Convert XYZ to Mol"""
-            xyz = next(pybel.readfile("xyz", FILE))
-            name = ((self.path).split('.')[0]).split('/')[-1] + '.mol'
-            mol = xyz.write('mol', name, erwrite=True)
+        # Failure
+        print('Invalid file extension')
+        return None
 
-        if self.path.endswith('.mol') or self.path.endswith('.mol2'):
-            self.molecule2D = self.contents
-
-        file1 = open('geom_2D.mol', 'w+')
-        file1.write(self.molecule2D)
-        file1.close()
-        return self.molecule2D
-
-    def convert3D(self, path: str):
-        """Convert 2D geometry mol file into 3D geometry using RDKit"""
-
-        self.molecule3D = AllChem.MMFFOptimizeMolecule(self.molecule2D)
-        file2 = open('geom_3D.mol', 'w+')
-        file2.write(self.molecule3D)
-        file2.close()
-
-        # should return instance of Geometry3D
-        return self.molecule3D
-
-    def total_partial_charge(self):
-        self.charge = np.array([a.partialcharge for a in self.atoms]).sum()
-        return self.charge
-
-    def natoms(self):
-        self.number = len(self.atoms)
-        return self.number
-
-    def save(self, path):
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
+    def save_mol_2D(self):
+        self._save_mol('geom_2D.mol')
         return
 
 
-class Geometry3D(Geometry2D):
+# TODO: update documentation
+class Geometry3D(Geometry):
     '''
     Builds off of the 2D representation, with additional methods specifc to a
     representation with 3D coordinates. Any methods that would result in a more
@@ -116,6 +202,20 @@ class Geometry3D(Geometry2D):
     def __init__(self):
         # Initialize the base class
         super().__init__()
+
+    def gen3D(self, path: str, mol2D=None):
+        """Convert 2D geometry mol file into 3D geometry using RDKit"""
+        if mol2D is None:
+            Geom2 = self.to_2D()  # Spawn dummy Geometry2D instance
+            mol2D = Geom2.mol
+
+        # Create 3D representation
+        if mol2D is not None:
+            self.mol = AllChem.MMFFOptimizeMolecule(mol2D)
+            return self.mol
+
+        # Failure
+        return None
 
     def optimize(self, method='md', kwargs={}):
         '''Call appropriate optimization function and return result as the appropriate class'''
@@ -132,6 +232,9 @@ class Geometry3D(Geometry2D):
 
         raise NotImplementedError
 
+    def save_mol_3D(self):
+        self.save_mol('geom_3D.mol')
+        return
 
 class MDOptimizedGeometry(Geometry3D):
     '''
@@ -149,7 +252,7 @@ class MDOptimizedGeometry(Geometry3D):
 class DFTOptimizedGeometry(Geometry3D):
     '''
     Builds off of the 3D representation, with additional methods specifc to a
-    representation with DFT optimized 3D coordinates. 
+    representation with DFT optimized 3D coordinates.
     '''
 
     def __init__(self):
