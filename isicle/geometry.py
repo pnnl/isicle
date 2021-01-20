@@ -1,6 +1,8 @@
 from isicle.interfaces import GeometryGenerationInterface
+from isicle.interfaces import MolecularStringInterface
+from rdkit.Chem import SaltRemover, AllChem, MolToSmiles, MolFromSmiles, MolFromSmarts, MolToPDBFile
+from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit import Chem
-from rdkit.Chem import AllChem
 import pybel
 import pickle
 import numpy as np
