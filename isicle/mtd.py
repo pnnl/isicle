@@ -1,10 +1,10 @@
 
 def xtb(input, method='gff', optlevel='Normal'):
-    """
+    '''
     Geometry input can be TURBOMOLE coordinates (.coord/.tmol), any valid Xmol (e.g. .xyz),
     mol files (.mol), Structure-Data files (.sdf), Protein Database Files (.pdb),
     Vasp’s POSCAR and CONTCAR files (.poscar/.contcar/.vasp) and DFTB+ genFormat files (.gen)
-    """
+    '''
     # TODO: define output
     raise NotImplementedError
 

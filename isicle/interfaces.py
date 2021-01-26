@@ -2,10 +2,10 @@ import abc
 
 
 class FileParserInterface(metaclass=abc.ABCMeta):
-    """
+    '''
     Abstract base class for file parser interface. All file parsers
     conform to this definition.
-    """
+    '''
 
     @classmethod
     def __subclasshook__(cls, subclass):
@@ -19,17 +19,17 @@ class FileParserInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def load(self, path: str):
-        """Load in the data file"""
+        '''Load in the data file'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def parse(self):
-        """Extract relevant information from data"""
+        '''Extract relevant information from data'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, path: str):
-        """Write parsed object to file"""
+        '''Write parsed object to file'''
         raise NotImplementedError
 
 
@@ -49,22 +49,22 @@ class MolecularStringInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def load(self, path: str):
-        """Load in the molecular data file"""
+        '''Load in the molecular data file'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def desalt(self):
-        """Desalt molecular object"""
+        '''Desalt molecular object'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def neutralize(self):
-        """Neutralize molecular object"""
+        '''Neutralize molecular object'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def tautomerize(self):
-        """Tautomerize molecular object"""
+        '''Tautomerize molecular object'''
         raise NotImplementedError
 
 
@@ -94,22 +94,22 @@ class GeometryInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _to_2D(self, path: str):
-        """Load in SMILES string"""
+        '''Load in SMILES string'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def to_2D(self):
-        """Convert into 2D geometry using RDKit"""
+        '''Convert into 2D geometry using RDKit'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def _to_3D(self):
-        """Convert 2D geometry into 3D geometry using RDKit"""
+        '''Convert 2D geometry into 3D geometry using RDKit'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def to_3D(self):
-        """Convert 2D geometry into 3D geometry using RDKit"""
+        '''Convert 2D geometry into 3D geometry using RDKit'''
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -118,12 +118,12 @@ class GeometryInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def save_mol(self, path: str):
-        """Write 3D molecule to file (xyz and mol/mol2)"""
+        '''Write 3D molecule to file (xyz and mol/mol2)'''
         raise NotImplementedError
 
     @abc.abstractmethod
     def natoms(self):
-        """Count number of atoms"""
+        '''Count number of atoms'''
         raise NotImplementedError
 
     @abc.abstractmethod

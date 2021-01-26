@@ -7,7 +7,7 @@ import numpy as np
 
 
 class NWChemResult():
-    """Organize parsed results from NWChem outputs"""
+    '''Organize parsed results from NWChem outputs'''
 
     def __init__(self):
         self.energy = None  # Dictionary, keys: energy, charges
@@ -114,7 +114,7 @@ class NWChemResult():
 
 
 class NWChemParser(FileParserInterface):
-    """Extract text from an NWChem simulation output file."""
+    '''Extract text from an NWChem simulation output file.'''
 
     def __init__(self):
         self.contents = None
@@ -122,7 +122,7 @@ class NWChemParser(FileParserInterface):
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        '''Load in the data file'''
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
@@ -375,7 +375,7 @@ class NWChemParser(FileParserInterface):
     # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy'],
               geom_path=None, molden_path=None):
-        """Extract relevant information from data"""
+        '''Extract relevant information from data'''
 
         result = NWChemResult()
 
@@ -432,27 +432,27 @@ class NWChemParser(FileParserInterface):
         return result
 
     def save(self, path: str):
-        """Write parsed object to file"""
+        '''Write parsed object to file'''
         self.result.save(path)
         return
 
 
 class ImpactParser(FileParserInterface):
-    """Extract text from an Impact mobility calculation output file."""
+    '''Extract text from an Impact mobility calculation output file.'''
 
     def __init__(self):
         self.contents = None
         self.result = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        '''Load in the data file'''
         with open(path, 'r') as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        """Extract relevant information from data"""
+        '''Extract relevant information from data'''
 
         # Check CCS results == 1
         count = 0
@@ -489,27 +489,27 @@ class ImpactParser(FileParserInterface):
         return result  # TODO: return CCS?
 
     def save(self, path: str, sep='\t'):
-        """Write parsed object to file"""
+        '''Write parsed object to file'''
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 
 class MobcalParser(FileParserInterface):
-    """Extract text from a MOBCAL mobility calculation output file."""
+    '''Extract text from a MOBCAL mobility calculation output file.'''
 
     def __init__(self):
         self.contents = None
         self.result = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        '''Load in the data file'''
         with open(path, 'r') as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        """Extract relevant information from data"""
+        '''Extract relevant information from data'''
         done = False
         for line in self.contents:
             # if "average (second order) TM mobility" in line:
@@ -526,22 +526,22 @@ class MobcalParser(FileParserInterface):
         return self.result
 
     def save(self, path: str, sep='\t'):
-        """Write parsed object to file"""
+        '''Write parsed object to file'''
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 
 class SanderParser(FileParserInterface):
-    """Extract text from an Sander simulated annealing simulation output file."""
+    '''Extract text from an Sander simulated annealing simulation output file.'''
 
     def load(self, path: str):
-        """Load in the data file"""
+        '''Load in the data file'''
         raise NotImplementedError
 
     def parse(self):
-        """Extract relevant information from data"""
+        '''Extract relevant information from data'''
         raise NotImplementedError
 
     def save(self, path: str):
-        """Write parsed object to file"""
+        '''Write parsed object to file'''
         raise NotImplementedError

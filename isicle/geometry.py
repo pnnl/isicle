@@ -33,18 +33,18 @@ def _load_pickle(path):
 
 
 def _load_text_file(self, path: str):
-    """Load in the data file"""
+    '''Load in the data file'''
     with open(path, 'r') as f:
         contents = f.readlines()
     return contents
 
 
 def load(path, pkl=False):
-    """
+    '''
     Reads in molecule information of the below supported data types
 
     Supported file types: .smi, .inchi, .xyz, .mol, .mol2
-    """
+    '''
     path = path.strip()
     extension = os.path.splitext(path)[-1]
 
@@ -108,7 +108,7 @@ def inchi_to_mol(inchi):
 # TODO: catch conversion error
 # TODO: fix, need to generate xyz from contents in memory
 def xyz_to_mol(path):
-    """Convert XYZ to Mol"""
+    '''Convert XYZ to Mol'''
     xyz = next(pybel.readfile('xyz', path))
     name = ((path).split('.')[0]).split('/')[-1] + '.mol'
     mol = xyz.write('mol', name, erwrite=True)
@@ -116,13 +116,13 @@ def xyz_to_mol(path):
 
 
 def to_mol(input, frm='SMILES'):
-    """
+    '''
     Convert from given datatype to RDKit Mol object.
 
     Can convert from smiles, smarts, inchi, or xyz.
 
     Need to read in smiles string from file, can't use filename as input
-    """
+    '''
 
     if frm.lower() in ['smiles', 'smi']:
         return smi_to_mol(input)
@@ -142,11 +142,11 @@ def to_mol(input, frm='SMILES'):
 
 
 def to_smiles(input, frm='mol'):
-    """
+    '''
     Convert from given datatype to RDKit canonical SMILES.
 
     Can convert from smiles, inchi or mol.
-    """
+    '''
 
     if frm.lower() == 'mol':
         return MolToSmiles(input)
@@ -163,11 +163,11 @@ def to_smiles(input, frm='mol'):
 
 
 def to_xyz(input, filename, frm='mol'):
-    """
+    '''
     Convert from given datatype to XYZ file.
 
     Can convert from smiles, inchi, or mol.
-    """
+    '''
 
     if frm.lower() == 'mol':
         return MolToXYZFile(MolFromMolFile(input, sanitize=False, removeHs=False), filename)
@@ -205,12 +205,12 @@ class MolecularString(MolecularStringInterface):
         return geom
 
     def desalt(self, salts=None, inplace=False):
-        """
+        '''
         Converts SMILES to RDKit mol object.
         Desalts RDKit mol object using Chem.SaltRemover module.
         Returns desalted RDKit SMILES string.
         (not instituted) Salts to be removed with a config file.
-        """
+        '''
         remover = SaltRemover.SaltRemover(defnFormat='smiles', defnData=salts)
         # defnData="[Cl,Br,Na]" *sample definition of salts to be removed*
         # add iterator for salts listed in config?
@@ -231,11 +231,11 @@ class MolecularString(MolecularStringInterface):
         return res
 
     def neutralize(self, inplace=False):
-        """
+        '''
         Converts SMILES to RDKit mol object.
         Neutralizes SMILES string.
         Returns neutralized SMILES string.
-        """
+        '''
 
         def _InitializeNeutralisationReactions():
             patts = (
@@ -281,12 +281,12 @@ class MolecularString(MolecularStringInterface):
         return res
 
     def tautomerize(self, alt=False, inplace=False):
-        """
+        '''
         Converts SMILES to RDKIT mol object.
         Generate tautomers according to RDKit TautomerEnumerator() method.
         Default returns first tautomer generated.
         If alt=True, returns all generated tautomers
-        """
+        '''
         # source: https://rdkit.blogspot.com/2020/01/trying-out-new-tautomer.html
         # Discuss noted double bond changes
         enumerator = rdMolStandardize.TautomerEnumerator()
@@ -315,14 +315,14 @@ class MolecularString(MolecularStringInterface):
         return to_mol(input, frm=frm)
 
     def save_pdb(self, fn):
-        """Write contents to string file"""
+        '''Write contents to string file'''
         with open(path, 'w') as f:
             f.write(self.smiles)
             f.close()
 
     # What is fn?
     def save_string(self, fn):
-        """Write contents to PDB file"""
+        '''Write contents to PDB file'''
         MolToPDBFile(self.smiles, fn)
 
 
@@ -362,7 +362,7 @@ class Geometry(GeometryInterface):
         return Geom2
 
     def _to_3D(self, mol2D=None):
-        """Convert 2D geometry mol file into 3D geometry using RDKit"""
+        '''Convert 2D geometry mol file into 3D geometry using RDKit'''
         if mol2D is None:
             Geom2 = self.to_2D()  # Spawn dummy Geometry2D instance
             mol2D = Geom2.mol
@@ -407,7 +407,7 @@ class Geometry(GeometryInterface):
         return
 
     def save_mol(self, filename):
-        """Save RDKit Mol instance"""
+        '''Save RDKit Mol instance'''
 
         # Skip if no mol available
         if self.mol is None:
