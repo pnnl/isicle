@@ -1,12 +1,11 @@
 from isicle.interfaces import GeometryInterface
 from isicle.interfaces import MolecularStringInterface
-from rdkit.Chem import SaltRemover, AllChem, MolToSmiles, MolFromSmiles, MolFromSmarts, MolToPDBFile
+from rdkit.Chem import SaltRemover, AllChem, MolToSmiles, MolFromSmiles, MolToPDBFile
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit import Chem
 import pybel
 import pickle
 import numpy as np
-from rdkit.Chem import AllChem
 import os
 
 # TO DO, read from xyz or mol2 to yield class
@@ -18,13 +17,13 @@ import os
 
 # TODO: add relevant functions as class methods
 
-def _load_pickle(path):
 
+def _load_pickle(path):
     with open(path, 'rb') as f:
         mol = pickle.load(f)
 
     # Check for valid Geometry class type
-    if instance.__class__.__name__ in ['Geometry', 'Geometry2D', 'Geometry3D']:
+    if mol.__class__.__name__ in ['Geometry', 'Geometry2D', 'Geometry3D']:
         return mol
 
     # This is not a Geometry* instance
@@ -32,11 +31,13 @@ def _load_pickle(path):
     print('Error: unknown geometry loaded')
     return None
 
+
 def _load_text_file(self, path: str):
     """Load in the data file"""
     with open(path, 'r') as f:
         contents = f.readlines()
     return contents
+
 
 def load(path, pkl=False):
     """
@@ -69,9 +70,9 @@ def load(path, pkl=False):
 
         return geom3
 
-    # No spacial info, return String instance
+    # No spatial info, return String instance
     if extension in ['smi', 'inchi']:
-        ms = String()
+        ms = MolecularString()
         ms.path = path
         ms.contents = _load_text_file(path)
         ms.canon_smi = to_smi(ms.contents, frm=extension)
@@ -80,9 +81,11 @@ def load(path, pkl=False):
     # Assume file with string information
     return _load_text(path)
 
+
 # TODO: catch conversion error
 def smarts_to_mol(smarts):
     return Chem.MolFromSmarts(smarts)
+
 
 # TODO: catch conversion error
 def smi_to_mol(smi):
@@ -92,13 +95,15 @@ def smi_to_mol(smi):
     mol = Chem.MolToMolBlock(molH)
     return mol
 
-# TODO: catch conversion error, 
+
+# TODO: catch conversion error,
 def inchi_to_mol(inchi):
     init = load(inchi)
     mol = Chem.MolFromInchi(init)
     molH = Chem.AddHs(mol)
     mol = Chem.MolToMolBlock(molH)
     return mol
+
 
 # TODO: catch conversion error
 # TODO: fix, need to generate xyz from contents in memory
@@ -109,6 +114,7 @@ def xyz_to_mol(path):
     mol = xyz.write('mol', name, erwrite=True)
     return mol
 
+
 def to_mol(input, frm='SMILES'):
     """
     Convert from given datatype to RDKit Mol object.
@@ -118,7 +124,7 @@ def to_mol(input, frm='SMILES'):
     Need to read in smiles string from file, can't use filename as input
     """
 
-    if frm.lower() in ['smiles', 'smi'] :
+    if frm.lower() in ['smiles', 'smi']:
         return smi_to_mol(input)
 
     if frm.lower() == 'smarts':
@@ -133,6 +139,7 @@ def to_mol(input, frm='SMILES'):
     # Failure
     print('Conversion failed. Input "from" type not supported.')
     return None
+
 
 def to_smiles(input, frm='mol'):
     """
@@ -154,6 +161,7 @@ def to_smiles(input, frm='mol'):
     print('Conversion failed. Input "from" type not supported.')
     return None
 
+
 def to_xyz(input, filename, frm='mol'):
     """
     Convert from given datatype to XYZ file.
@@ -174,8 +182,8 @@ def to_xyz(input, filename, frm='mol'):
     print('Conversion failed. Input "from" type not supported.')
     return None
 
-class MolecularString(MolecularStringInterface):
 
+class MolecularString(MolecularStringInterface):
     def __init__(self):
         self.contents = None  # Original text from file
         self.path = None  # Path to original file
@@ -317,8 +325,8 @@ class MolecularString(MolecularStringInterface):
         """Write contents to PDB file"""
         MolToPDBFile(self.smiles, fn)
 
-class Geometry(GeometryInterface):
 
+class Geometry(GeometryInterface):
     def __init__(self):
         self.path = None
         self.contents = None
@@ -361,7 +369,8 @@ class Geometry(GeometryInterface):
 
         # Create 3D representation
         if mol2D is not None:
-            self.mol = EmbedMolecule(MolFromMolFile(mol2D, sanitize=False, removeHs=False), randomSeed=0xf00d)
+            self.mol = EmbedMolecule(MolFromMolFile(
+                mol2D, sanitize=False, removeHs=False), randomSeed=0xf00d)
             return self.mol
 
         # TODO: Account for 3D coord already available - go straight to mol
@@ -463,13 +472,15 @@ class Geometry3D(Geometry):
             # instance of that class
             return DFT()
         else:
-            raise ValueError('Optimization method "{}" not supported'.format(method))
+            raise ValueError(
+                'Optimization method "{}" not supported'.format(method))
 
         raise NotImplementedError
 
     def save_mol_3D(self):
         self.save_mol('geom_3D.mol')
         return
+
 
 class MTD(Geometry3D):
     '''

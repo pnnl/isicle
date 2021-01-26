@@ -129,10 +129,3 @@ class GeometryInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def total_partial_charge(self):
         raise NotImplementedError
-
-    @abc.abstractmethod
-    def natoms(self):
-        """Count number of atoms"""
-        raise NotImplementedError
-
-        
