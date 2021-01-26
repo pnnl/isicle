@@ -119,3 +119,6 @@ class GeometryInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def push_atom(path, output, idx, content):
         raise NotImplementedError
+
+class AdductInterface(metaclass=abc.ABCMeta):
+    
