@@ -72,33 +72,52 @@ class GeometryInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'load')
-                and callable(subclass.load)
-                and hasattr(subclass, 'convert2D')
-                and callable(subclass.convert2D)
-                and hasattr(subclass, 'convert3D')
-                and callable(subclass.convert3D)
-                and hasattr(subclass, 'save')
-                and callable(subclass.save)
+        return (hasattr(subclass, '_to_2D')
+                and callable(subclass._to_2D)
+                and hasattr(subclass, 'to_2D')
+                and callable(subclass.to_2D)
+                and hasattr(subclass, '_to_3D')
+                and callable(subclass._to_3D)
+                and hasattr(subclass, 'to_3D')
+                and callable(subclass.to_3D)
+                and hasattr(subclass, 'natoms')
+                and callable(subclass.natoms)
+                and hasattr(subclass, 'total_partial_charge')
+                and callable(subclass.total_partial_charge)
+                and hasattr(subclass, 'save_pickle')
+                and callable(subclass.save_pickle)
+                and hasattr(subclass, 'save_mol')
+                and callable(subclass.save_mol)
+                and hasattr(subclass, 'copy')
+                and callable(subclass.copy)
                 or NotImplemented)
 
     @abc.abstractmethod
-    def load(self, path: str):
+    def _to_2D(self, path: str):
         """Load in SMILES string"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def convert2D(self):
+    def to_2D(self):
         """Convert into 2D geometry using RDKit"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def convert3D(self):
+    def _to_3D(self):
         """Convert 2D geometry into 3D geometry using RDKit"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save(self, path: str):
+    def to_3D(self):
+        """Convert 2D geometry into 3D geometry using RDKit"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save_pickle(self, path: str):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save_mol(self, path: str):
         """Write 3D molecule to file (xyz and mol/mol2)"""
         raise NotImplementedError
 
@@ -109,15 +128,6 @@ class GeometryInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def total_partial_charge(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def pop_atom(path, output, atom='Na'):
-        """Removes Na atoms"""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def push_atom(path, output, idx, content):
         raise NotImplementedError
 
 class AdductInterface(metaclass=abc.ABCMeta):

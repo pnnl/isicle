@@ -1,8 +1,10 @@
 import pytest
 import isicle
+from isicle import geometry
 import os
 import pandas as pd
-
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def localfile(path):
     "Returns path relative to this file."
@@ -10,37 +12,84 @@ def localfile(path):
 
 
 @pytest.fixture()
-def gengeom():
-    return isicle.generate_geom.GeometryGeneration()
+def geom():
+    return isicle.geometry.Geometry()
 
 
 class TestGeometryGeneration:
 
-    def test_init(self, gengeom):
-        assert isinstance(gengeom, isicle.generate_geom.GeometryGeneration)
+    def test_init(self, geom):
+        assert isinstance(geom, isicle.geometry.Geometry)
 
     @pytest.mark.parametrize('path,expected',
-                             [('resources/geom_test.smi', 23),
-                              ('resources/geom_test.inchi', 25),
-                              ('resources/geom_test.xyz', 23)])
-    def test_load(self, gengeom, path, expected):
+                             [('resources/geom_test.smi', 'resources/geom_test.mol'),
+                              ('resources/geom_test.inchi', 'resources/geom_test.mol'),
+                              ('resources/geom_test.xyz', 'resources/geom_test.mol')])
+    def _test_to_2D(self, geom, path, expected):
         # initialize
-        contents = gengeom.load(localfile(path))
-        print(contents)
+        contents = geom._to_2D(localfile(path))
         # test attribute
-        assert len(gengeom.contents) == expected
+        assert geom.contents == expected
 
         # test return
-        assert len(contents) == expected
+        assert contents == expected
 
     @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_test.smi', 'resources/geom_2D_smi.mol'),
-                              ('resources/geom_test.xyz', 'resources/geom_2D.mol'),
-                              ('resources/geom_test.inchi', 'resources/geom_2D.mol')])
-    def test_convert2D(self, gengeom, path, expected):
+                             [('resources/geom_test.smi', 'resources/geom_test.mol'),
+                              ('resources/geom_test.xyz', 'resources/geom_test.mol'),
+                              ('resources/geom_test.inchi', 'resources/geom_test.mol')])
+    def test_to_2D(self, gengeom, path, expected):
         # initialize
+        result = geom.to_2D(path)
+
+        # test attribute
+        assert geom.result == expected
+
+        # test return
+        assert result == expected
+
+    @pytest.mark.parametrize('path, expected',
+                             [('resources/geom_test.mol', 'resources/geom_test_3D.mol')])
+    def _test_to_3D(self, gengeom, path, expected):
+        # initialize
+        result = geom._to_3D(path)
+
+        # test attribute
+        assert geom.result == expected
+
+        # test return
+        assert result == expected
+
+    @pytest.mark.parametrize('path, expected',
+                             [('resources/geom_test.mol', 'resources/geom_test_3D.mol')])
+    def test_to_3D(self, gengeom, path, expected):
+        # initialize
+        result = geom.to_3D(path)
+
+        # test attribute
+        assert geom.result == expected
+
+        # test return
+        assert result == expected
+
+    @pytest.mark.parametrize('path, expected',
+                              ['resources/geom_test_3D.mol', 0])
+    def test_total_partial_charge(self, gengeom, path, expected):
         gengeom.load(localfile(path))
-        result = gengeom.inputto2D()
+        result = gengeom.total_partial_charge()
+  
+        # test attribute
+        assert gengeom.result == expected
+
+        # test return
+        assert result == expected
+
+
+    @pytest.mark.parametrize('path, expected',
+                              ['resources/geom_test_3D.mol', 6])
+    def test_natoms(self, gengeom, path, expected):
+        gengeom.load(localfile(path))
+        result = gengeom.natoms()
 
         # test attribute
         assert gengeom.result == expected
@@ -48,39 +97,4 @@ class TestGeometryGeneration:
         # test return
         assert result == expected
 
-    @pytest.mark.parametrize('path, expected',
-                             [('resources/geom_2D.mol', 'resources/geom_3D_xyz.mol'),
-                              ('resources/geom_2D_smi.mol', 'resources/geom_3D_smi.mol'),
-                              ('resources/geom_2D_inchi.mol', 'resources/geom_3D_inchi.mol')])
-    def test_convert3D(self, gengeom, path, expected):
-        # initialize
-        gengeom.load(localfile(path))
-        result = gengeom.convert3D()
 
-        # test attribute
-        assert gengeom.result == expected
-
-        # test return
-        assert result == expected
-
-    # currently only tests success case
-    @pytest.mark.parametrize('path,sep,nrows',
-                             [('resources/geom_output.mol', '\t', 1)])
-    def test_save(self, gengeom, path, sep, nrows):
-        # initialize
-        output = localfile('resources/mobcal_save.txt')
-        mparser.load(localfile(path))
-        mparser.parse()
-        mparser.save(output, sep=sep)
-
-        # file exists
-        assert os.path.exists(output)
-
-        # read back in
-        df = pd.read_csv(output, sep=sep)
-
-        # check length
-        assert len(df.index) == nrows
-
-        # clean up
-        os.remove(output)

@@ -3,6 +3,7 @@ import pandas as pd
 from os.path import splitext
 import glob
 import pickle
+import numpy as np
 
 
 class NWChemResult():
