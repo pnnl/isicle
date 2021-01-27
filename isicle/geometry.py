@@ -124,12 +124,15 @@ class MolecularString(MolecularStringInterface):
         # TODO: shouldn't rely on Geometry methods
         # We know we're starting with a string (inchi/smiles) here
         raise NotImplementedError
+        return Geometry()
 
         # geom = Geometry()
         # geom.path = self.path
         # geom.contents = self.contents
         # return geom.to_3D()
 
+    # TODO: Move to Geometry class
+    # TODO: Return instance of Geometry
     def desalt(self, salts=None, inplace=False):
         '''
         Converts SMILES to RDKit mol object.
@@ -302,6 +305,18 @@ class Geometry(GeometryInterface):
         cp.contents = self.contents
         cp.mol = self.mol  # TODO: make hard copy
         return cp
+
+    def to_smiles(self):
+        '''Return SMILES string (in memory, no files).'''
+        raise NotImplementedError
+
+    def to_inchi(self):
+        '''Return InChI string (in memory, no files).'''
+        raise NotImplementedError
+
+    def to_smarts(self):
+        '''Return SMARTS string (in memory, no files).'''
+        raise NotImplementedError
 
     def save_pickle(self, path):
         with open(path, 'wb') as f:
