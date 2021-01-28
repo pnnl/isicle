@@ -10,9 +10,7 @@ import os
 
 # TO DO, read from xyz or mol2 to yield class
 # in utils.py, read_mol, Mol, pop_aom, push_atom functions
-# TODO: catch file not found errors
 # TODO: add docstrings
-# TODO: add relevant functions as class methods
 
 
 def _load_pickle(path):
@@ -48,23 +46,16 @@ def _load_text(path: str):
     return contents
 
 
-def _load_molecular_string(path):
-    ms = MolecularString()
-    ms.path = path
-    ms.contents = _load_text(path)
-    return ms
-
-
-def _load_generic_3D(path):
+def _load_generic_geom(path):
     geom = Geometry()
     geom.path = path
     geom.contents = _load_text(path)
-
+    geom.filetype = os.path.splitext(path)[-1].lower()
     return geom
 
 
 def _load_xyz(path):
-    geom = _load_generic_3D(path)
+    geom = _load_generic_geom(path)
     xyz = next(pybel.readfile('xyz', path))
     name = ((path).split('.')[0]).split('/')[-1] + '.mol'
     geom.mol = xyz.write('mol', name, erwrite=True)
@@ -72,14 +63,14 @@ def _load_xyz(path):
 
 
 def _load_mol(path):
-    geom = _load_generic_3D(path)
+    geom = _load_generic_geom(path)
     geom.mol = Chem.MolFromMolFile(path)
     return geom
 
 
 # TODO: full implementation of pdb loader
 def _load_pdb(path):
-    geom = _load_generic_3D(path)
+    geom = _load_generic_geom(path)
     return geom
 
 
@@ -104,8 +95,8 @@ def load(path):
         return _load_pdb(path)
 
     # No spatial info, return String instance
-    if extension in ['smi', 'inchi']:
-        return _load_molecular_string(path)
+    if extension in ['smi', 'inchi', 'smiles']:
+        return _load_generic_geom(path)
 
     raise IOError('Extension {} not recognized.'.format(extension))
 
@@ -133,8 +124,13 @@ class Geometry(GeometryInterface):
             Generated mol object
         """
 
-        self.mol = to_mol(self.contents, frm=self.filetype)
-        return self.get_mol()  # Returns safe copy
+        if self.filetype in ['smi', 'smiles', 'inchi']:
+            self.mol = to_mol(self.contents, frm=self.filetype)
+            return self.get_mol()  # Returns safe copy
+
+        raise RuntimeError('mol object should have been generated upon load \
+                           for the given filetype. Check original load() \
+                           input.')
 
     # TODO: Return hard copy of mol object, not pointer
     def get_mol(self):
@@ -197,7 +193,7 @@ class Geometry(GeometryInterface):
                 # Amides
                 ('[$([N-]C=O)]', 'N'),
             )
-            return [(self.to_mol(x, frm='smarts'), self.to_mol(y, frm='smi')) for x, y in patts]
+            return [(to_mol(x, frm='smarts'), to_mol(y, frm='smi')) for x, y in patts]
 
         # Generate mol object if not already completed
         if self.mol is None:
