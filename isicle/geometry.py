@@ -10,23 +10,25 @@ import os
 
 # TO DO, read from xyz or mol2 to yield class
 # in utils.py, read_mol, Mol, pop_aom, push_atom functions
-# TODO: add docstrings
 
 
-def _load_pickle(path):
-    """Short summary.
+def _load_pickle(path: str):
+    """
+    Load pickled file.
 
     Parameters
     ----------
     path : type
-        Description of parameter `path`.
+        Path to pickle.
 
     Returns
     -------
-    type
-        Description of returned object.
+    Geometry, MDOptimizedGeometry, or DFTOptimizedGeometry
+        Previously pickled *Geometry instance.
 
     """
+
+    # Load file
     with open(path, 'rb') as f:
         mol = pickle.load(f)
 
@@ -35,18 +37,45 @@ def _load_pickle(path):
                                   'DFTOptimizedGeometry']:
         return mol
 
-    # This is not a Geometry* instance
+    # Failure. This is not a *Geometry instance
     raise IOError('Unsupported geometry format: {}.'.format(mol.__class__.name))
 
 
 def _load_text(path: str):
-    '''Load in the data file'''
+    """
+    Grab all text from given file.
+
+    Parameters
+    ----------
+    path : str
+        Path to text file.
+
+    Returns
+    -------
+    list
+        List of lines from given text file.
+
+    """
     with open(path, 'r') as f:
         contents = f.readlines()
     return contents
 
 
-def _load_generic_geom(path):
+def _load_generic_geom(path: str):
+    """
+    Create new Geometry instance and populate file information.
+
+    Parameters
+    ----------
+    path : str
+        Path to geometry text file (.mol, .smi, etc.)
+
+    Returns
+    -------
+    Geometry
+        Basic Geometry class with only file information populated.
+
+    """
     geom = Geometry()
     geom.path = path
     geom.contents = _load_text(path)
@@ -54,7 +83,21 @@ def _load_generic_geom(path):
     return geom
 
 
-def _load_xyz(path):
+def _load_xyz(path: str):
+    """
+    Load XYZ file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to XYZ file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    """
     geom = _load_generic_geom(path)
     xyz = next(pybel.readfile('xyz', path))
     name = ((path).split('.')[0]).split('/')[-1] + '.mol'
@@ -62,23 +105,62 @@ def _load_xyz(path):
     return geom
 
 
-def _load_mol(path):
+def _load_mol(path: str):
+    """
+    Load mol or mol2 file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to mol or mol2 file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    """
     geom = _load_generic_geom(path)
     geom.mol = Chem.MolFromMolFile(path)
     return geom
 
 
 # TODO: full implementation of pdb loader
-def _load_pdb(path):
+def _load_pdb(path: str):
+    """
+    Load PDB file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to PDB file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    """
     geom = _load_generic_geom(path)
     return geom
 
 
-def load(path):
-    '''
+def load(path: str):
+    """
     Reads in molecule information of the following supported file types:
-    .smi, .inchi, .xyz, .mol, .mol2
-    '''
+    .smi, .inchi, .xyz, .mol, .mol2, .pkl.
+
+    Parameters
+    ----------
+    path : str
+        Path to file with molecule information.
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    """
     path = path.strip()
     extension = os.path.splitext(path)[-1].lower()
 
