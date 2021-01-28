@@ -83,7 +83,7 @@ def _load_generic_geom(path: str):
     return geom
 
 
-def _load_xyz(path: str):
+def load_xyz(path: str):
     """
     Load XYZ file and return as a Geometry instance.
 
@@ -105,7 +105,7 @@ def _load_xyz(path: str):
     return geom
 
 
-def _load_mol(path: str):
+def load_mol(path: str):
     """
     Load mol or mol2 file and return as a Geometry instance.
 
@@ -126,7 +126,7 @@ def _load_mol(path: str):
 
 
 # TODO: full implementation of pdb loader
-def _load_pdb(path: str):
+def load_pdb(path: str):
     """
     Load PDB file and return as a Geometry instance.
 
