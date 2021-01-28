@@ -16,11 +16,25 @@ import os
 
 
 def _load_pickle(path):
+    """Short summary.
+
+    Parameters
+    ----------
+    path : type
+        Description of parameter `path`.
+
+    Returns
+    -------
+    type
+        Description of returned object.
+
+    """
     with open(path, 'rb') as f:
         mol = pickle.load(f)
 
     # Check for valid Geometry class type
-    if mol.__class__.__name__ in ['Geometry', 'MDOptimizedGeometry', 'DFTOptimizedGeometry']:
+    if mol.__class__.__name__ in ['Geometry', 'MDOptimizedGeometry',
+                                  'DFTOptimizedGeometry']:
         return mol
 
     # This is not a Geometry* instance
@@ -80,17 +94,17 @@ def load(path):
     if extension == 'pkl':
         return _load_pickle(path)
 
-    elif extension in ['mol', 'mol2']:
+    if extension in ['mol', 'mol2']:
         return _load_mol(path)
 
-    elif extension == 'xyz':
+    if extension == 'xyz':
         return _load_xyz(path)
 
-    elif extension == 'pdb':
+    if extension == 'pdb':
         return _load_pdb(path)
 
     # No spatial info, return String instance
-    elif extension in ['smi', 'inchi']:
+    if extension in ['smi', 'inchi']:
         return _load_molecular_string(path)
 
     raise IOError('Extension {} not recognized.'.format(extension))
@@ -119,17 +133,6 @@ class MolecularString(MolecularStringInterface):
         # geom.path = self.path
         # geom.contents = self.contents
         # return geom.to_2D()
-
-    def to_3D(self):
-        # TODO: shouldn't rely on Geometry methods
-        # We know we're starting with a string (inchi/smiles) here
-        raise NotImplementedError
-        return Geometry()
-
-        # geom = Geometry()
-        # geom.path = self.path
-        # geom.contents = self.contents
-        # return geom.to_3D()
 
     # TODO: Move to Geometry class
     # TODO: Return instance of Geometry
@@ -263,14 +266,29 @@ class Geometry(GeometryInterface):
     def __init__(self):
         self.path = None
         self.contents = None
+        self.filetype = None
         self.mol = None
 
-    def to_2D(self):
-        # TODO: we have an internal mol representation, just
-        # return using rdkit functionality
-        raise NotImplementedError
+    def _gen_mol(self):
+        """
+        Uses loaded file with SMILES or InChI to generate a mol object and
+        saves to mol attribute.
+
+        Returns
+        -------
+        RDKit Mol Object
+            Generated mol object
+        """
+
+        self.mol = to_mol(self.contents, frm=self.filetype)
+        return self.mol
 
     def optimize(self, method='mtd', kwargs={}):
+
+        # Generate mol object if not already completed
+        if self.mol is None:
+            self._gen_mol()
+
         '''Call appropriate optimization function and return result as the appropriate class'''
         raise NotImplementedError
 
@@ -307,8 +325,9 @@ class Geometry(GeometryInterface):
         return cp
 
     def to_smiles(self):
-        '''Return SMILES string (in memory, no files).'''
-        raise NotImplementedError
+        if self.mol is None:
+            return to_smiles(self.contents, frm=self.filetype)
+        return to_smiles(self.mol, frm='mol')
 
     def to_inchi(self):
         '''Return InChI string (in memory, no files).'''
@@ -328,13 +347,11 @@ class Geometry(GeometryInterface):
 
         # Skip if no mol available
         if self.mol is None:
-            print('A Mol object has not been generated yet.')
-            return
+            self._gen_mol()
 
         # Save file
-        f = open(path, 'w+')
-        f.write(self.mol)
-        f.close()
+        with open(path, 'w+') as f:
+            f.write(self.mol)
         return
 
     def save(self, path, format=None):
@@ -366,34 +383,24 @@ class DFTOptimizedGeometry(Geometry):
         super().__init__()
 
 
-# TODO: Roll all of the following into the functionality of MolecularString.
-# Any converters we want to implement down the road will use the class, not the
-# other way around (i.e. class uses functions).
-
-# TODO: catch conversion error
-def smarts_to_mol(path):
-    return Chem.MolFromSmarts(path)
+def smarts_to_mol(smarts):
+    return Chem.MolFromSmarts(smarts)
 
 
-# TODO: catch conversion error
-def smi_to_mol(path):
-    init = load(path)
-    mol = Chem.MolFromSmiles(init)
+def smi_to_mol(smi):
+    mol = Chem.MolFromSmiles(smi)
     molH = Chem.AddHs(mol)
     mol = Chem.MolToMolBlock(molH)
     return mol
 
 
-# TODO: catch conversion error,
-def inchi_to_mol(path):
-    init = load(path)
-    mol = Chem.MolFromInchi(init)
+def inchi_to_mol(inchi):
+    mol = Chem.MolFromInchi(inchi)
     molH = Chem.AddHs(mol)
     mol = Chem.MolToMolBlock(molH)
     return mol
 
 
-# TODO: catch conversion error
 # TODO: fix, need to generate xyz from contents in memory
 def xyz_to_mol(path):
     '''Convert XYZ to Mol'''
@@ -403,69 +410,80 @@ def xyz_to_mol(path):
     return mol
 
 
-def to_mol(path, frm='SMILES'):
+def to_mol(cpd, frm='smi'):
     '''
     Convert from given datatype to RDKit Mol object.
 
     Can convert from smiles, smarts, inchi, or xyz.
-
-    Need to read in smiles string from file, can't use filename as input
     '''
 
     if frm.lower() in ['smiles', 'smi']:
-        return smi_to_mol(path)
+        res = smi_to_mol(cpd)
 
-    if frm.lower() == 'smarts':
-        return smarts_to_mol(path)
+    elif frm.lower() == 'smarts':
+        res = smarts_to_mol(cpd)
 
-    if frm.lower() == 'inchi':
-        return inchi_to_mol(path)
+    elif frm.lower() == 'inchi':
+        res = inchi_to_mol(cpd)
 
-    if frm.lower() == 'xyz':
-        return xyz_to_mol(path)
+    elif frm.lower() == 'xyz':
+        res = xyz_to_mol(cpd)
 
-    # Failure
-    print('Conversion failed. Input "from" type not supported.')
-    return None
+    else:
+        raise TypeError('Input format {} not supported.'.format(frm))
+
+    if res is None:
+        raise RuntimeError('Conversion to mol failed.')
+
+    return res
 
 
-def to_smiles(path, frm='mol'):
+def to_smiles(cpd, frm='mol'):
     '''
     Convert from given datatype to RDKit canonical SMILES.
 
-    Can convert from smiles, inchi or mol.
+    Can convert from SMILES, InChI or mol.
     '''
 
-    if frm.lower() == 'mol':
-        return MolToSmiles(path)
+    if 'mol' in frm.lower():
+        res = MolToSmiles(cpd)
 
-    if frm.lower() == 'smiles':
-        return MolToSmiles(MolFromSmiles(path))
+    elif 'smi' in frm.lower():
+        res = MolToSmiles(MolFromSmiles(cpd))
 
-    if frm.lower() == 'inchi':
-        return MolToSmiles(MolFromInchi(path))
+    elif 'inchi' in frm.lower():
+        res = MolToSmiles(MolFromInchi(cpd))
 
-    # Failure
-    print('Conversion failed. Input "from" type not supported.')
-    return None
+    else:
+        raise TypeError('Input format {} not supported.'.format(frm))
+
+    if res is None:
+        raise RuntimeError('Conversion to smiles failed.')
+
+    return res
 
 
-def to_xyz(path, filename, frm='mol'):
+# TODO: still needed? What all should be supported?
+def to_xyz(cpd, frm='mol'):
     '''
     Convert from given datatype to XYZ file.
 
     Can convert from smiles, inchi, or mol.
     '''
 
-    if frm.lower() == 'mol':
-        return MolToXYZFile(MolFromMolFile(path, sanitize=False, removeHs=False), filename)
+    if 'mol' in frm.lower():
+        res = MolToXYZFile(cpd, filename)
 
-    if frm.lower() == 'smiles':
-        return MolToXYZFile(smi_to_mol(path), filename)
+    elif 'smi' in frm.lower():
+        res = MolToXYZFile(smi_to_mol(cpd), filename)
 
-    if frm.lower() == 'inchi':
-        return MolToXYZFile(inchi_to_mol(path), filename)
+    elif 'inchi' in frm.lower():
+        res = MolToXYZFile(inchi_to_mol(cpd), filename)
 
-    # Failure
-    print('Conversion failed. Input "from" type not supported.')
-    return None
+    else:
+        raise TypeError('Input format {} not supported.'.format(frm))
+
+    if res is None:
+        raise RuntimeError('Conversion to xyz failed.')
+
+    return res
