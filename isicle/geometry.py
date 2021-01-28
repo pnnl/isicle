@@ -110,32 +110,36 @@ def load(path):
     raise IOError('Extension {} not recognized.'.format(extension))
 
 
-class MolecularString(MolecularStringInterface):
+# TODO: update documentation
+class Geometry(GeometryInterface):
     '''
-    Refactor this. We know we either have InChI or SMILES (maybe SMARTS?)
-    as input. Make use of this knowledge! If InChI, `to_inchi` just returns
-    original string, `to_smiles` converts and returns. You could even just
-    precompute all, such that the interfaces to other methods (e.g. `to_3D`)
-    are the same by consistently using e.g. SMILES representation.
+    Molecular representation as geometry with 3D coordinates.
     '''
 
     def __init__(self):
-        self.contents = None  # Original text from file
-        self.path = None  # Path to original file
-        self.smiles = None  # SMILES being manipulated
+        self.path = None
+        self.contents = None
+        self.filetype = None
+        self.mol = None
 
-    def to_2D(self):
-        # TODO: shouldn't rely on Geometry methods
-        # We know we're starting with a string (inchi/smiles) here
-        raise NotImplementedError
+    def _gen_mol(self):
+        """
+        Uses loaded file with SMILES or InChI to generate a mol object and
+        saves to mol attribute.
 
-        # geom = Geometry()
-        # geom.path = self.path
-        # geom.contents = self.contents
-        # return geom.to_2D()
+        Returns
+        -------
+        RDKit Mol Object
+            Generated mol object
+        """
 
-    # TODO: Move to Geometry class
-    # TODO: Return instance of Geometry
+        self.mol = to_mol(self.contents, frm=self.filetype)
+        return self.get_mol()  # Returns safe copy
+
+    # TODO: Return hard copy of mol object, not pointer
+    def get_mol(self):
+        return self.mol
+
     def desalt(self, salts=None, inplace=False):
         '''
         Converts SMILES to RDKit mol object.
@@ -143,24 +147,27 @@ class MolecularString(MolecularStringInterface):
         Returns desalted RDKit SMILES string.
         (not instituted) Salts to be removed with a config file.
         '''
+
+        # Generate mol object if not already completed
+        if self.mol is None:
+            self._gen_mol()
+
         remover = SaltRemover.SaltRemover(defnFormat='smiles', defnData=salts)
         # defnData="[Cl,Br,Na]" *sample definition of salts to be removed*
         # add iterator for salts listed in config?
         # set potential salts to be removed in a config file
 
-        mol, deleted = remover.StripMolWithDeleted(self.to_mol(self.smiles))
+        mol, deleted = remover.StripMolWithDeleted(self.get_mol())
         # using StripMolWithDeleted instead of StripMol
         # add functionality to track removed salts
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        res = self.to_smiles(mol, frm='mol')
-
         # Replace current smiles with desalted form
         if inplace:
-            self.smiles = res
+            self.mol = mol
 
-        return res
+        return mol
 
     def neutralize(self, inplace=False):
         '''
@@ -192,26 +199,33 @@ class MolecularString(MolecularStringInterface):
             )
             return [(self.to_mol(x, frm='smarts'), self.to_mol(y, frm='smi')) for x, y in patts]
 
+        # Generate mol object if not already completed
+        if self.mol is None:
+            self._gen_mol()
+
         reactions = _InitializeNeutralisationReactions()
 
-        mol = self.to_mol(self.smiles, frm='smi')
+        mol = self.get_mol()
         replaced = False
         for i, (reactant, product) in enumerate(reactions):
             while mol.HasSubstructMatch(reactant):
                 replaced = True
                 rms = AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
-        if replaced:
-            res = self.to_smiles(mol, frm='mol')
-        else:
-            res = self.to_smiles(self.smiles, frm='smi')
+
+        # # TODO: is this still necessary?
+        # if replaced:
+        #     res = self.to_smiles(mol, frm='mol')
+        # else:
+        #     res = self.to_smiles(self.smiles, frm='smi')
 
         # Replace current smiles with neutral form
         if inplace:
-            self.smiles = res
+            self.mol = mol
 
-        return res
+        return mol
 
+    # TODO: Refactor based on new class structure
     def tautomerize(self, alt=False, inplace=False):
         '''
         Converts SMILES to RDKIT mol object.
@@ -219,69 +233,30 @@ class MolecularString(MolecularStringInterface):
         Default returns first tautomer generated.
         If alt=True, returns all generated tautomers
         '''
+
+        # Generate mol object if not already completed
+        if self.mol is None:
+            self._gen_mol()
+
         # source: https://rdkit.blogspot.com/2020/01/trying-out-new-tautomer.html
         # Discuss noted double bond changes
         enumerator = rdMolStandardize.TautomerEnumerator()
 
-        mol = self.to_mol(self.smiles, frm='smi')
-        res = [self.smiles]
+        mol = self.get_mol()
+        res = [self.to_smiles()]
         tauts = enumerator.Enumerate(mol)
-        smis = [self.to_smiles(x) for x in tauts]
+        smis = [to_smiles(x) for x in tauts]
         s_smis = sorted((x, y)
                         for x, y in zip(smis, tauts) if x != self.smiles)
         res += [y for x, y in s_smis]
 
         # Replace current smiles with major tautomer
         if inplace:
-            self.smiles = res[0]
+            self.smiles = res[0]  # TODO: change to update self.mol instead
 
         if alt is True:
             return res
-        else:
-            return res[0]
-
-    def to_smiles(self):
-        '''Return SMILES string (in memory, no files).'''
-        raise NotImplementedError
-
-    def to_inchi(self):
-        '''Return InChI string (in memory, no files).'''
-        raise NotImplementedError
-
-    def to_smarts(self):
-        '''Return SMARTS string (in memory, no files).'''
-        raise NotImplementedError
-
-    def save(self, path, format=None):
-        '''Generic save function, provided format flag.'''
-        raise NotImplementedError
-
-
-# TODO: update documentation
-class Geometry(GeometryInterface):
-    '''
-    Molecular representation as geometry with 3D coordinates.
-    '''
-
-    def __init__(self):
-        self.path = None
-        self.contents = None
-        self.filetype = None
-        self.mol = None
-
-    def _gen_mol(self):
-        """
-        Uses loaded file with SMILES or InChI to generate a mol object and
-        saves to mol attribute.
-
-        Returns
-        -------
-        RDKit Mol Object
-            Generated mol object
-        """
-
-        self.mol = to_mol(self.contents, frm=self.filetype)
-        return self.mol
+        return res[0]
 
     def optimize(self, method='mtd', kwargs={}):
 
