@@ -1,7 +1,8 @@
 from isicle.interfaces import AdductInterface
+from isicle.geometry import Geometry
 
 
-class Adduct(AdductInterface):
+class Adduct(Geometry, AdductInterface):
 
     def __init__(self):
         self.contents = None
