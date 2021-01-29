@@ -33,92 +33,51 @@ class FileParserInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class MolecularStringInterface(metaclass=abc.ABCMeta):
-
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'load')
-                and callable(subclass.load)
-                and hasattr(subclass, 'desalt')
-                and callable(subclass.desalt)
-                and hasattr(subclass, 'neutralize')
-                and callable(subclass.neutralize)
-                and hasattr(subclass, 'tautomerize')
-                and callable(subclass.tautomerize)
-                or NotImplemented)
-
-    @abc.abstractmethod
-    def load(self, path: str):
-        '''Load in the molecular data file'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def desalt(self):
-        '''Desalt molecular object'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def neutralize(self):
-        '''Neutralize molecular object'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def tautomerize(self):
-        '''Tautomerize molecular object'''
-        raise NotImplementedError
-
-
 class GeometryInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, '_to_2D')
-                and callable(subclass._to_2D)
-                and hasattr(subclass, 'to_2D')
-                and callable(subclass.to_2D)
-                and hasattr(subclass, '_to_3D')
-                and callable(subclass._to_3D)
-                and hasattr(subclass, 'to_3D')
-                and callable(subclass.to_3D)
+        return (hasattr(subclass, 'optimize')
+                and callable(subclass.optimze)
+                and hasattr(subclass, 'save')
+                and callable(subclass.save)
+                and hasattr(subclass, 'save')
+                and callable(subclass.save)
+                and hasattr(subclass, 'to_smiles')
+                and callable(subclass.to_smiles)
+                and hasattr(subclass, 'to_inchi')
+                and callable(subclass.to_inchi)
+                and hasattr(subclass, 'to_smarts')
+                and callable(subclass.to_smarts)
                 and hasattr(subclass, 'natoms')
                 and callable(subclass.natoms)
                 and hasattr(subclass, 'total_partial_charge')
                 and callable(subclass.total_partial_charge)
-                and hasattr(subclass, 'save_pickle')
-                and callable(subclass.save_pickle)
-                and hasattr(subclass, 'save_mol')
-                and callable(subclass.save_mol)
-                and hasattr(subclass, 'copy')
-                and callable(subclass.copy)
                 or NotImplemented)
 
     @abc.abstractmethod
-    def _to_2D(self, path: str):
-        '''Load in SMILES string'''
+    def optimize(self):
+        '''Optimize geometry'''
         raise NotImplementedError
 
     @abc.abstractmethod
-    def to_2D(self):
-        '''Convert into 2D geometry using RDKit'''
+    def save(self, path: str):
+        '''Write 3D molecule to file'''
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _to_3D(self):
-        '''Convert 2D geometry into 3D geometry using RDKit'''
+    def to_smiles(self, path: str):
+        '''Return SMILES representation'''
         raise NotImplementedError
 
     @abc.abstractmethod
-    def to_3D(self):
-        '''Convert 2D geometry into 3D geometry using RDKit'''
+    def to_inchi(self, path: str):
+        '''Return InChI representation'''
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save_pickle(self, path: str):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def save_mol(self, path: str):
-        '''Write 3D molecule to file (xyz and mol/mol2)'''
+    def to_smarts(self, path: str):
+        '''Return SMARTS representation'''
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -128,7 +87,19 @@ class GeometryInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def total_partial_charge(self):
+        '''Determine total partial charge of molecule'''
         raise NotImplementedError
 
-class AdductInterface(metaclass=abc.ABCMeta):
-    
+
+class AdductInterface(GeometryInterface):
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'negative_mode')
+                and callable(subclass.negative_mode)
+                or NotImplemented)
+
+    @abc.abstractmethod
+    def negative_mode(self):
+        '''Optimize geometry'''
+        raise NotImplementedError
