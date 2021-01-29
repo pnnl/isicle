@@ -206,6 +206,28 @@ def load_inchi(path: str):
     return geom
 
 
+def load_smarts(path: str):
+    '''
+    Load SMARTS file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to SMARTS file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    '''
+    geom = _load_generic_geom(path)
+    mol = Chem.MolFromSmarts(geom.contents[0])
+    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
+    geom.mol = mol
+    return geom
+
+
 def load(path: str):
     '''
     Reads in molecule information of the following supported file types:
@@ -246,6 +268,9 @@ def load(path: str):
 
     if extension == 'inchi':
         return load_inchi(path)
+
+    if extension == 'smarts':
+        return load_smarts(path)
 
     raise IOError('Extension {} not recognized.'.format(extension))
 
