@@ -1,19 +1,16 @@
-from isicle.interfaces import GeometryInterface
-from isicle.interfaces import MolecularStringInterface
-from rdkit.Chem import SaltRemover, AllChem, MolToSmiles, MolFromSmiles, MolFromInchi, MolFromMolFile, MolToXYZFile
+import numpy as np
+import os
+import copy
+from rdkit.Chem.SaltRemover import SaltRemover
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit import Chem
 import pybel
 import pickle
-import numpy as np
-import os
-
-# TO DO, read from xyz or mol2 to yield class
-# in utils.py, read_mol, Mol, pop_aom, push_atom functions
+from isicle.interfaces import GeometryInterface, MolecularStringInterface
 
 
-def _load_pickle(path: str):
-    """
+def load_pickle(path: str):
+    '''
     Load pickled file.
 
     Parameters
@@ -26,7 +23,7 @@ def _load_pickle(path: str):
     Geometry, MDOptimizedGeometry, or DFTOptimizedGeometry
         Previously pickled *Geometry instance.
 
-    """
+    '''
 
     # Load file
     with open(path, 'rb') as f:
@@ -42,7 +39,7 @@ def _load_pickle(path: str):
 
 
 def _load_text(path: str):
-    """
+    '''
     Grab all text from given file.
 
     Parameters
@@ -55,14 +52,14 @@ def _load_text(path: str):
     list
         List of lines from given text file.
 
-    """
+    '''
     with open(path, 'r') as f:
         contents = f.readlines()
     return contents
 
 
 def _load_generic_geom(path: str):
-    """
+    '''
     Create new Geometry instance and populate file information.
 
     Parameters
@@ -75,7 +72,7 @@ def _load_generic_geom(path: str):
     Geometry
         Basic Geometry class with only file information populated.
 
-    """
+    '''
     geom = Geometry()
     geom.path = path
     geom.contents = _load_text(path)
@@ -84,7 +81,7 @@ def _load_generic_geom(path: str):
 
 
 def load_xyz(path: str):
-    """
+    '''
     Load XYZ file and return as a Geometry instance.
 
     Parameters
@@ -97,7 +94,7 @@ def load_xyz(path: str):
     Geometry
         Provided file and molecule information
 
-    """
+    '''
     geom = _load_generic_geom(path)
     xyz = next(pybel.readfile('xyz', path))
     name = ((path).split('.')[0]).split('/')[-1] + '.mol'
@@ -106,28 +103,47 @@ def load_xyz(path: str):
 
 
 def load_mol(path: str):
-    """
-    Load mol or mol2 file and return as a Geometry instance.
+    '''
+    Load mol file and return as a Geometry instance.
 
     Parameters
     ----------
     path : str
-        Path to mol or mol2 file
+        Path to mol file
 
     Returns
     -------
     Geometry
         Provided file and molecule information
 
-    """
+    '''
     geom = _load_generic_geom(path)
     geom.mol = Chem.MolFromMolFile(path)
     return geom
 
 
-# TODO: full implementation of pdb loader
+def load_mol2(path: str):
+    '''
+    Load mol2 file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to mol2 file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    '''
+    geom = _load_generic_geom(path)
+    geom.mol = Chem.MolFromMol2File(path)
+    return geom
+
+
 def load_pdb(path: str):
-    """
+    '''
     Load PDB file and return as a Geometry instance.
 
     Parameters
@@ -140,15 +156,57 @@ def load_pdb(path: str):
     Geometry
         Provided file and molecule information
 
-    """
+    '''
     geom = _load_generic_geom(path)
+    geom.mol = Chem.MolFromPDBFile(path)
+    return geom
+
+
+def load_smiles(path: str):
+    '''
+    Load SMILES file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to SMILES file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    '''
+    geom = _load_generic_geom(path)
+    geom.mol = Chem.MolFromSmiles(geom.contents[0])
+    return geom
+
+
+def load_inchi(path: str):
+    '''
+    Load InChI file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to InChI file
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    '''
+    geom = _load_generic_geom(path)
+    geom.mol = Chem.MolFromInchi(geom.contents[0])
     return geom
 
 
 def load(path: str):
-    """
+    '''
     Reads in molecule information of the following supported file types:
-    .smi, .inchi, .xyz, .mol, .mol2, .pkl.
+    .smi, .inchi, .xyz, .mol, .mol2, .pkl, .pdb. Direct loaders can also
+    be used, see load_* functions for more information.
 
     Parameters
     ----------
@@ -158,79 +216,132 @@ def load(path: str):
     Returns
     -------
     Geometry
-        Provided file and molecule information
+        Molecule information.
 
-    """
+    '''
     path = path.strip()
     extension = os.path.splitext(path)[-1].lower()
 
     if extension == 'pkl':
-        return _load_pickle(path)
+        return load_pickle(path)
 
-    if extension in ['mol', 'mol2']:
-        return _load_mol(path)
+    if 'mol2' in extension:
+        return load_mol2(path)
+
+    if 'mol' in extension:
+        return load_mol(path)
 
     if extension == 'xyz':
-        return _load_xyz(path)
+        return load_xyz(path)
 
     if extension == 'pdb':
-        return _load_pdb(path)
+        return load_pdb(path)
 
-    # No spatial info, return String instance
-    if extension in ['smi', 'inchi', 'smiles']:
-        return _load_generic_geom(path)
+    if 'smi' in extension:
+        return load_smiles(path)
+
+    if extension == 'inchi':
+        return load_inchi(path)
 
     raise IOError('Extension {} not recognized.'.format(extension))
 
 
-# TODO: update documentation
 class Geometry(GeometryInterface):
     '''
-    Molecular representation as geometry with 3D coordinates.
+    Molecule information, including information on the file it was
+    generated from. It is not recommended to manipulate or retrieve
+    attributes of this class without using class functions.
+
+    Attributes
+    ----------
+    path : str
+        Path provided to generate original instance.
+    contents : list(str)
+        Contents of file used to create original instance.
+    filetype : str
+        File type used to create original instance.
+    mol : RDKit Mol object
+        Current structure, potentially updated from its original
+        form using functions in this class.
+
     '''
 
-    def __init__(self):
-        self.path = None
-        self.contents = None
-        self.filetype = None
-        self.mol = None
+    def __init__(self, path=None, contents=None, filetype=None, mol=None):
+        self.path = path
+        self.contents = contents
+        self.filetype = filetype
+        self.mol = mol
 
-    def _gen_mol(self):
-        """
-        Uses loaded file with SMILES or InChI to generate a mol object and
-        saves to mol attribute.
+    def get_mol(self, hard_copy=True):
+        '''
+        Returns RDKit Mol object for this Geometry.
+
+        Parameters
+        ----------
+        hard_copy : boolean
+            Return a hard copy of the mol object. If false, returns pointer to
+            this instance's mol object (not recommended). Default: True.
 
         Returns
         -------
-        RDKit Mol Object
-            Generated mol object
-        """
+        RDKit Mol object
+            Current structure
 
-        if self.filetype in ['smi', 'smiles', 'inchi']:
-            self.mol = to_mol(self.contents, frm=self.filetype)
-            return self.get_mol()  # Returns safe copy
+        '''
+        return self.mol.__copy__()
 
-        raise RuntimeError('mol object should have been generated upon load \
-                           for the given filetype. Check original load() \
-                           input.')
+    def _handle_inplace(self, mol, inplace):
+        '''
+        Return updated Geometry object with given structure.
 
-    # TODO: Return hard copy of mol object, not pointer
-    def get_mol(self):
-        return self.mol
+        Parameters
+        ----------
+        mol : RDKit Mol object
+            Structure to use.
+        inplace : boolean
+            If true, update this instance with the new structure. Otherwise,
+            create a new Geometry instance and populate it with the structure.
+
+        Returns
+        -------
+        Geometry
+            Updated structure instance.
+
+        '''
+        if inplace:
+            self.mol = mol
+            return self
+
+        # Make a new object and populate its mol with the given mol
+        cp = self.__copy__()
+        cp.mol = mol.__copy__
+        return cp
 
     def desalt(self, salts=None, inplace=False):
         '''
-        Converts SMILES to RDKit mol object.
         Desalts RDKit mol object using Chem.SaltRemover module.
-        Returns desalted RDKit SMILES string.
-        (not instituted) Salts to be removed with a config file.
+
+        Parameters
+        ----------
+        salts : str (optional)
+            Salt type to remove. Ex: 'Cl', 'Br', '[Na+]'. Default: None.
+        inplace : boolean (optional)
+            If true, update this instance with the new structure. Otherwise,
+            create a new Geometry instance and populate it with the structure.
+            Default: False.
+
+        Returns
+        -------
+        Geometry
+            Molecule with given salt(S) removed.
+
         '''
 
-        # Generate mol object if not already completed
-        if self.mol is None:
-            self._gen_mol()
+        # If no salts given, skip desalting
+        if salts is None:
+            return self._handle_inplace(self.get_mol(), inplace)
 
-        remover = SaltRemover.SaltRemover(defnFormat='smiles', defnData=salts)
+        remover = SaltRemover(defnFormat='smiles', defnData=salts)
         # defnData="[Cl,Br,Na]" *sample definition of salts to be removed*
         # add iterator for salts listed in config?
         # set potential salts to be removed in a config file
@@ -241,20 +352,27 @@ class Geometry(GeometryInterface):
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        # Replace current smiles with desalted form
-        if inplace:
-            self.mol = mol
-
-        return mol
+        return self._handle_inplace(mol, inplace)
 
     def neutralize(self, inplace=False):
         '''
-        Converts SMILES to RDKit mol object.
-        Neutralizes SMILES string.
-        Returns neutralized SMILES string.
+        Neutralizes RDKit mol object using neutralization reactions.
+
+        Parameters
+        ----------
+        inplace : boolean (optional)
+            If true, update this instance with the new structure. Otherwise,
+            create a new Geometry instance and populate it with the structure.
+            Default: False.
+
+        Returns
+        -------
+        Geometry
+            Neutralized form of the molecule.
+
         '''
 
-        def _InitializeNeutralisationReactions():
+        def _initialize_neutralisation_reactions():
             patts = (
                 # Imidazoles
                 ('[n+;H]', 'n'),
@@ -275,20 +393,16 @@ class Geometry(GeometryInterface):
                 # Amides
                 ('[$([N-]C=O)]', 'N'),
             )
-            return [(to_mol(x, frm='smarts'), to_mol(y, frm='smi')) for x, y in patts]
+            return [(Chem.MolFromSmarts(x), Chem.MolFromSmiles(y)) for x, y in patts]
 
-        # Generate mol object if not already completed
-        if self.mol is None:
-            self._gen_mol()
-
-        reactions = _InitializeNeutralisationReactions()
+        reactions = _initialize_neutralisation_reactions()
 
         mol = self.get_mol()
         replaced = False
         for i, (reactant, product) in enumerate(reactions):
             while mol.HasSubstructMatch(reactant):
                 replaced = True
-                rms = AllChem.ReplaceSubstructs(mol, reactant, product)
+                rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
         # # TODO: is this still necessary?
@@ -297,24 +411,29 @@ class Geometry(GeometryInterface):
         # else:
         #     res = self.to_smiles(self.smiles, frm='smi')
 
-        # Replace current smiles with neutral form
-        if inplace:
-            self.mol = mol
-
-        return mol
+        return self._handle_inplace(mol, inplace)
 
     # TODO: Refactor based on new class structure
-    def tautomerize(self, alt=False, inplace=False):
+    def tautomerize(self, return_all=False, inplace=False):
         '''
-        Converts SMILES to RDKIT mol object.
         Generate tautomers according to RDKit TautomerEnumerator() method.
-        Default returns first tautomer generated.
-        If alt=True, returns all generated tautomers
-        '''
 
-        # Generate mol object if not already completed
-        if self.mol is None:
-            self._gen_mol()
+        Parameters
+        ----------
+        return_all : boolean (optional)
+            If true, return all tautomers generated. Otherwise, only return
+            the most common. Default=False
+        inplace : boolean (optional)
+            If true, update this instance with the new structure. Otherwise,
+            create a new Geometry instance and populate it with the structure.
+            Default: False.
+
+        Returns
+        -------
+        Geometry or list(Geometry)
+            Tautomer(s) of starting structure.
+
+        '''
 
         # source: https://rdkit.blogspot.com/2020/01/trying-out-new-tautomer.html
         # Discuss noted double bond changes
@@ -323,25 +442,23 @@ class Geometry(GeometryInterface):
         mol = self.get_mol()
         res = [self.to_smiles()]
         tauts = enumerator.Enumerate(mol)
-        smis = [to_smiles(x) for x in tauts]
+        smis = [Chem.MolToSmiles(x) for x in tauts]
         s_smis = sorted((x, y)
                         for x, y in zip(smis, tauts) if x != self.smiles)
         res += [y for x, y in s_smis]
 
-        # Replace current smiles with major tautomer
-        if inplace:
-            self.smiles = res[0]  # TODO: change to update self.mol instead
+        # Ensure res is a list of mol objects
+        if return_all:
+            new_geoms = []
+            for r in res:
+                geom = self.__copy__()
+                geom.mol = r
+                new_geoms.append(geom)
+            return new_geoms
 
-        if alt is True:
-            return res
-        return res[0]
+        return self._handle_inplace(res[0], inplace)
 
     def optimize(self, method='mtd', kwargs={}):
-
-        # Generate mol object if not already completed
-        if self.mol is None:
-            self._gen_mol()
-
         '''Call appropriate optimization function and return result as the appropriate class'''
         raise NotImplementedError
 
@@ -349,67 +466,137 @@ class Geometry(GeometryInterface):
             # don't actually return the below, just ensure the MD optimizer returns an
             # instance of that class
             return MDOptimizedGeometry()
-        elif method.lower() == 'dft':
+
+        if method.lower() == 'dft':
             # don't actually return the below, just ensure the DFT optimizer returns an
             # instance of that class
             return DFTOptimizedGeometry()
         else:
-            raise ValueError(
-                'Optimization method "{}" not supported'.format(method))
+        raise ValueError('Optimization method "{}" not supported'.format(method))
 
     # TODO: update
     def total_partial_charge(self):
-        if self.mol is None:
-            return None
+        '''Sum the partial charge across all atoms.'''
         self.charge = np.array([a.partialcharge for a in self.atoms]).sum()
         return self.charge
 
     # TODO: update
     def natoms(self):
-        if self.mol is None:
-            return None
+        '''Calculate total number of atoms.'''
         return Chem.Mol.GetNumAtoms(self.mol)  # TODO: check
 
-    def copy(self):
-        cp = self.__class__
-        cp.path = self.path
-        cp.contents = self.contents
-        cp.mol = self.mol  # TODO: make hard copy
-        return cp
+    def __copy__(self):
+        '''Return hard copy of this class instance.'''
+        return type(self)(self.path, self.contents,
+                          self.filetype, self.get_mol())
 
     def to_smiles(self):
-        if self.mol is None:
-            return to_smiles(self.contents, frm=self.filetype)
-        return to_smiles(self.mol, frm='mol')
+        '''Get SMILES for this structure.'''
+        return Chem.MolToSmiles(self.mol)
 
     def to_inchi(self):
-        '''Return InChI string (in memory, no files).'''
-        raise NotImplementedError
+        '''Get InChI for this structure.'''
+        return Chem.MolToInchi(self.mol)
 
     def to_smarts(self):
-        '''Return SMARTS string (in memory, no files).'''
-        raise NotImplementedError
+        '''Get SMARTS for this structure.'''
+        return Chem.MolToSmarts(self.mol)
 
-    def save_pickle(self, path):
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-        return
+    def to_xyz(self):
+        '''Get XYZ text for this structure.'''
+        return Chem.MolToXYZBlock(self.mol)
+
+    def to_pdb(self):
+        '''Get PDB text for this structure'''
+        return Chem.MolToPDBBlock(self.mol)
+
+    def save_smiles(self, path: str):
+        '''Save this structure's SMILES to file.'''
+        with open(path) as f:
+            f.write(Chem.MolToSmiles(self.mol))
+        return 'Success'
+
+    def save_inchi(self, path: str):
+        '''Save this structure's InChI to file.'''
+        with open(path) as f:
+            f.write(Chem.MolToInchi(self.mol))
+        return 'Success'
+
+    def save_smarts(self, path: str):
+        '''Save this structure's SMARTS to file.'''
+        with open(path) as f:
+            f.write(Chem.MolToSmarts(self.mol))
+        return 'Success'
+
+    def save_xyz(self, path: str):
+        '''Save XYZ file for this structure.'''
+        return Chem.MolToXYZFile(self.mol, path)
 
     def save_mol(self, path):
-        '''Save RDKit Mol instance'''
+        '''Save Mol file for this structure.'''
+        return Chem.MolToMolFile(self.mol, path)
 
-        # Skip if no mol available
-        if self.mol is None:
-            self._gen_mol()
+    def save_pickle(self, path):
+        '''Pickle this class instance.'''
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        return 'Success'
 
-        # Save file
-        with open(path, 'w+') as f:
-            f.write(self.mol)
-        return
+    def save_pdb(self, path: str):
+        '''Save PDB file for this structure.'''
+        return Chem.MolToPDBFile(self.mol, path)
 
-    def save(self, path, format=None):
-        '''Generic save function, provided format flag.'''
-        raise NotImplementedError
+    def save(self, path, fmt=None):
+        '''
+        Save molecule
+
+        Parameters
+        ----------
+        path : str
+            Path to save file.
+        fmt : str (optional)
+            Format to save this molecule in. If None, determined from given
+            path's extension. If .pkl. pickles this full object.
+            Default: None.
+            Supported formats: .smi (SMILES), .inchi (InChI), .mol, .xyz,
+            .pdb, .pkl.
+
+        Returns
+        -------
+        str
+            Status of save.
+
+        '''
+
+        if fmt is None:
+            # Decide format based on path
+            fmt = os.path.splitext(path)[-1]
+        fmt = fmt.lower()
+
+        if 'smi' in fmt:
+            return self.save_smiles(path)
+
+        if 'inchi' in fmt:
+            return self.save_inchi(path)
+
+        if 'smarts' in fmt:
+            return self.save_smarts(path)
+
+        if 'xyz' in fmt:
+            return self.save_xyz(path)
+
+        if 'mol' in fmt:  # diff for mol2?
+            return self.save_mol(path)
+
+        if 'pkl' in fmt:
+            return self.save_pickle(path)
+
+        if 'pdb' in fmt:
+            return self.save_pdb(path)
+
+        # TODO: enable Compute2DCoords, https://www.rdkit.org/docs/source/rdkit.Chem.rdDepictor.html
+
+        raise TypeError('Input format {} not supported.'.format(fmt))
 
 
 class MDOptimizedGeometry(Geometry):
@@ -434,109 +621,3 @@ class DFTOptimizedGeometry(Geometry):
     def __init__(self):
         # Initialize the base class
         super().__init__()
-
-
-def smarts_to_mol(smarts):
-    return Chem.MolFromSmarts(smarts)
-
-
-def smi_to_mol(smi):
-    mol = Chem.MolFromSmiles(smi)
-    molH = Chem.AddHs(mol)
-    mol = Chem.MolToMolBlock(molH)
-    return mol
-
-
-def inchi_to_mol(inchi):
-    mol = Chem.MolFromInchi(inchi)
-    molH = Chem.AddHs(mol)
-    mol = Chem.MolToMolBlock(molH)
-    return mol
-
-
-# TODO: fix, need to generate xyz from contents in memory
-def xyz_to_mol(path):
-    '''Convert XYZ to Mol'''
-    xyz = next(pybel.readfile('xyz', path))
-    name = ((path).split('.')[0]).split('/')[-1] + '.mol'
-    mol = xyz.write('mol', name, erwrite=True)
-    return mol
-
-
-def to_mol(cpd, frm='smi'):
-    '''
-    Convert from given datatype to RDKit Mol object.
-
-    Can convert from smiles, smarts, inchi, or xyz.
-    '''
-
-    if frm.lower() in ['smiles', 'smi']:
-        res = smi_to_mol(cpd)
-
-    elif frm.lower() == 'smarts':
-        res = smarts_to_mol(cpd)
-
-    elif frm.lower() == 'inchi':
-        res = inchi_to_mol(cpd)
-
-    elif frm.lower() == 'xyz':
-        res = xyz_to_mol(cpd)
-
-    else:
-        raise TypeError('Input format {} not supported.'.format(frm))
-
-    if res is None:
-        raise RuntimeError('Conversion to mol failed.')
-
-    return res
-
-
-def to_smiles(cpd, frm='mol'):
-    '''
-    Convert from given datatype to RDKit canonical SMILES.
-
-    Can convert from SMILES, InChI or mol.
-    '''
-
-    if 'mol' in frm.lower():
-        res = MolToSmiles(cpd)
-
-    elif 'smi' in frm.lower():
-        res = MolToSmiles(MolFromSmiles(cpd))
-
-    elif 'inchi' in frm.lower():
-        res = MolToSmiles(MolFromInchi(cpd))
-
-    else:
-        raise TypeError('Input format {} not supported.'.format(frm))
-
-    if res is None:
-        raise RuntimeError('Conversion to smiles failed.')
-
-    return res
-
-
-# TODO: still needed? What all should be supported?
-def to_xyz(cpd, frm='mol'):
-    '''
-    Convert from given datatype to XYZ file.
-
-    Can convert from smiles, inchi, or mol.
-    '''
-
-    if 'mol' in frm.lower():
-        res = MolToXYZFile(cpd, filename)
-
-    elif 'smi' in frm.lower():
-        res = MolToXYZFile(smi_to_mol(cpd), filename)
-
-    elif 'inchi' in frm.lower():
-        res = MolToXYZFile(inchi_to_mol(cpd), filename)
-
-    else:
-        raise TypeError('Input format {} not supported.'.format(frm))
-
-    if res is None:
-        raise RuntimeError('Conversion to xyz failed.')
-
-    return res
