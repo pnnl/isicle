@@ -178,7 +178,9 @@ def load_smiles(path: str):
 
     '''
     geom = _load_generic_geom(path)
-    geom.mol = Chem.MolFromSmiles(geom.contents[0])
+    mol = Chem.MolFromSmiles(geom.contents[0])
+    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
+    geom.mol = mol
     return geom
 
 
@@ -198,7 +200,9 @@ def load_inchi(path: str):
 
     '''
     geom = _load_generic_geom(path)
-    geom.mol = Chem.MolFromInchi(geom.contents[0])
+    mol = Chem.MolFromInchi(geom.contents[0])
+    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
+    geom.mol = mol
     return geom
 
 
