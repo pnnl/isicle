@@ -103,3 +103,42 @@ class AdductInterface(GeometryInterface):
     def negative_mode(self):
         '''Optimize geometry'''
         raise NotImplementedError
+
+
+class QMWrapperInterface(metaclass=abc.ABCMeta):
+    '''
+    Abstract base class for quantum mechanics wrapper interface. All QM
+    wrappers conform to this definition.
+    '''
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'load_geometry')
+                and callable(subclass.load_geometry)
+                and hasattr(subclass, 'configure')
+                and callable(subclass.configure)
+                and hasattr(subclass, 'run')
+                and callable(subclass.run)
+                and hasattr(subclass, 'finsih')
+                and callable(subclass.finish),
+                or NotImplemented)
+
+    @abc.abstractmethod
+    def load_geometry(self):
+        '''Load the input geometry file'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def configure(self):
+        '''Configure the run.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def run(self):
+        '''Execute/submit the run.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def finish(self, path: str):
+        '''Finalize, parse, return result object.'''
+        raise NotImplementedError
