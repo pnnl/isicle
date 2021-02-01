@@ -33,7 +33,8 @@ class NWChemWrapper(QMWrapperInterface):
 
     def __init__(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        
+    
+    # TODO: what if user wants to pass a `Geometry` instance instead?
     def load_geometry(self, path):
         # Load geometry
         self.geom = load(path)
