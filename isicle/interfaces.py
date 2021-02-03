@@ -124,7 +124,7 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
                 and hasattr(subclass, 'run')
                 and callable(subclass.run)
                 and hasattr(subclass, 'finsih')
-                and callable(subclass.finish),
+                and callable(subclass.finish)
                 or NotImplemented)
 
     @abc.abstractmethod
