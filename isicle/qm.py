@@ -10,25 +10,47 @@ from isicle.utils import safelist
 import tempfile
 import os
 from string import Template
-import itertools
+from itertools import combinations, cycle
 import subprocess
-from itertools import cycle
 
 
-def dft(self, program='NWChem', functional='b3lyp', basis_set='6-31g*'):
+def _program_selector(program):
+    program_map = {'nwchem': NWChemWrapper}
+
+    if program.lower() in program_map.keys():
+        return program_map[program.lower()]()
+    else:
+        raise ValueError('{} not a supported quantum mechanical program.'.format(program))
+
+
+def dft(self, path, program='NWChem', template=None, **kwargs):
     '''
     Optimize geometry, either XYZ or PDB, using stated functional and basis set.
     Additional inputs can be grid size, optimization criteria level,
     '''
-    # TODO: define input, arguments, and output
-    # Should return instance (or list) of DFT
+    # Select program
+    qmw = _program_selector(program)
 
-    # save geometry to input file
-    # load/generate .nw script
-    # submit job
-    # parse result
-    # return decorated `*OptimizedGeometry` class instance
-    raise NotImplementedError
+    # Load geometry
+    qmw.load_geometry(path)
+
+    # Save geometry
+    qmw.save_geometry(path, fmt=kwargs.pop('fmt'))
+
+    # Configure
+    if template is not None:
+        qmw.configure_from_template(template)
+    else:
+        qmw.configure(**kwargs)
+
+    # Save configuration file
+    qmw.save_config()
+
+    # Run QM simulation
+    qmw.run()
+
+    # Finish/clean up
+    return qmw.finish()
 
 
 class NWChemWrapper(QMWrapperInterface):
@@ -70,16 +92,15 @@ class NWChemWrapper(QMWrapperInterface):
         return idx
 
     def _configure_header(scratch_dir='/scratch', mem_global=1600, mem_heap=100, mem_stack=600):
-        d = {'basename': self.geom.basename
-             'self.fmt': self.fmt,
+        d = {'basename': self.geom.basename,
              'dirname': self.temp_dir,
              'mem_global': mem_global,
              'mem_heap': mem_heap,
              'mem_stack': mem_stack,
              'scratch_dir': scratch_dir}
 
-        return ('title "{basename}.{fmt}"\n'
-                'start {basename}.{fmt}\n\n'
+        return ('title "{basename}"\n'
+                'start {basename}\n\n'
                 'memory global {mem_global} mb heap {mem_heap} mb stack {mem_stack} mb\n\n'
                 'permanent_dir {dirname}\n'
                 'scratch_dir {scratch_dir}\n\n'
@@ -205,7 +226,7 @@ class NWChemWrapper(QMWrapperInterface):
     def _configure_spin(self, idx, max_pairs=30, basis_set='6-31G*', ao_basis='cartesian',
                         functional='b3lyp', cosmo=True, solvent='H20', gas=False, energy=True, **kwargs):
         # Enumerate spin-spin couplings
-        pairs = list(itertools.combinations(idx, 2))
+        pairs = list(combinations(idx, 2))
 
         # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
@@ -249,12 +270,11 @@ class NWChemWrapper(QMWrapperInterface):
         functional = safelist(functional)
         basis_set = safelist(basis_set)
         ao_basis = safelist(ao_basis)
-        max_iter = safelist(max_iter)
         atoms = safelist(atoms)
         cosmo = safelist(cosmo)
 
         # Container for final configuration script
-        nwconfig = ''
+        config = ''
 
         # Check lengths
         if not ((len(tasks) == len(functional)) or (len(functional) == 1)):
@@ -273,21 +293,41 @@ class NWChemWrapper(QMWrapperInterface):
         idx = self._atom_indices(atoms=atoms)
 
         # Generate header information
-        nwconfig += self._configure_header(scratch_dir=scratch_dir, mem_global=mem_global, mem_heap=mem_heap, mem_stack=mem_stack)
+        config += self._configure_header(scratch_dir=scratch_dir, mem_global=mem_global, mem_heap=mem_heap, mem_stack=mem_stack)
 
         # Load geometry
-        nwconfig += self._configure_load(charge=charge)
+        config += self._configure_load(charge=charge)
 
         # Configure tasks
         for task, f, b, a, c in zip(tasks, cycle(functional), cycle(basis), cycle(ao_basis), cycle(cosmo)):
             # TODO: finish this
-            nwconfig += self.task_map[task](functional=f, basis_set=b, ao_basis=a,
+            config += self.task_map[task](functional=f, basis_set=b, ao_basis=a,
                                             energy=energy, frequency=frequency, temp=temp,
                                             cosmo=c, solvent=solvent, gas=gas, max_iter=max_iter)
 
+        # Store as atrribute
+        self.config = config
+
+        return self.config
+
+    def configure_from_template(self, path, **kwargs):
+        # Add/override class-managed kwargs
+        kwargs['basename'] = self.geom.basename
+        kwargs['fmt'] = self.fmt
+
+        # Open template
+        with open(path, 'r') as f:
+            template = Template(f.read())
+
+        # Store as attribute
+        self.config = template.substitute(**kwargs)
+
+        return self.config
+
+    def save_config(self):
         # Write to file
         with open(os.path.join(self.temp_dir, self.geom.basename + '.nw'), 'w') as f:
-            f.write(nwconfig)
+            f.write(self.config)
 
     def run(self):
         infile = os.path.join(self.temp_dir, self.geom.basename + '.nw')
@@ -319,5 +359,3 @@ class NWChemWrapper(QMWrapperInterface):
         os.removedirs(self.temp_dir)
 
         return result
-
-# TODO: add other DFT methods as needed
