@@ -115,8 +115,12 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
     def __subclasshook__(cls, subclass):
         return (hasattr(subclass, 'load_geometry')
                 and callable(subclass.load_geometry)
+                and hasattr(subclass, 'set_geometry')
+                and callable(subclass.set_geometry)
                 and hasattr(subclass, 'configure')
                 and callable(subclass.configure)
+                and hasattr(subclass, 'save_config')
+                and callable(subclass.save_config)
                 and hasattr(subclass, 'run')
                 and callable(subclass.run)
                 and hasattr(subclass, 'finsih')
@@ -129,7 +133,17 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def set_geometry(self):
+        '''Load the input geometry file'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def configure(self):
+        '''Configure the run.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save_config(self):
         '''Configure the run.'''
         raise NotImplementedError
 
