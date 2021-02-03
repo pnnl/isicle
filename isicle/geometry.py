@@ -6,7 +6,7 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit import Chem
 import pybel
 import pickle
-from isicle.interfaces import GeometryInterface, MolecularStringInterface
+from isicle.interfaces import GeometryInterface
 
 
 def load_pickle(path: str):
@@ -501,7 +501,7 @@ class Geometry(GeometryInterface):
             # instance of that class
             return DFTOptimizedGeometry()
         else:
-        raise ValueError('Optimization method "{}" not supported'.format(method))
+            raise ValueError('Optimization method "{}" not supported'.format(method))
 
     # TODO: update
     def total_partial_charge(self):

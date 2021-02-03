@@ -57,43 +57,43 @@ class NWChemWrapper(QMWrapperInterface):
 
     def __init__(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        task_map = {'optimize': self._configure_optimize,
-                    'shielding': self._configure_shielding,
-                    'spin': self._configure_spin}
+        self.task_map = {'optimize': self._configure_optimize,
+                         'shielding': self._configure_shielding,
+                         'spin': self._configure_spin}
 
     def load_geometry(self, path):
         # Load geometry
         self.geom = load(path)
 
         # Extract filename
-        self.geom.basename = os.path.splitext(self.geom.path)[0]
+        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
 
     def set_geometry(self, geom):
         # Assign geometry
         self.geom = geom
 
         # Extract filename
-        self.geom.basename = os.path.splitext(self.geom.path)[0]
+        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
 
     def save_geometry(self, fmt='xyz'):
         # Save to temporary directory
         self.fmt = fmt.lower()
-        outfile = os.path.join(self.temp_dir, '{}.{}'.format(self.geom.basename, self.fmt.lower()))
+        outfile = os.path.join(self.temp_dir.name, '{}.{}'.format(self.geom.basename, self.fmt.lower()))
         self.geom.save(outfile)
 
     def _atom_indices(self, atoms=['C', 'H'],
                       lookup={'C': 6, 'H': 1, 'N': 7, 'O': 8, 'F': 9, 'P': 15}):
         atoms = [lookup[x] for x in atoms]
         idx = []
-        for a in self.geom.mol.atoms:
-            if a.atomicnum in atoms:
-                idx.append(a.idx)
-
+        for a in self.geom.mol.GetAtoms():
+            if a.GetAtomicNum() in atoms:
+                idx.append(a.GetIdx())
+        self.idx = idx
         return idx
 
-    def _configure_header(scratch_dir='/scratch', mem_global=1600, mem_heap=100, mem_stack=600):
+    def _configure_header(self, scratch_dir='/scratch', mem_global=1600, mem_heap=100, mem_stack=600):
         d = {'basename': self.geom.basename,
-             'dirname': self.temp_dir,
+             'dirname': self.temp_dir.name,
              'mem_global': mem_global,
              'mem_heap': mem_heap,
              'mem_stack': mem_stack,
@@ -110,7 +110,7 @@ class NWChemWrapper(QMWrapperInterface):
     def _configure_load(self, charge=0):
         d = {'basename': self.geom.basename,
              'fmt': self.fmt,
-             'dirname': self.temp_dir,
+             'dirname': self.temp_dir.name,
              'charge': charge}
 
         return ('\ncharge {charge}\n'
@@ -147,7 +147,7 @@ class NWChemWrapper(QMWrapperInterface):
         return ('\ndriver\n'
                 ' max_iter {max_iter}\n'
                 ' {fmt} {basename}_geom\n'
-                'end\n')
+                'end\n').format(**d)
 
     def _configure_cosmo(self, solvent='H20', gas=False):
 
@@ -160,9 +160,9 @@ class NWChemWrapper(QMWrapperInterface):
                 'end\n').format(**d)
 
     def _configure_frequency(self, temp=298.15):
-        return ('\nfreq'
-                ' temp 1 {temp}\n'.format(temp)
-                'end\n')
+        return ('\nfreq\n'
+                ' temp 1 {}\n'
+                'end\n').format(temp)
 
     def _configure_optimize(self, basis_set='6-31G*', ao_basis='cartesian',
                             functional='b3lyp', max_iter=150,
@@ -194,7 +194,7 @@ class NWChemWrapper(QMWrapperInterface):
 
         return s
 
-    def _configure_shielding(self, idx, basis_set='6-31G*', ao_basis='cartesian',
+    def _configure_shielding(self, basis_set='6-31G*', ao_basis='cartesian',
                              functional='b3lyp', cosmo=True, solvent='H20', gas=False, energy=True, **kwargs):
         # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
@@ -207,8 +207,8 @@ class NWChemWrapper(QMWrapperInterface):
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
         # Add shielding block
-        d = {'ncount': len(idx),
-             'nuclei': ' '.join(['%s' % x for x in idx])}
+        d = {'ncount': len(self.idx),
+             'nuclei': ' '.join(['%s' % x for x in self.idx])}
 
         s += ('\nproperty\n'
               ' SHIELDING {ncount} {nuclei}\n'
@@ -223,10 +223,10 @@ class NWChemWrapper(QMWrapperInterface):
 
         return s
 
-    def _configure_spin(self, idx, max_pairs=30, basis_set='6-31G*', ao_basis='cartesian',
+    def _configure_spin(self, max_pairs=30, basis_set='6-31G*', ao_basis='cartesian',
                         functional='b3lyp', cosmo=True, solvent='H20', gas=False, energy=True, **kwargs):
         # Enumerate spin-spin couplings
-        pairs = list(combinations(idx, 2))
+        pairs = list(combinations(self.idx, 2))
 
         # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
@@ -244,9 +244,9 @@ class NWChemWrapper(QMWrapperInterface):
                 if i > 0:
                     s += '\nend\n'
                     s += '\ntask dft property\n\n'
-                s += 'property\n'
+                s += '\nproperty\n'
                 npairs = min(len(pairs) - i, max_pairs)
-                s += ' SPINSPIN {}}'.format(npairs)
+                s += ' SPINSPIN {}'.format(npairs)
             s += ' {} {}'.format(*p)
 
         s += '\nend\n'
@@ -290,7 +290,7 @@ class NWChemWrapper(QMWrapperInterface):
             raise ValueError('Maximum iterations must be assigned globally or per task.')
 
         # Extract atom index information
-        idx = self._atom_indices(atoms=atoms)
+        self._atom_indices(atoms=atoms)
 
         # Generate header information
         config += self._configure_header(scratch_dir=scratch_dir, mem_global=mem_global, mem_heap=mem_heap, mem_stack=mem_stack)
@@ -299,7 +299,7 @@ class NWChemWrapper(QMWrapperInterface):
         config += self._configure_load(charge=charge)
 
         # Configure tasks
-        for task, f, b, a, c in zip(tasks, cycle(functional), cycle(basis), cycle(ao_basis), cycle(cosmo)):
+        for task, f, b, a, c in zip(tasks, cycle(functional), cycle(basis_set), cycle(ao_basis), cycle(cosmo)):
             # TODO: finish this
             config += self.task_map[task](functional=f, basis_set=b, ao_basis=a,
                                             energy=energy, frequency=frequency, temp=temp,
@@ -326,18 +326,18 @@ class NWChemWrapper(QMWrapperInterface):
 
     def save_config(self):
         # Write to file
-        with open(os.path.join(self.temp_dir, self.geom.basename + '.nw'), 'w') as f:
+        with open(os.path.join(self.temp_dir.name, self.geom.basename + '.nw'), 'w') as f:
             f.write(self.config)
 
     def run(self):
-        infile = os.path.join(self.temp_dir, self.geom.basename + '.nw')
-        outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
-        logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
+        infile = os.path.join(self.temp_dir.name, self.geom.basename + '.nw')
+        outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
+        logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
         subprocess.call('nwchem {} > {} 2> {}'.format(infile, outfile, logfile, shell=True))
 
     def finish(self, keep_files=True, path=None):
         parser = NWChemParser()
-        parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
+        parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
         result = parser.parse(to_parse=self.to_parse)
 
         if keep_files is True:
@@ -348,14 +348,14 @@ class NWChemWrapper(QMWrapperInterface):
                 raise ValueError('Must supply `path`.') 
             else:
                 # TODO: anything else to keep?
-                shutil.copy2(os.path.join(self.temp_dir, self.geom.basename + '.nw'), path)
-                shutil.copy2(os.path.join(self.temp_dir, self.geom.basename + '.out'), path)
-                shutil.copy2(os.path.join(self.temp_dir, self.geom.basename + '.log'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name, self.geom.basename + '.nw'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name, self.geom.basename + '.out'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name, self.geom.basename + '.log'), path)
 
-                geoms = glob.glob(self.temp_dir, '*.{}'.format(self.fmt))
+                geoms = glob.glob(os.path.join(self.temp_dir.name, '*.{}'.format(self.fmt)))
                 [shutil.copy2(x, path) for x in geoms]
 
         # Remove temporary files
-        os.removedirs(self.temp_dir)
+        self.temp_dir.cleanup()
 
         return result
