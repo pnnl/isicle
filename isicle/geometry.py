@@ -35,7 +35,7 @@ def load_pickle(path: str):
         return mol
 
     # Failure. This is not a *Geometry instance
-    raise IOError('Unsupported geometry format: {}.'.format(mol.__class__.name))
+    raise TypeError('Unsupported geometry format: {}.'.format(mol.__class__.name))
 
 
 def _load_text(path: str):
