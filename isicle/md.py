@@ -1,6 +1,5 @@
 from isicle import geometry
-import os
-import 
+import os 
 
 '''
 Files resulting from an xtb job always run in the same directory that the command is 
