@@ -104,14 +104,14 @@ class TestNWChemWrapper:
 
     # TODO: parametrize
     # TODO: meaningful assertions (currently just runs without error)
-    @pytest.mark.parametrize('tasks',
-                             [('optimize'),
-                              ('shielding'),
-                              ('spin'),
-                              (['optimize', 'shielding']),
-                              (['shielding', 'spin']),
-                              (['optimize', 'shielding', 'spin'])])
-    def test_configure(self, nwc, tasks):
+    @pytest.mark.parametrize('tasks,ao_basis,cosmo',
+                             [('optimize', 'spherical', True),
+                              ('shielding', 'spherical', False),
+                              ('spin', 'cartesian', True),
+                              (['optimize', 'shielding'], ['spherical', 'spherical'], [False, True]),
+                              (['shielding', 'spin'], 'spherical', True),
+                              (['optimize', 'shielding', 'spin'], 'spherical', True)])
+    def test_configure(self, nwc, tasks, ao_basis, cosmo):
         # Load geometry from file
         nwc.load_geometry(localfile('resources/geom_test.mol'))
 
@@ -119,7 +119,7 @@ class TestNWChemWrapper:
         nwc.save_geometry(fmt='pdb')
 
         # Configure
-        config = nwc.configure(tasks=tasks)
+        config = nwc.configure(tasks=tasks, ao_basis=ao_basis, cosmo=cosmo)
 
         # Clean up
         nwc.temp_dir.cleanup()
