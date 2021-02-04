@@ -1,0 +1,12 @@
+HEADER    PROTEIN                                 03-FEB-21   NONE
+TITLE     NULL                                                        
+COMPND    NULL                                                        
+SOURCE    NULL                                                        
+KEYWDS    NULL                                                        
+EXPDTA    NULL                                                        
+AUTHOR    Marvin                                                      
+REVDAT   1   03-FEB-21         0                                  
+HETATM    1  C   UNK     0       1.540   0.000   0.000  0.00  0.00           C+0
+HETATM    2  C   UNK     0       0.000   0.000   0.000  0.00  0.00           C+0
+MASTER        0    0    0    0    0    0    0    0    2    0    0    0
+END
