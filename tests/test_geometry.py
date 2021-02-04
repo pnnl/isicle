@@ -16,8 +16,8 @@ def compare(geom1, geom2):
     '''
     Compares two NWChemResult objects and returns if they are equivalent
     '''
-    if geom1.path == geom2.path and geom1.contents == geom2.contents and /
-        MolToSmiles(geom1.mol) == MolToSmiles(geom2.mol):
+    if geom1.path == geom2.path and geom1.contents == geom2.contents and \
+            MolToSmiles(geom1.mol) == MolToSmiles(geom2.mol):
         return True
     return False
 
@@ -43,20 +43,20 @@ class testLoad:
                              [('tests/resources/geom_test.smi', 'UnpicklingError: pickle data was truncated'),
                               ('tests/resources/geom_test_bad.pkl', 'Unsupported geometry format: Mol')])
     def test_load_pickle_fail(self, path, expected):
-        assertRaises(expected, isicle.geometry.load_pickle(path)
+        assertRaises(expected, isicle.geometry.load_pickle(path))
 
     @ pytest.mark.parametrize('path,expected,saved_pkl',
-                             [('tests/resources/geom_test.smi', ['C=C'], 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.smi', ['C=C'], 'tests/resources/geom_test.pkl')])
     def test_load_smiles(self, path, expected, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_smiles(path)
+        geom1 = isicle.geometry.load_smiles(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test for expected smiles
         assert geom1.contents == expected
@@ -68,17 +68,17 @@ class testLoad:
         assert compare(geom1, geom3)
 
     @ pytest.mark.parametrize('path,expected,saved_pkl',
-                             [('tests/resources/geom_test.inchi', ['InChI=1S/C2H4/c1-2/h1-2H2'], 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.inchi', ['InChI=1S/C2H4/c1-2/h1-2H2'], 'tests/resources/geom_test.pkl')])
     def test_load_inchi(self, path, expected, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_inchi(path)
+        geom1 = isicle.geometry.load_inchi(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test for expected inchi
         assert geom1.contents == expected
@@ -90,17 +90,17 @@ class testLoad:
         assert compare(geom1, geom3)
 
     @ pytest.mark.parametrize('path,expected,saved_pkl',
-                             [('tests/resources/geom_test.smarts', ['[#6]=[#6]'], 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.smarts', ['[#6]=[#6]'], 'tests/resources/geom_test.pkl')])
     def test_load_smarts(self, path, expected, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_smarts(path)
+        geom1 = isicle.geometry.load_smarts(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test for expected inchi
         assert geom1.contents == expected
@@ -111,19 +111,18 @@ class testLoad:
         # Test this matches saved result
         assert compare(geom1, geom3)
 
-
     @ pytest.mark.parametrize('path,saved_pkl',
-                             [('tests/resources/geom_test.mol', 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.mol', 'tests/resources/geom_test.pkl')])
     def test_load_mol(self, path, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_mol(path)
+        geom1 = isicle.geometry.load_mol(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
@@ -132,17 +131,17 @@ class testLoad:
         assert compare(geom1, geom3)
 
     @ pytest.mark.parametrize('path,saved_pkl',
-                             [('tests/resources/geom_test.mol', 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.mol', 'tests/resources/geom_test.pkl')])
     def test_load_mol2(self, path, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_mol2(path)
+        geom1 = isicle.geometry.load_mol2(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
@@ -151,17 +150,17 @@ class testLoad:
         assert compare(geom1, geom3)
 
     @ pytest.mark.parametrize('path,saved_pkl',
-                             [('tests/resources/geom_test.xyz', 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.xyz', 'tests/resources/geom_test.pkl')])
     def test_load_xyz(self, path, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_xyz(path)
+        geom1 = isicle.geometry.load_xyz(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
@@ -169,19 +168,18 @@ class testLoad:
         # Test this matches saved result
         assert compare(geom1, geom3)
 
-
     @ pytest.mark.parametrize('path,saved_pkl',
-                             [('tests/resources/geom_test.pdb', 'tests/resources/geom_test.pkl')])
+                              [('tests/resources/geom_test.pdb', 'tests/resources/geom_test.pkl')])
     def test_load_pdb(self, path, saved_pkl):
 
         # Initialize using direct call
-        geom1=isicle.geometry.load_pdb(path)
+        geom1 = isicle.geometry.load_pdb(path)
 
         # Initialize using indirect call
-        geom2=isicle.geometry.load(path)
+        geom2 = isicle.geometry.load(path)
 
         # Load saved result
-        geom3=isicle.geometry.load_pickle(saved_pkl)
+        geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
