@@ -95,11 +95,14 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    xyz = next(pybel.readfile('xyz', path))
-    name = ((path).split('.')[0]).split('/')[-1] + '.mol'
-    geom.mol = xyz.write('mol', name, erwrite=True)
-    return geom
+    # geom = _load_generic_geom(path)
+    # xyz = next(pybel.readfile('xyz', path))
+
+    # geom.mol = xyz.write('mol', None, overwrite=True)
+    # return geom
+
+    # NOTE: currently cannot cast to RDKit Mol object
+    raise NotImplementedError
 
 
 def load_mol(path: str):
@@ -248,7 +251,7 @@ def load(path: str):
     path = path.strip()
     extension = os.path.splitext(path)[-1].lower()
 
-    if extension == 'pkl':
+    if extension == '.pkl':
         return load_pickle(path)
 
     if 'mol2' in extension:
@@ -257,19 +260,19 @@ def load(path: str):
     if 'mol' in extension:
         return load_mol(path)
 
-    if extension == 'xyz':
+    if extension == '.xyz':
         return load_xyz(path)
 
-    if extension == 'pdb':
+    if extension == '.pdb':
         return load_pdb(path)
 
     if 'smi' in extension:
         return load_smiles(path)
 
-    if extension == 'inchi':
+    if extension == '.inchi':
         return load_inchi(path)
 
-    if extension == 'smarts':
+    if extension == '.smarts':
         return load_smarts(path)
 
     raise IOError('Extension {} not recognized.'.format(extension))

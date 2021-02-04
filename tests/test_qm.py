@@ -2,6 +2,7 @@ import pytest
 from isicle.qm import _program_selector, NWChemWrapper, dft
 from isicle.geometry import Geometry, load
 import os
+import shutil
 
 
 def localfile(path):
@@ -155,6 +156,12 @@ class TestNWChemWrapper:
         raise NotImplementedError
 
     def test_finish(self, nwc):
-        # Clean up
-        nwc.temp_dir.cleanup()
-        raise NotImplementedError
+        # Load geometry from file
+        nwc.load_geometry(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.xyz'))
+
+        # Copy example output to temp folder (i.e. assume nwchem was "run")
+        shutil.copy2(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out'),
+                     nwc.temp_dir.name)
+
+        # Finish
+        nwc.finish(keep_files=False)

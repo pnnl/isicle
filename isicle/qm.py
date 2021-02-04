@@ -4,7 +4,7 @@ Assumes NWChem as default quantum chemistry package. Other options can be added 
 '''
 
 from isicle.interfaces import QMWrapperInterface
-from isicle.geometry import load
+from isicle.geometry import load, _load_generic_geom
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
 import tempfile
@@ -62,8 +62,13 @@ class NWChemWrapper(QMWrapperInterface):
                          'spin': self._configure_spin}
 
     def load_geometry(self, path):
-        # Load geometry
-        self.geom = load(path)
+        # Workaround for xyz input
+        # See `isicle.geometry.load_xyz`
+        fn, ext = os.path.splitext(path)
+        if ext.lower() == '.xyz':
+            self.geom = _load_generic_geom(path)
+        else:
+            self.geom = load(path)
 
         # Extract filename
         self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
@@ -76,9 +81,21 @@ class NWChemWrapper(QMWrapperInterface):
         self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
 
     def save_geometry(self, fmt='xyz'):
-        # Save to temporary directory
+        # Path operations
         self.fmt = fmt.lower()
-        outfile = os.path.join(self.temp_dir.name, '{}.{}'.format(self.geom.basename, self.fmt.lower()))
+        outfile = os.path.join(self.temp_dir.name,
+                               '{}.{}'.format(self.geom.basename, self.fmt.lower()))
+
+        # Workaround for xyz input
+        # See `isicle.geometry.load_xyz`
+        if self.geom.filetype == '.xyz':
+            if fmt != 'xyz':
+                raise TypeError('Input .xyz files cannot be converted.')
+
+            with open(outfile, 'w') as f:
+                f.write(geom.contents)
+
+        # All other formats
         self.geom.save(outfile)
 
     def _atom_indices(self, atoms=['C', 'H'],
@@ -338,7 +355,7 @@ class NWChemWrapper(QMWrapperInterface):
     def finish(self, keep_files=True, path=None):
         parser = NWChemParser()
         parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
-        result = parser.parse(to_parse=self.to_parse)
+        result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'molden', 'frequency'])
 
         if keep_files is True:
             import shutil
