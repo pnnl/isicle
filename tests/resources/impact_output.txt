@@ -1,0 +1,2 @@
+#Str nr   filename                   CCS_PA (SEM_rel)     CCS_TJM*      n_iter
+CCS 1     /dtemp/emslc50583/colby/benchmark/output/adducts/geometry_+H/AUNGANRZJHBGPY-SCRDCRAPSA-N_+H.xyz     119.0296 ( 0.0013)     128.1511    -1003520
