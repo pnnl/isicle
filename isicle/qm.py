@@ -144,11 +144,12 @@ class NWChemWrapper(QMWrapperInterface):
                 ' * library {basis_set}\n'
                 'end\n').format(**d)
 
-    def _configure_dft(self, functional='b3lyp'):
+    def _configure_dft(self, functional='b3lyp', odft=False):
 
-        d = {'functional': functional}
+        d = {'functional': functional,
+             'dft': 'odft' if odft is True else 'dft'}
         
-        return ('\ndft\n'
+        return ('\n{dft}\n'
                 ' direct\n'
                 ' xc {functional}\n'
                 ' mulliken\n'               # Do we need this line?
@@ -249,7 +250,7 @@ class NWChemWrapper(QMWrapperInterface):
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
 
         # Add DFT block
-        s += self._configure_dft(functional=functional)
+        s += self._configure_dft(functional=functional, odft=True)
 
         # Add COSMO block
         if cosmo:
