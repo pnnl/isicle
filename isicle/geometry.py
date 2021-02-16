@@ -551,26 +551,29 @@ class Geometry(GeometryInterface):
         # NOTE: Depricated, returns nothing for C2H4
     raise NotImplementedError
 
-    def to_pdb(self):
+    def to_pdbblock(self):
         '''Get PDB text for this structure'''
         return Chem.MolToPDBBlock(self.get_mol())
 
+    def to_molblock(self):
+        '''Get PDB text for this structure'''
+        return Chem.MolToMolBlock(self.get_mol())
 
     def save_smiles(self, path: str):
         '''Save this structure's SMILES to file.'''
-        with open(path) as f:
+        with open(path, 'w') as f:
             f.write(self.to_smiles())
         return 'Success'
 
     def save_inchi(self, path: str):
         '''Save this structure's InChI to file.'''
-        with open(path) as f:
+        with open(path, 'w') as f:
             f.write(self.to_inchi())
         return 'Success'
 
     def save_smarts(self, path: str):
         '''Save this structure's SMARTS to file.'''
-        with open(path) as f:
+        with open(path, 'w') as f:
             f.write(self.to_smarts())
         return 'Success'
 
