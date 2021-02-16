@@ -556,19 +556,19 @@ class Geometry(GeometryInterface):
     def save_smiles(self, path: str):
         '''Save this structure's SMILES to file.'''
         with open(path) as f:
-            f.write(Chem.MolToSmiles(self.mol))
+            f.write(self.to_smiles())
         return 'Success'
 
     def save_inchi(self, path: str):
         '''Save this structure's InChI to file.'''
         with open(path) as f:
-            f.write(Chem.MolToInchi(self.mol))
+            f.write(self.to_inchi())
         return 'Success'
 
     def save_smarts(self, path: str):
         '''Save this structure's SMARTS to file.'''
         with open(path) as f:
-            f.write(Chem.MolToSmarts(self.mol))
+            f.write(self.to_smarts())
         return 'Success'
 
     def save_xyz(self, path: str):
