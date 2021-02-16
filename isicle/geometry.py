@@ -188,7 +188,10 @@ def _load_2D(path, convert_fxn):
     if mol is None:
         raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
 
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
+    # Hs not explicit, must be added. Not done for MolFromSmarts.
+    if convert_fxn is not Chem.MolFromSmarts:
+        mol = Chem.AddHs(mol)
+
     geom.mol = mol
     return geom
 
