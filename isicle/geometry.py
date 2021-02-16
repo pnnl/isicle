@@ -495,11 +495,11 @@ class Geometry(GeometryInterface):
         enumerator = rdMolStandardize.TautomerEnumerator()
 
         mol = self.get_mol()
-        res = [self.to_smiles()]
+        res = [mol]
         tauts = enumerator.Enumerate(mol)
         smis = [Chem.MolToSmiles(x) for x in tauts]
         s_smis = sorted((x, y)
-                        for x, y in zip(smis, tauts) if x != self.smiles)
+                        for x, y in zip(smis, tauts) if x != self.to_smiles())
         res += [y for x, y in s_smis]
 
         # Ensure res is a list of mol objects
