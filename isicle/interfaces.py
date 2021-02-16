@@ -56,7 +56,7 @@ class GeometryInterface(metaclass=abc.ABCMeta):
                 or NotImplemented)
 
     @abc.abstractmethod
-    def optimize(self):
+    def dft_optimize(self):
         '''Optimize geometry'''
         raise NotImplementedError
 

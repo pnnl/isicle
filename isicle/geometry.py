@@ -507,21 +507,34 @@ class Geometry(GeometryInterface):
 
         return self._handle_inplace(res[0], inplace)
 
-    def optimize(self, method='mtd', kwargs={}):
-        '''Call appropriate optimization function and return result as the appropriate class'''
-        raise NotImplementedError
+    def dft_optimize(self, program='NWChem', template=None, **kwargs):
+        '''
+        Optimize geometry, either XYZ or PDB, using stated functional and basis set.
+        Additional inputs can be grid size, optimization criteria level,
+        '''
+        # Select program
+        qmw = _program_selector(program)
 
-        if method.lower() == 'mtd':
-            # don't actually return the below, just ensure the MD optimizer returns an
-            # instance of that class
-            return MDOptimizedGeometry()
+        # Load geometry
+        qmw.set_geometry(self)
 
-        if method.lower() == 'dft':
-            # don't actually return the below, just ensure the DFT optimizer returns an
-            # instance of that class
-            return DFTOptimizedGeometry()
+        # Save geometry
+        qmw.save_geometry(path, fmt=kwargs.pop('fmt'))
+
+        # Configure
+        if template is not None:
+            qmw.configure_from_template(template)
         else:
-            raise ValueError('Optimization method "{}" not supported'.format(method))
+            qmw.configure(**kwargs)
+
+        # Save configuration file
+        qmw.save_config()
+
+        # Run QM simulation
+        qmw.run()
+
+        # Finish/clean up
+        return qmw.finish()
 
     # TODO: update
     def total_partial_charge(self):
