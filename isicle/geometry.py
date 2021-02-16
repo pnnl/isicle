@@ -545,9 +545,11 @@ class Geometry(GeometryInterface):
         '''Get SMARTS for this structure.'''
         return Chem.MolToSmarts(self.get_mol())
 
-    def to_xyz(self):
-        '''Get XYZ text for this structure.'''
-        return Chem.MolToXYZBlock(self.mol)
+    def to_xyzblock(self):
+        #     '''Get XYZ text for this structure.'''
+        #     return Chem.MolToXYZBlock(self.mol)
+        # NOTE: Depricated, returns nothing for C2H4
+    raise NotImplementedError
 
     def to_pdb(self):
         '''Get PDB text for this structure'''
@@ -573,8 +575,10 @@ class Geometry(GeometryInterface):
         return 'Success'
 
     def save_xyz(self, path: str):
-        '''Save XYZ file for this structure.'''
-        return Chem.MolToXYZFile(self.mol, path)
+        #     '''Save XYZ file for this structure.'''
+        #     return Chem.MolToXYZFile(self.get_mol(), path)
+        # NOTE: Depricated, creates blank files for C2H4
+    raise NotImplementedError
 
     def save_mol(self, path):
         '''Save Mol file for this structure.'''
