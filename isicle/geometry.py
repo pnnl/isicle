@@ -526,7 +526,7 @@ class Geometry(GeometryInterface):
 
     def natoms(self):
         '''Calculate total number of atoms.'''
-        return Chem.Mol.GetNumAtoms(self.mol)
+        return Chem.Mol.GetNumAtoms(self.get_mol())
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
@@ -535,15 +535,15 @@ class Geometry(GeometryInterface):
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
-        return Chem.MolToSmiles(self.mol)
+        return Chem.MolToSmiles(self.get_mol())
 
     def to_inchi(self):
         '''Get InChI for this structure.'''
-        return Chem.MolToInchi(self.mol)
+        return Chem.MolToInchi(self.get_mol())
 
     def to_smarts(self):
         '''Get SMARTS for this structure.'''
-        return Chem.MolToSmarts(self.mol)
+        return Chem.MolToSmarts(self.get_mol())
 
     def to_xyz(self):
         '''Get XYZ text for this structure.'''
@@ -551,7 +551,8 @@ class Geometry(GeometryInterface):
 
     def to_pdb(self):
         '''Get PDB text for this structure'''
-        return Chem.MolToPDBBlock(self.mol)
+        return Chem.MolToPDBBlock(self.get_mol())
+
 
     def save_smiles(self, path: str):
         '''Save this structure's SMILES to file.'''
@@ -577,7 +578,7 @@ class Geometry(GeometryInterface):
 
     def save_mol(self, path):
         '''Save Mol file for this structure.'''
-        return Chem.MolToMolFile(self.mol, path)
+        return Chem.MolToMolFile(self.get_mol(), path)
 
     def save_pickle(self, path):
         '''Pickle this class instance.'''
