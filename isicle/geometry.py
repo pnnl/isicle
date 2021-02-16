@@ -519,8 +519,11 @@ class Geometry(GeometryInterface):
     # TODO: update
     def total_partial_charge(self):
         '''Sum the partial charge across all atoms.'''
-        self.charge = np.array([a.partialcharge for a in self.atoms]).sum()
-        return self.charge
+        mol = self.get_mol()
+        Chem.AllChem.ComputeGasteigerCharges(mol)
+        contribs = [mol.GetAtomWithIdx(i).GetDoubleProp('_GasteigerCharge')
+                    for i in range(mol.GetNumAtoms())]
+        return np.nansum(contribs)
 
     # TODO: update
     def natoms(self):
