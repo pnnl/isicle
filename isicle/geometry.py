@@ -551,10 +551,9 @@ class Geometry(GeometryInterface):
                     for i in range(mol.GetNumAtoms())]
         return np.nansum(contribs)
 
-    # TODO: update
     def natoms(self):
         '''Calculate total number of atoms.'''
-        return Chem.Mol.GetNumAtoms(self.mol)  # TODO: check
+        return Chem.Mol.GetNumAtoms(self.mol)
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
