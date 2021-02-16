@@ -56,7 +56,7 @@ def _load_text(path: str):
     '''
     with open(path, 'r') as f:
         contents = f.readlines()
-    return contents
+    return [x.strip() for x in contents]
 
 
 def _load_generic_geom(path: str):
@@ -77,7 +77,7 @@ def _load_generic_geom(path: str):
     geom = Geometry()
     geom.path = path
     geom.contents = _load_text(path)
-    geom.filetype = os.path.splitext(path)[-1].lower()
+    geom.filetype = os.path.splitext(path)[-1].lower().strip()
     return geom
 
 
@@ -161,6 +161,35 @@ def load_pdb(path: str):
     return geom
 
 
+def _load_2D(path, convert_fxn):
+    '''
+    Load string file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to SMILES file
+    convert_fxn: RDKit function
+        Function to use to convert from string to mol (e.g. MolFromSmiles)
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    '''
+    geom = _load_generic_geom(path)
+    string_struct = geom.contents[0].strip()
+    mol = convert_fxn(string_struct)
+
+    if mol is None:
+        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
+
+    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
+    geom.mol = mol
+    return geom
+
+
 def load_smiles(path: str):
     '''
     Load SMILES file and return as a Geometry instance.
@@ -176,11 +205,7 @@ def load_smiles(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    mol = Chem.MolFromSmiles(geom.contents[0])
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
-    geom.mol = mol
-    return geom
+    return _load_2D(path, Chem.MolFromSmiles)
 
 
 def load_inchi(path: str):
@@ -198,11 +223,7 @@ def load_inchi(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    mol = Chem.MolFromInchi(geom.contents[0])
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
-    geom.mol = mol
-    return geom
+    return _load_2D(path, Chem.MolFromInchi)
 
 
 def load_smarts(path: str):
@@ -220,11 +241,7 @@ def load_smarts(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    mol = Chem.MolFromSmarts(geom.contents[0])
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
-    geom.mol = mol
-    return geom
+    return _load_2D(path, Chem.MolFromSmarts)
 
 
 def load(path: str):
