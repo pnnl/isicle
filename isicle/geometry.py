@@ -368,9 +368,8 @@ class Geometry(GeometryInterface):
             return self
 
         # Make a new object and populate its mol with the given mol
-        cp = self.__copy__()
-        cp.mol = mol.__copy__
-        return cp
+        return type(self)(self.path, self.contents,
+                          self.filetype, mol)
 
     def desalt(self, salts=None, inplace=False):
         '''
