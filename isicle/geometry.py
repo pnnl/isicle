@@ -7,6 +7,7 @@ from rdkit import Chem
 import pybel
 import pickle
 from isicle.interfaces import GeometryInterface
+from isicle.qm import dft
 
 
 def load_pickle(path: str):
@@ -27,15 +28,17 @@ def load_pickle(path: str):
 
     # Load file
     with open(path, 'rb') as f:
-        mol = pickle.load(f)
+        try:
+            geom = pickle.load(f)
+        except pickle.UnpicklingError:
+            raise IOError('Could not read file as pickle: {}'.format(path))
 
     # Check for valid Geometry class type
-    if mol.__class__.__name__ in ['Geometry', 'MDOptimizedGeometry',
-                                  'DFTOptimizedGeometry']:
-        return mol
+    if isinstance(geom, (Geometry, MDOptimizedGeometry, DFTOptimizedGeometry)):
+        return geom
 
     # Failure. This is not a *Geometry instance
-    raise TypeError('Unsupported geometry format: {}.'.format(mol.__class__.name))
+    raise TypeError('Unsupported geometry format: {}.'.format(geom.__class__))
 
 
 def _load_text(path: str):
@@ -55,7 +58,7 @@ def _load_text(path: str):
     '''
     with open(path, 'r') as f:
         contents = f.readlines()
-    return contents
+    return [x.strip() for x in contents]
 
 
 def _load_generic_geom(path: str):
@@ -76,7 +79,7 @@ def _load_generic_geom(path: str):
     geom = Geometry()
     geom.path = path
     geom.contents = _load_text(path)
-    geom.filetype = os.path.splitext(path)[-1].lower()
+    geom.filetype = os.path.splitext(path)[-1].lower().strip()
     return geom
 
 
@@ -95,14 +98,9 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    # geom = _load_generic_geom(path)
-    # xyz = next(pybel.readfile('xyz', path))
-
-    # geom.mol = xyz.write('mol', None, overwrite=True)
-    # return geom
-
     # NOTE: currently cannot cast to RDKit Mol object
-    raise NotImplementedError
+    geom = _load_generic_geom(path)
+    return geom
 
 
 def load_mol(path: str):
@@ -165,6 +163,38 @@ def load_pdb(path: str):
     return geom
 
 
+def _load_2D(path, convert_fxn):
+    '''
+    Load string file and return as a Geometry instance.
+
+    Parameters
+    ----------
+    path : str
+        Path to SMILES file
+    convert_fxn: RDKit function
+        Function to use to convert from string to mol (e.g. MolFromSmiles)
+
+    Returns
+    -------
+    Geometry
+        Provided file and molecule information
+
+    '''
+    geom = _load_generic_geom(path)
+    string_struct = geom.contents[0].strip()
+    mol = convert_fxn(string_struct)
+
+    if mol is None:
+        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
+
+    # Hs not explicit, must be added. Not done for MolFromSmarts.
+    if convert_fxn is not Chem.MolFromSmarts:
+        mol = Chem.AddHs(mol)
+
+    geom.mol = mol
+    return geom
+
+
 def load_smiles(path: str):
     '''
     Load SMILES file and return as a Geometry instance.
@@ -180,11 +210,7 @@ def load_smiles(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    mol = Chem.MolFromSmiles(geom.contents[0])
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
-    geom.mol = mol
-    return geom
+    return _load_2D(path, Chem.MolFromSmiles)
 
 
 def load_inchi(path: str):
@@ -202,11 +228,7 @@ def load_inchi(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    mol = Chem.MolFromInchi(geom.contents[0])
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
-    geom.mol = mol
-    return geom
+    return _load_2D(path, Chem.MolFromInchi)
 
 
 def load_smarts(path: str):
@@ -224,11 +246,7 @@ def load_smarts(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    mol = Chem.MolFromSmarts(geom.contents[0])
-    mol = Chem.MolToMolBlock(Chem.AddHs(mol))
-    geom.mol = mol
-    return geom
+    return _load_2D(path, Chem.MolFromSmarts)
 
 
 def load(path: str):
@@ -345,9 +363,8 @@ class Geometry(GeometryInterface):
             return self
 
         # Make a new object and populate its mol with the given mol
-        cp = self.__copy__()
-        cp.mol = mol.__copy__
-        return cp
+        return type(self)(self.path, self.contents,
+                          self.filetype, mol)
 
     def desalt(self, salts=None, inplace=False):
         '''
@@ -472,11 +489,11 @@ class Geometry(GeometryInterface):
         enumerator = rdMolStandardize.TautomerEnumerator()
 
         mol = self.get_mol()
-        res = [self.to_smiles()]
+        res = [mol]
         tauts = enumerator.Enumerate(mol)
         smis = [Chem.MolToSmiles(x) for x in tauts]
         s_smis = sorted((x, y)
-                        for x, y in zip(smis, tauts) if x != self.smiles)
+                        for x, y in zip(smis, tauts) if x != self.to_smiles())
         res += [y for x, y in s_smis]
 
         # Ensure res is a list of mol objects
@@ -495,40 +512,20 @@ class Geometry(GeometryInterface):
         Optimize geometry, either XYZ or PDB, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        # Select program
-        qmw = _program_selector(program)
-
-        # Load geometry
-        qmw.set_geometry(self)
-
-        # Save geometry
-        qmw.save_geometry(path, fmt=kwargs.pop('fmt'))
-
-        # Configure
-        if template is not None:
-            qmw.configure_from_template(template)
-        else:
-            qmw.configure(**kwargs)
-
-        # Save configuration file
-        qmw.save_config()
-
-        # Run QM simulation
-        qmw.run()
-
-        # Finish/clean up
-        return qmw.finish()
+        return isicle.qm.dft(self, program=program, template=template, **kwargs)
 
     # TODO: update
     def total_partial_charge(self):
         '''Sum the partial charge across all atoms.'''
-        self.charge = np.array([a.partialcharge for a in self.atoms]).sum()
-        return self.charge
+        mol = self.get_mol()
+        Chem.AllChem.ComputeGasteigerCharges(mol)
+        contribs = [mol.GetAtomWithIdx(i).GetDoubleProp('_GasteigerCharge')
+                    for i in range(mol.GetNumAtoms())]
+        return np.nansum(contribs)
 
-    # TODO: update
     def natoms(self):
         '''Calculate total number of atoms.'''
-        return Chem.Mol.GetNumAtoms(self.mol)  # TODO: check
+        return Chem.Mol.GetNumAtoms(self.get_mol())
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
@@ -537,49 +534,57 @@ class Geometry(GeometryInterface):
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
-        return Chem.MolToSmiles(self.mol)
+        return Chem.MolToSmiles(self.get_mol())
 
     def to_inchi(self):
         '''Get InChI for this structure.'''
-        return Chem.MolToInchi(self.mol)
+        return Chem.MolToInchi(self.get_mol())
 
     def to_smarts(self):
         '''Get SMARTS for this structure.'''
-        return Chem.MolToSmarts(self.mol)
+        return Chem.MolToSmarts(self.get_mol())
 
-    def to_xyz(self):
-        '''Get XYZ text for this structure.'''
-        return Chem.MolToXYZBlock(self.mol)
+    def to_xyzblock(self):
+        #     '''Get XYZ text for this structure.'''
+        #     return Chem.MolToXYZBlock(self.mol)
+        # NOTE: Depricated, returns nothing for C2H4
+        raise NotImplementedError
 
-    def to_pdb(self):
+    def to_pdbblock(self):
         '''Get PDB text for this structure'''
-        return Chem.MolToPDBBlock(self.mol)
+        return Chem.MolToPDBBlock(self.get_mol())
+
+    def to_molblock(self):
+        '''Get PDB text for this structure'''
+        return Chem.MolToMolBlock(self.get_mol())
 
     def save_smiles(self, path: str):
         '''Save this structure's SMILES to file.'''
-        with open(path) as f:
-            f.write(Chem.MolToSmiles(self.mol))
+        with open(path, 'w') as f:
+            f.write(self.to_smiles())
         return 'Success'
 
     def save_inchi(self, path: str):
         '''Save this structure's InChI to file.'''
-        with open(path) as f:
-            f.write(Chem.MolToInchi(self.mol))
+        with open(path, 'w') as f:
+            f.write(self.to_inchi())
         return 'Success'
 
     def save_smarts(self, path: str):
         '''Save this structure's SMARTS to file.'''
-        with open(path) as f:
-            f.write(Chem.MolToSmarts(self.mol))
+        with open(path, 'w') as f:
+            f.write(self.to_smarts())
         return 'Success'
 
     def save_xyz(self, path: str):
-        '''Save XYZ file for this structure.'''
-        return Chem.MolToXYZFile(self.mol, path)
+        #     '''Save XYZ file for this structure.'''
+        #     return Chem.MolToXYZFile(self.get_mol(), path)
+        # NOTE: Depricated, creates blank files for C2H4
+        raise NotImplementedError
 
     def save_mol(self, path):
         '''Save Mol file for this structure.'''
-        return Chem.MolToMolFile(self.mol, path)
+        return Chem.MolToMolFile(self.get_mol(), path)
 
     def save_pickle(self, path):
         '''Pickle this class instance.'''

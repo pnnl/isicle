@@ -128,11 +128,6 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
                 or NotImplemented)
 
     @abc.abstractmethod
-    def load_geometry(self):
-        '''Load the input geometry file'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def set_geometry(self):
         '''Load the input geometry file'''
         raise NotImplementedError
