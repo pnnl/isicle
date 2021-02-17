@@ -7,6 +7,7 @@ from rdkit import Chem
 import pybel
 import pickle
 from isicle.interfaces import GeometryInterface
+from isicle.qm import dft
 
 
 def load_pickle(path: str):
@@ -95,14 +96,9 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    # geom = _load_generic_geom(path)
-    # xyz = next(pybel.readfile('xyz', path))
-
-    # geom.mol = xyz.write('mol', None, overwrite=True)
-    # return geom
-
     # NOTE: currently cannot cast to RDKit Mol object
-    raise NotImplementedError
+    geom = _load_generic_geom(path)
+    return geom
 
 
 def load_mol(path: str):
@@ -495,29 +491,7 @@ class Geometry(GeometryInterface):
         Optimize geometry, either XYZ or PDB, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        # Select program
-        qmw = _program_selector(program)
-
-        # Load geometry
-        qmw.set_geometry(self)
-
-        # Save geometry
-        qmw.save_geometry(path, fmt=kwargs.pop('fmt'))
-
-        # Configure
-        if template is not None:
-            qmw.configure_from_template(template)
-        else:
-            qmw.configure(**kwargs)
-
-        # Save configuration file
-        qmw.save_config()
-
-        # Run QM simulation
-        qmw.run()
-
-        # Finish/clean up
-        return qmw.finish()
+        return isicle.qm.dft(self, program=program, template=template, **kwargs)
 
     # TODO: update
     def total_partial_charge(self):
