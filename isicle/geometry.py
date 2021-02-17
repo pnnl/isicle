@@ -29,17 +29,16 @@ def load_pickle(path: str):
     # Load file
     with open(path, 'rb') as f:
         try:
-            mol = pickle.load(f)
+            geom = pickle.load(f)
         except pickle.UnpicklingError:
             raise IOError('Could not read file as pickle: {}'.format(path))
 
     # Check for valid Geometry class type
-    if mol.__class__.__name__ in ['Geometry', 'MDOptimizedGeometry',
-                                  'DFTOptimizedGeometry']:
-        return mol
+    if isinstance(geom, (Geometry, MDOptimizedGeometry, DFTOptimizedGeometry)):
+        return geom
 
     # Failure. This is not a *Geometry instance
-    raise TypeError('Unsupported geometry format: {}.'.format(mol.__class__))
+    raise TypeError('Unsupported geometry format: {}.'.format(geom.__class__))
 
 
 def _load_text(path: str):
