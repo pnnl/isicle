@@ -6,8 +6,8 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit import Chem
 import pybel
 import pickle
+import isicle
 from isicle.interfaces import GeometryInterface
-from isicle.qm import dft
 
 
 def load_pickle(path: str):
