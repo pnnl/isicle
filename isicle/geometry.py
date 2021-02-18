@@ -179,9 +179,9 @@ def _gen_3D_coord(mol, string_struct):
     check_mol(mol, string_struct)
 
     # Gen 3d coord
-    mol = AllChem.EmbedMolecule(mol)
+    Chem.AllChem.EmbedMolecule(mol)
     check_mol(mol, string_struct)
-    mol = AllChem.MMFFOptimizeMolecule(mol)
+    Chem.AllChem.MMFFOptimizeMolecule(mol)
     check_mol(mol, string_struct)
 
     return mol
