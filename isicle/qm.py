@@ -339,7 +339,7 @@ class NWChemWrapper(QMWrapperInterface):
         infile = os.path.join(self.temp_dir.name, self.geom.basename + '.nw')
         outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
-        subprocess.call('nwchem {} > {} 2> {}'.format(infile, outfile, logfile, shell=True))
+        subprocess.call('nwchem {} > {} 2> {}'.format(infile, outfile, logfile), shell=True)
 
     def finish(self, keep_files=True, path=None):
         parser = NWChemParser()
