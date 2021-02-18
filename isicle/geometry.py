@@ -98,8 +98,8 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    # NOTE: currently cannot cast to RDKit Mol object
     geom = _load_generic_geom(path)
+    geom.mol = _gen_3D_coord(Chem.MolFromXYZFile(path))
     return geom
 
 
@@ -169,6 +169,24 @@ def check_mol(mol, string_struct):
     return
 
 
+def _gen_3D_coord(mol, string_struct):
+
+    # Check given input
+    check_mol(mol, string_struct)
+
+    # Add explicit hydrogens
+    mol = Chem.AddHs(mol)
+    check_mol(mol, string_struct)
+
+    # Gen 3d coord
+    mol = AllChem.EmbedMolecule(mol)
+    check_mol(mol, string_struct)
+    mol = AllChem.MMFFOptimizeMolecule(mol)
+    check_mol(mol, string_struct)
+
+    return mol
+
+
 def _load_2D(path, convert_fxn):
     '''
     Load string file and return as a Geometry instance.
@@ -191,12 +209,10 @@ def _load_2D(path, convert_fxn):
     mol = convert_fxn(string_struct)
     check_mol(mol, string_struct)
 
-    if mol is None:
-        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
-
-    # Hs not explicit, must be added. Not done for MolFromSmarts.
+    # Hs not explicit, must be added.
+    # Not done for MolFromSmarts since it crashes at the AddHs step.
     if convert_fxn is not Chem.MolFromSmarts:
-        mol = Chem.AddHs(mol)
+        mol = _gen_3D_coord(mol, string_struct)
     check_mol(mol, string_struct)
 
     geom.mol = mol
