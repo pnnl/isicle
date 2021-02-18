@@ -142,9 +142,26 @@ class TestNWChemWrapper:
 
     # Not particularly testable
     def test_run(self, nwc):
+        # Load geometry externally
+        geom = load(localfile('resources/geom_test.mol'))
+
+        # Set geometry
+        nwc.set_geometry(geom)
+
+        # Save geometry
+        nwc.save_geometry(fmt='pdb')
+
+        # Configure
+        nwc.configure()
+
+        # Save config
+        nwc.save_config()
+
+        # For now, just check if NWChem is added to path and returns
+        nwc.run()
+
         # Clean up
         nwc.temp_dir.cleanup()
-        raise NotImplementedError
 
     def test_finish(self, nwc):
         # Load geometry externally
