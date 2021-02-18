@@ -49,29 +49,11 @@ class TestNWChemWrapper:
         # Clean up
         nwc.temp_dir.cleanup()
 
-    # Note: mostly relies on `geometry.load`, so
-    # no need to test fully. Just make sure attributes
-    # are assigned and outputs generated correctly.
-    @pytest.mark.parametrize('path,expected',
-                             [('resources/geom_test.mol', 'geom_test')])
-    def test_load_geometry(self, nwc, path, expected):
-        # Load geometry from file
-        nwc.load_geometry(localfile(path))
-
-        # Check class instance
-        assert isinstance(nwc.geom, Geometry)
-
-        # Check basename attribute
-        assert nwc.geom.basename == expected
-
-        # Clean up
-        nwc.temp_dir.cleanup()
-
     @pytest.mark.parametrize('path,expected',
                              [('resources/geom_test.mol', 'geom_test')])
     def test_set_geometry(self, nwc, path, expected):
         # Load geometry externally
-        geom = load(path)
+        geom = load(localfile(path))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -89,8 +71,11 @@ class TestNWChemWrapper:
                              [('xyz'),
                               ('pdb')])
     def test_save_geometry(self, nwc, fmt):
-        # Load geometry from file
-        nwc.load_geometry(localfile('resources/geom_test.mol'))
+        # Load geometry externally
+        geom = load(localfile('resources/geom_test.mol'))
+
+        # Set geometry
+        nwc.set_geometry(geom)
 
         # Save geometry
         nwc.save_geometry(fmt=fmt)
@@ -113,8 +98,11 @@ class TestNWChemWrapper:
                               (['shielding', 'spin'], 'spherical', True),
                               (['optimize', 'shielding', 'spin'], 'spherical', True)])
     def test_configure(self, nwc, tasks, ao_basis, cosmo):
-        # Load geometry from file
-        nwc.load_geometry(localfile('resources/geom_test.mol'))
+        # Load geometry externally
+        geom = load(localfile('resources/geom_test.mol'))
+
+        # Set geometry
+        nwc.set_geometry(geom)
 
         # Save geometry
         nwc.save_geometry(fmt='pdb')
@@ -131,8 +119,11 @@ class TestNWChemWrapper:
         raise NotImplementedError
 
     def test_save_config(self, nwc):
-        # Load geometry from file
-        nwc.load_geometry(localfile('resources/geom_test.mol'))
+        # Load geometry externally
+        geom = load(localfile('resources/geom_test.mol'))
+
+        # Set geometry
+        nwc.set_geometry(geom)
 
         # Save geometry
         nwc.save_geometry(fmt='pdb')
@@ -156,8 +147,11 @@ class TestNWChemWrapper:
         raise NotImplementedError
 
     def test_finish(self, nwc):
-        # Load geometry from file
-        nwc.load_geometry(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.xyz'))
+        # Load geometry externally
+        geom = load(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.xyz'))
+
+        # Set geometry
+        nwc.set_geometry(geom)
 
         # Copy example output to temp folder (i.e. assume nwchem was "run")
         shutil.copy2(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out'),
