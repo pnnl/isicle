@@ -23,7 +23,7 @@ def _program_selector(program):
         raise ValueError('{} not a supported quantum mechanical program.'.format(program))
 
 
-def dft(self, path, program='NWChem', template=None, **kwargs):
+def dft(geom, program='NWChem', template=None, **kwargs):
     '''
     Optimize geometry, either XYZ or PDB, using stated functional and basis set.
     Additional inputs can be grid size, optimization criteria level,
@@ -31,11 +31,11 @@ def dft(self, path, program='NWChem', template=None, **kwargs):
     # Select program
     qmw = _program_selector(program)
 
-    # Load geometry
-    qmw.load_geometry(path)
+    # Set geometry
+    qmw.set_geometry(geom)
 
     # Save geometry
-    qmw.save_geometry(path, fmt=kwargs.pop('fmt'))
+    qmw.save_geometry(fmt=kwargs.pop('fmt'))
 
     # Configure
     if template is not None:
@@ -60,18 +60,6 @@ class NWChemWrapper(QMWrapperInterface):
         self.task_map = {'optimize': self._configure_optimize,
                          'shielding': self._configure_shielding,
                          'spin': self._configure_spin}
-
-    def load_geometry(self, path):
-        # Workaround for xyz input
-        # See `isicle.geometry.load_xyz`
-        fn, ext = os.path.splitext(path)
-        if ext.lower() == '.xyz':
-            self.geom = _load_generic_geom(path)
-        else:
-            self.geom = load(path)
-
-        # Extract filename
-        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
 
     def set_geometry(self, geom):
         # Assign geometry

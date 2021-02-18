@@ -6,6 +6,7 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit import Chem
 import pybel
 import pickle
+import isicle
 from isicle.interfaces import GeometryInterface
 
 
@@ -28,17 +29,16 @@ def load_pickle(path: str):
     # Load file
     with open(path, 'rb') as f:
         try:
-            mol = pickle.load(f)
+            geom = pickle.load(f)
         except pickle.UnpicklingError:
             raise IOError('Could not read file as pickle: {}'.format(path))
 
     # Check for valid Geometry class type
-    if mol.__class__.__name__ in ['Geometry', 'MDOptimizedGeometry',
-                                  'DFTOptimizedGeometry']:
-        return mol
+    if isinstance(geom, (Geometry, MDOptimizedGeometry, DFTOptimizedGeometry)):
+        return geom
 
     # Failure. This is not a *Geometry instance
-    raise TypeError('Unsupported geometry format: {}.'.format(mol.__class__))
+    raise TypeError('Unsupported geometry format: {}.'.format(geom.__class__))
 
 
 def _load_text(path: str):
@@ -98,14 +98,9 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    # geom = _load_generic_geom(path)
-    # xyz = next(pybel.readfile('xyz', path))
-
-    # geom.mol = xyz.write('mol', None, overwrite=True)
-    # return geom
-
     # NOTE: currently cannot cast to RDKit Mol object
-    raise NotImplementedError
+    geom = _load_generic_geom(path)
+    return geom
 
 
 def load_mol(path: str):
@@ -517,29 +512,7 @@ class Geometry(GeometryInterface):
         Optimize geometry, either XYZ or PDB, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        # Select program
-        qmw = _program_selector(program)
-
-        # Load geometry
-        qmw.set_geometry(self)
-
-        # Save geometry
-        qmw.save_geometry(path, fmt=kwargs.pop('fmt'))
-
-        # Configure
-        if template is not None:
-            qmw.configure_from_template(template)
-        else:
-            qmw.configure(**kwargs)
-
-        # Save configuration file
-        qmw.save_config()
-
-        # Run QM simulation
-        qmw.run()
-
-        # Finish/clean up
-        return qmw.finish()
+        return isicle.qm.dft(self, program=program, template=template, **kwargs)
 
     # TODO: update
     def total_partial_charge(self):
