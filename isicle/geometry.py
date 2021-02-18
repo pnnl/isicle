@@ -163,6 +163,12 @@ def load_pdb(path: str):
     return geom
 
 
+def check_mol(mol, string_struct):
+    if mol is None:
+        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
+    return
+
+
 def _load_2D(path, convert_fxn):
     '''
     Load string file and return as a Geometry instance.
@@ -183,6 +189,7 @@ def _load_2D(path, convert_fxn):
     geom = _load_generic_geom(path)
     string_struct = geom.contents[0].strip()
     mol = convert_fxn(string_struct)
+    check_mol(mol, string_struct)
 
     if mol is None:
         raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
@@ -190,6 +197,7 @@ def _load_2D(path, convert_fxn):
     # Hs not explicit, must be added. Not done for MolFromSmarts.
     if convert_fxn is not Chem.MolFromSmarts:
         mol = Chem.AddHs(mol)
+    check_mol(mol, string_struct)
 
     geom.mol = mol
     return geom
