@@ -1,6 +1,7 @@
 from statsmodels.stats.weightstats import DescrStatsW
 import pandas as pd
 from isicle.geometry import Geometry, MDOptimizedGeometry, DFTOptimizedGeometry
+import numpy as np
 
 
 def _method_selector(method):
@@ -12,12 +13,12 @@ def _method_selector(method):
     if method.lower() in method_map.keys():
         return method_map[method.lower()]
     else:
-        raise ValueError('{} not a supported conformer reduction method.'.format(method))
+        raise ValueError('{} not a supported reduction method.'.format(method))
 
 
 def reduce(value, method='boltzmann', **kwargs):
-    f = _method_selctor(method)
-    return f(value, energy, **kwargs)
+    f = _method_selector(method)
+    return f(value, **kwargs)
 
 
 def boltzmann(value, energy=None, index=None):
@@ -91,14 +92,17 @@ def threshold(value, energy=None, threshold=5, index=None):
 
 
 def _are_Geometry_instances(objects):
-    return all(isinstance(x, (Geometry, MDOptimizedGeometry, DFTOptimizedGeometry)) for x in objects)
+    return all(isinstance(x, (Geometry,
+                              MDOptimizedGeometry,
+                              DFTOptimizedGeometry)) for x in objects)
 
 
 def build_conformational_ensemble(geometries):
     if _are_Geometry_instances(geometries) is True:
         return ConformationalEnsemble(geometries)
     else:
-        raise TypeError('Conformers must be of type Geometry or related subclass.')
+        raise TypeError('Conformers must be of type Geometry or related'
+                        'subclass.')
 
 
 class ConformationalEnsemble(list):
@@ -111,7 +115,8 @@ class ConformationalEnsemble(list):
     def _apply_method(self, method, **kwargs):
         # Check for attribute
         if not all(hasattr(x, method) for x in self):
-            raise AttributeError('{} not found for all conformational sample members.')
+            raise AttributeError('{} not found for all conformational sample'
+                                 'members.')
 
         # Apply method to collection
         result = [getattr(x, method)(**kwargs) for x in self]
