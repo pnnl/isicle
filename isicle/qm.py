@@ -88,8 +88,8 @@ class NWChemWrapper(QMWrapperInterface):
     '''
     Wrapper for NWChem functionality.
 
-    Implements isicle.interfaces.QMWrapperInterface to ensure required methods
-    are exposed.
+    Implements :class:`~isicle.interfaces.QMWrapperInterface` to ensure
+    required methods are exposed.
 
     Attributes
     ----------
