@@ -41,8 +41,8 @@ def boltzmann(value, energy=None, index=None):
 
     res = pd.DataFrame(res, columns=['index', 'mean', 'std', 'n'])
 
-    if index is None:
-        return res.drop(columns='index')
+    if index == -1:
+        return res.drop(columns='index').iloc[0]
 
     return res
 
@@ -53,10 +53,12 @@ def simple_average(value, index=None):
 
     df = pd.DataFrame({'value': value, 'index': index})
 
-    res = df.groupby(['index'], as_index=False).mean()
+    res = df.groupby(['index'], as_index=False).agg({'value':
+                                                     ['mean', 'std', 'count']})
+    res.columns = ['index', 'mean', 'std', 'n']
 
-    if index is None:
-        return res.drop(columns='index')
+    if index == -1:
+        return res.drop(columns='index').iloc[0]
 
     return res
 
@@ -69,8 +71,8 @@ def lowest_energy(value, energy=None, index=None):
 
     res = df.loc[df.groupby('index')['energy'].idxmin()]
 
-    if index is None:
-        return res.drop(columns='index')
+    if index == -1:
+        return res.drop(columns='index').iloc[0]
 
     return res
 
@@ -83,10 +85,12 @@ def threshold(value, energy=None, threshold=5, index=None):
 
     df = df.loc[df['energy'] <= threshold, :]
 
-    res = df.groupby(['index'], as_index=False).mean()
+    res = df.groupby(['index'], as_index=False).agg({'value':
+                                                     ['mean', 'std', 'count']})
+    res.columns = ['index', 'mean', 'std', 'n']
 
-    if index is None:
-        return res.drop(columns='index')
+    if index == -1:
+        return res.drop(columns='index').iloc[0]
 
     return res
 
@@ -106,8 +110,6 @@ def build_conformational_ensemble(geometries):
 
 
 class ConformationalEnsemble(list):
-    def __init__(self):
-        pass
 
     def reduce(self):
         raise NotImplementedError()
