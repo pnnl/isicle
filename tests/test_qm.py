@@ -1,6 +1,7 @@
 import pytest
+import isicle
 from isicle.qm import _program_selector, NWChemWrapper, dft
-from isicle.geometry import Geometry, load
+from isicle.geometry import Geometry
 import os
 import shutil
 
@@ -33,8 +34,12 @@ def test__program_selector_fail(program):
         _program_selector(program)
 
 
-def test_dft():
-    raise NotImplementedError
+def test_dft(nwc):
+    # Load geometry externally
+    geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+
+    # Run dft
+    result = dft(geom, program='NWChem', fmt='xyz')
 
 
 class TestNWChemWrapper:
@@ -53,7 +58,7 @@ class TestNWChemWrapper:
                              [('resources/geom_test.mol', 'geom_test')])
     def test_set_geometry(self, nwc, path, expected):
         # Load geometry externally
-        geom = load(localfile(path))
+        geom = isicle.geometry.load(localfile(path))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -72,7 +77,7 @@ class TestNWChemWrapper:
                               ('pdb')])
     def test_save_geometry(self, nwc, fmt):
         # Load geometry externally
-        geom = load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -99,7 +104,7 @@ class TestNWChemWrapper:
                               (['optimize', 'shielding', 'spin'], 'spherical', True)])
     def test_configure(self, nwc, tasks, ao_basis, cosmo):
         # Load geometry externally
-        geom = load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -113,14 +118,33 @@ class TestNWChemWrapper:
         # Clean up
         nwc.temp_dir.cleanup()
 
-    def test_configure_from_template(self, nwc):
+    @pytest.mark.parametrize('basename,dirname',
+                             [(None, None),
+                              (None, 'override'),
+                              ('override', None),
+                              ('override', 'override')])
+    def test_configure_from_template(self, nwc, basename, dirname):
+        # Load geometry externally
+        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+
+        # Set geometry
+        nwc.set_geometry(geom)
+
+        # Save geometry
+        nwc.save_geometry(fmt='pdb')
+
+        # Configure from template
+        config = nwc.configure_from_template(localfile('resources/nwchem_template.txt'),
+                                             basename_override=basename,
+                                             dirname_override=dirname,
+                                             charge=0)
+
         # Clean up
         nwc.temp_dir.cleanup()
-        raise NotImplementedError
 
     def test_save_config(self, nwc):
         # Load geometry externally
-        geom = load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -143,7 +167,7 @@ class TestNWChemWrapper:
     # Not particularly testable
     def test_run(self, nwc):
         # Load geometry externally
-        geom = load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -165,7 +189,7 @@ class TestNWChemWrapper:
 
     def test_finish(self, nwc):
         # Load geometry externally
-        geom = load(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.xyz'))
+        geom = isicle.geometry.load(localfile('resources/nwchem_output/1R3R_difenacoum_+H_001_s.xyz'))
 
         # Set geometry
         nwc.set_geometry(geom)

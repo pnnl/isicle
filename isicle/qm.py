@@ -77,11 +77,12 @@ class NWChemWrapper(QMWrapperInterface):
         # Workaround for xyz input
         # See `isicle.geometry.load_xyz`
         if self.geom.filetype == '.xyz':
-            if fmt != 'xyz':
+            if self.fmt != 'xyz':
                 raise TypeError('Input .xyz files cannot be converted.')
 
             with open(outfile, 'w') as f:
-                f.write(geom.contents)
+                f.write('\n'.join(self.geom.contents))
+            return
 
         # All other formats
         self.geom.save(outfile)
@@ -316,9 +317,19 @@ class NWChemWrapper(QMWrapperInterface):
 
         return self.config
 
-    def configure_from_template(self, path, **kwargs):
+    def configure_from_template(self, path, basename_override=None, dirname_override=None, **kwargs):
         # Add/override class-managed kwargs
-        kwargs['basename'] = self.geom.basename
+        if basename_override is not None:
+            kwargs['basename'] = basename_override
+        else:
+            kwargs['basename'] = self.geom.basename
+
+        if dirname_override is not None:
+            kwargs['dirname'] = dirname_override
+        else:
+            kwargs['dirname'] = self.temp_dir.name
+
+        # Tied to save_geometry, required
         kwargs['fmt'] = self.fmt
 
         # Open template
@@ -341,7 +352,7 @@ class NWChemWrapper(QMWrapperInterface):
         logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
         subprocess.call('nwchem {} > {} 2> {}'.format(infile, outfile, logfile), shell=True)
 
-    def finish(self, keep_files=True, path=None):
+    def finish(self, keep_files=False, path=None):
         parser = NWChemParser()
         parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
         result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'molden', 'frequency'])
