@@ -1,5 +1,4 @@
 from isicle.interfaces import QMWrapperInterface
-from isicle.geometry import load, _load_generic_geom
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
 import tempfile
@@ -18,12 +17,12 @@ def _program_selector(program):
     ----------
     program : str
         Alias for program selection (NWChem).
-    
+
     Returns
     -------
     program
-        Wrapped functionality of the selected program.
-        Must implement QMWrapperInterface.
+        Wrapped functionality of the selected program. Must implement
+        :class:`~isicle.interfaces.QMWrapperInterface`.
 
     '''
 
@@ -32,16 +31,18 @@ def _program_selector(program):
     if program.lower() in program_map.keys():
         return program_map[program.lower()]()
     else:
-        raise ValueError('{} not a supported quantum mechanical program.'.format(program))
+        raise ValueError(('{} not a supported quantum mechanical program.')
+                         .format(program))
 
 
 def dft(geom, program='NWChem', template=None, **kwargs):
     '''
-    Optimize geometry via density functional theory using supplied functional and basis set.
+    Optimize geometry via density functional theory using supplied functional
+    and basis set.
 
     Parameters
     ----------
-    geom : Geometry
+    geom : :obj:`~isicle.geometry.Geometry`
         Molecule representation.
     program : str
         Alias for program selection (NWChem).
@@ -49,7 +50,7 @@ def dft(geom, program='NWChem', template=None, **kwargs):
         Path to optional template to bypass default configuration process.
     **kwargs
         Keyword arguments to configure the simulation.
-        See isicle.qm.NWChemWrapper.configure.
+        See :meth:`~isicle.qm.NWChemWrapper.configure`.
 
     Returns
     -------
@@ -86,17 +87,17 @@ def dft(geom, program='NWChem', template=None, **kwargs):
 class NWChemWrapper(QMWrapperInterface):
     '''
     Wrapper for NWChem functionality.
-    
+
     Implements isicle.interfaces.QMWrapperInterface to ensure required methods
     are exposed.
-    
+
     Attributes
     ----------
     temp_dir : str
         Path to temporary directory used for simulation.
     task_map : dict
-        Alias mapper for supported quantum mechanical presets.
-        Thses include "optimze", "shielding", and "spin".
+        Alias mapper for supported quantum mechanical presets. Thses include
+        "optimze", "shielding", and "spin".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
     fmt : str
@@ -110,8 +111,8 @@ class NWChemWrapper(QMWrapperInterface):
         '''
         Initialize :obj:`NWChemWrapper` instance.
 
-        Creates temporary directory for intermediate files, establishes
-        aliases for preconfigured tasks.
+        Creates temporary directory for intermediate files, establishes aliases
+        for preconfigured tasks.
 
         '''
 
@@ -122,11 +123,11 @@ class NWChemWrapper(QMWrapperInterface):
 
     def set_geometry(self, geom):
         '''
-        Set :obj:`isicle.geometry.Geometry` instance for simulation.
+        Set :obj:`~isicle.geometry.Geometry` instance for simulation.
 
         Parameters
         ----------
-        geom : :obj:`isicle.geometry.Geometry`
+        geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
 
         '''
@@ -139,8 +140,8 @@ class NWChemWrapper(QMWrapperInterface):
 
     def save_geometry(self, fmt='xyz'):
         '''
-        Save internal geometry representation to file.
-        
+        Save internal :obj:`~isicle.geometry.Geometry` representation to file.
+
         Parameters
         ----------
         fmt : str
@@ -151,7 +152,8 @@ class NWChemWrapper(QMWrapperInterface):
         # Path operations
         self.fmt = fmt.lower()
         outfile = os.path.join(self.temp_dir.name,
-                               '{}.{}'.format(self.geom.basename, self.fmt.lower()))
+                               '{}.{}'.format(self.geom.basename,
+                                              self.fmt.lower()))
 
         # Workaround for xyz input
         # See `isicle.geometry.load_xyz`
@@ -167,22 +169,24 @@ class NWChemWrapper(QMWrapperInterface):
         self.geom.save(outfile)
 
     def _atom_indices(self, atoms=['C', 'H'],
-                      lookup={'C': 6, 'H': 1, 'N': 7, 'O': 8, 'F': 9, 'P': 15}):
+                      lookup={'C': 6, 'H': 1, 'N': 7,
+                              'O': 8, 'F': 9, 'P': 15}):
         '''
         Extract indices of each atom from the internal geometry.
-        
-        Note: currently incompatible with xyz (i.e. non :obj:`rdkit.Chem.mol` instances).
+
+        Note: currently incompatible with xyz (i.e. non :obj:`rdkit.Chem.mol`
+        instances).
 
         Parameters
         ----------
-        atoms : :obj:`list` of :obj:`str`
+        atoms : list of str
             Atom types of interest.
         lookup : dict
             Mapping between atom symbol and atomic number.
 
         Returns
         -------
-        :obj:`list` of :obj:`int`
+        list of int
             Atom indices.
 
         '''
@@ -195,10 +199,11 @@ class NWChemWrapper(QMWrapperInterface):
         self.idx = idx
         return idx
 
-    def _configure_header(self, scratch_dir='/scratch', mem_global=1600, mem_heap=100, mem_stack=600):
+    def _configure_header(self, scratch_dir='/scratch', mem_global=1600,
+                          mem_heap=100, mem_stack=600):
         '''
         Generate header block of NWChem configuration.
-        
+
         Parameters
         ----------
         scratch_dir : str
@@ -207,7 +212,7 @@ class NWChemWrapper(QMWrapperInterface):
             Global memory allocation in MB.
         mem_heap : int
             Heap memory allocation in MB.
-        mem_stack  : int
+        mem_stack : int
             Stack memory allocation in MB.
 
         Returns
@@ -226,7 +231,8 @@ class NWChemWrapper(QMWrapperInterface):
 
         return ('title "{basename}"\n'
                 'start {basename}\n\n'
-                'memory global {mem_global} mb heap {mem_heap} mb stack {mem_stack} mb\n\n'
+                'memory global {mem_global} mb heap {mem_heap} '
+                'mb stack {mem_stack} mb\n\n'
                 'permanent_dir {dirname}\n'
                 'scratch_dir {scratch_dir}\n\n'
                 'echo\n'
@@ -292,8 +298,8 @@ class NWChemWrapper(QMWrapperInterface):
         functional : str
             Functional selection.
         odft : bool
-            Indicate whether to use open DFT functional
-            (required for spin-spin couplings).
+            Indicate whether to use open DFT functional (required for spin-spin
+            couplings).
 
         Returns
         -------
@@ -304,7 +310,7 @@ class NWChemWrapper(QMWrapperInterface):
 
         d = {'functional': functional,
              'dft': 'odft' if odft is True else 'dft'}
-        
+
         return ('\n{dft}\n'
                 ' direct\n'
                 ' xc {functional}\n'
@@ -319,8 +325,8 @@ class NWChemWrapper(QMWrapperInterface):
         Parameters
         ----------
         max_iter : int
-            Maximum number of optimization iterations. 
-        
+            Maximum number of optimization iterations.
+
         Returns
         -------
         str
@@ -328,9 +334,9 @@ class NWChemWrapper(QMWrapperInterface):
 
         '''
 
-        d= {'basename': self.geom.basename,
-            'fmt': self.fmt,
-            'max_iter': max_iter}
+        d = {'basename': self.geom.basename,
+             'fmt': self.fmt,
+             'max_iter': max_iter}
 
         return ('\ndriver\n'
                 ' max_iter {max_iter}\n'
@@ -388,9 +394,10 @@ class NWChemWrapper(QMWrapperInterface):
                             cosmo=False, solvent='H20', gas=False,
                             frequency=True, temp=298.15, **kwargs):
         '''
-        Generate meta optimization block of NWChem configuration. 
+        Generate meta optimization block of NWChem configuration.
 
-        Includes basis, DFT, and driver blocks; can include COSMO and/or frequency blocks.
+        Includes basis, DFT, and driver blocks; can include COSMO and/or
+        frequency blocks.
 
         Parameters
         ----------
@@ -407,11 +414,13 @@ class NWChemWrapper(QMWrapperInterface):
         solvent : str
             Solvent selection. Only used if `cosmo` is True.
         gas : bool
-            Indicate whether to use gas phase calculations. Only used if `cosmo` is True.
+            Indicate whether to use gas phase calculations. Only used if
+            `cosmo` is True.
         frequency : bool
             Indicate whether to include frequency block.
         temp : float
-            Temperature for frequency calculation. Only used if `frequency` is True.
+            Temperature for frequency calculation. Only used if `frequency` is
+            True.
         **kwargs
             Arbitrary additional arguments (unused).
 
@@ -449,11 +458,13 @@ class NWChemWrapper(QMWrapperInterface):
         return s
 
     def _configure_shielding(self, basis_set='6-31G*', ao_basis='cartesian',
-                             functional='b3lyp', cosmo=True, solvent='H20', gas=False, energy=True, **kwargs):
+                             functional='b3lyp', cosmo=True, solvent='H20',
+                             gas=False, energy=True, **kwargs):
         '''
-        Generate meta shielding block of NWChem configuration. 
+        Generate meta shielding block of NWChem configuration.
 
-        Includes basis and DFT; can include COSMO and/or single-point energy calculation block.
+        Includes basis and DFT; can include COSMO and/or single-point energy
+        calculation blocks.
 
         Parameters
         ----------
@@ -470,7 +481,8 @@ class NWChemWrapper(QMWrapperInterface):
         solvent : str
             Solvent selection. Only used if `cosmo` is True.
         gas : bool
-            Indicate whether to use gas phase calculations. Only used if `cosmo` is True.
+            Indicate whether to use gas phase calculations. Only used if
+            `cosmo` is True.
         energy : True
             Indicate whether to include single-point energy calculation block.
         **kwargs
@@ -510,12 +522,14 @@ class NWChemWrapper(QMWrapperInterface):
 
         return s
 
-    def _configure_spin(self, max_pairs=30, basis_set='6-31G*', ao_basis='cartesian',
-                        functional='b3lyp', cosmo=True, solvent='H20', gas=False, energy=True, **kwargs):
+    def _configure_spin(self, max_pairs=30, basis_set='6-31G*',
+                        ao_basis='cartesian', functional='b3lyp', cosmo=True,
+                        solvent='H20', gas=False, energy=True, **kwargs):
         '''
-        Generate meta spin-spin coupling block of NWChem configuration. 
+        Generate meta spin-spin coupling block of NWChem configuration.
 
-        Includes basis and DFT; can include COSMO and/or single-point energy calculation block.
+        Includes basis and DFT; can include COSMO and/or single-point energy
+        calculation blocks.
 
         Parameters
         ----------
@@ -533,7 +547,8 @@ class NWChemWrapper(QMWrapperInterface):
         solvent : str
             Solvent selection. Only used if `cosmo` is True.
         gas : bool
-            Indicate whether to use gas phase calculations. Only used if `cosmo` is True.
+            Indicate whether to use gas phase calculations. Only used if
+            `cosmo` is True.
         energy : True
             Indicate whether to include single-point energy calculation block.
         **kwargs
@@ -581,39 +596,46 @@ class NWChemWrapper(QMWrapperInterface):
 
         return s
 
-    def configure(self, tasks='optimize', functional='b3lyp', basis_set='6-31g*', ao_basis='cartesian',
-                  charge=0, atoms=['C', 'H'], energy=True, frequency=True, temp=298.15,
+    def configure(self, tasks='optimize', functional='b3lyp',
+                  basis_set='6-31g*', ao_basis='cartesian', charge=0,
+                  atoms=['C', 'H'], energy=True, frequency=True, temp=298.15,
                   cosmo=False, solvent='H20', gas=False, max_iter=150,
-                  mem_global=1600, mem_heap=100, mem_stack=600, scratch_dir='/scratch'):
+                  mem_global=1600, mem_heap=100, mem_stack=600,
+                  scratch_dir='/scratch'):
         '''
-        Configure NWChem simulation. 
+        Configure NWChem simulation.
 
         Parameters
         ----------
-        tasks : :obj:`str` or :obj:`list` of :obj:`str`
+        tasks : str or list of str
             Tasks text.
-        functional : :obj:`str` or :obj:`list` of :obj:`str`
-            Functional selection. Supply globally or per-task.
-        basis_set : :obj:`str` or :obj:`list` of :obj:`str`
-            Basis set selection. Supply globally or per-task.
-        ao_basis : :obj:`str` or :obj:`list` of :obj:`str`
-            Angular function selection ("spherical", "cartesian"). Supply globally or per-task.
+        functional : str or list of str
+            Functional selection. Supply globally or per task.
+        basis_set : str or list of str
+            Basis set selection. Supply globally or per task.
+        ao_basis : str or list of str
+            Angular function selection ("spherical", "cartesian"). Supply
+            globally or per task.
         charge : int
             Nominal charge of the molecule to be optimized.
-        atoms : :obj:`list` of :obj:`str`
+        atoms : list of str
             Atom types of interest.
         energy : True
             Indicate whether to include single-point energy calculation block.
         frequency : bool
             Indicate whether to include frequency block.
         temp : float
-            Temperature for frequency calculation. Only used if `frequency` is True.
+            Temperature for frequency calculation. Only used if `frequency` is
+            True.
         cosmo : bool
-            Indicate whether to include COSMO block. Supply globally or per-task.
+            Indicate whether to include COSMO block. Supply globally or per
+            task.
         solvent : str
-            Solvent selection. Only used if `cosmo` is True. Supply globally or per-task.
+            Solvent selection. Only used if `cosmo` is True. Supply globally or
+            per task.
         gas : bool
-            Indicate whether to use gas phase calculations. Only used if `cosmo` is True. Supply globally or per-task.
+            Indicate whether to use gas phase calculations. Only used if
+            `cosmo` is True. Supply globally or per task.
         max_iter : int
             Maximum number of optimization iterations.
         scratch_dir : str
@@ -622,7 +644,7 @@ class NWChemWrapper(QMWrapperInterface):
             Global memory allocation in MB.
         mem_heap : int
             Heap memory allocation in MB.
-        mem_stack  : int
+        mem_stack : int
             Stack memory allocation in MB.
 
         Returns
@@ -645,46 +667,62 @@ class NWChemWrapper(QMWrapperInterface):
 
         # Check lengths
         if not ((len(tasks) == len(functional)) or (len(functional) == 1)):
-            raise ValueError('Functional must be assigned globally or per task.')
+            raise ValueError('Functional must be assigned globally or per'
+                             'task.')
 
         if not ((len(tasks) == len(basis_set)) or (len(basis_set) == 1)):
-            raise ValueError('Basis set must be assigned globally or per task.')
+            raise ValueError('Basis set must be assigned globally or per'
+                             'task.')
 
         if not ((len(tasks) == len(ao_basis)) or (len(ao_basis) == 1)):
             raise ValueError('AO basis must be assigned globally or per task.')
 
         if not ((len(tasks) == len(cosmo)) or (len(cosmo) == 1)):
-            raise ValueError('Maximum iterations must be assigned globally or per task.')
+            raise ValueError('Maximum iterations must be assigned globally or'
+                             'per task.')
 
         # Extract atom index information
         self._atom_indices(atoms=atoms)
 
         # Generate header information
-        config += self._configure_header(scratch_dir=scratch_dir, mem_global=mem_global, mem_heap=mem_heap, mem_stack=mem_stack)
+        config += self._configure_header(scratch_dir=scratch_dir,
+                                         mem_global=mem_global,
+                                         mem_heap=mem_heap,
+                                         mem_stack=mem_stack)
 
         # Load geometry
         config += self._configure_load(charge=charge)
 
         # Configure tasks
-        for task, f, b, a, c in zip(tasks, cycle(functional), cycle(basis_set), cycle(ao_basis), cycle(cosmo)):
+        for task, f, b, a, c in zip(tasks, cycle(functional), cycle(basis_set),
+                                    cycle(ao_basis), cycle(cosmo)):
             # TODO: finish this
-            config += self.task_map[task](functional=f, basis_set=b, ao_basis=a,
-                                            energy=energy, frequency=frequency, temp=temp,
-                                            cosmo=c, solvent=solvent, gas=gas, max_iter=max_iter)
+            config += self.task_map[task](functional=f,
+                                          basis_set=b,
+                                          ao_basis=a,
+                                          energy=energy,
+                                          frequency=frequency,
+                                          temp=temp,
+                                          cosmo=c,
+                                          solvent=solvent,
+                                          gas=gas,
+                                          max_iter=max_iter)
 
         # Store as atrribute
         self.config = config
 
         return self.config
 
-    def configure_from_template(self, path, basename_override=None, dirname_override=None, **kwargs):
+    def configure_from_template(self, path, basename_override=None,
+                                dirname_override=None, **kwargs):
         '''
         Configure NWChem simulation from template file.
 
-        For use cases involving NWChem configuration not exposed by the wrapper.
-        Template contains ${keyword} entries that will be replaced by entries in `**kwargs`, if present.
-        By default, ${basename} and ${dirname} must be included in the template and will be populated
-        automatically. Override this behavior through use of appropriate keyword arguments.
+        Use for NWChem functionality not exposed by the wrapper.
+        Template contains ${keyword} entries that will be replaced by entries
+        in `**kwargs`, if present. By default, ${basename} and ${dirname} must
+        be included in the template and will be populated automatically.
+        Override this behavior through use of appropriate keyword arguments.
 
         Parameters
         ----------
@@ -734,7 +772,8 @@ class NWChemWrapper(QMWrapperInterface):
         '''
 
         # Write to file
-        with open(os.path.join(self.temp_dir.name, self.geom.basename + '.nw'), 'w') as f:
+        with open(os.path.join(self.temp_dir.name,
+                               self.geom.basename + '.nw'), 'w') as f:
             f.write(self.config)
 
     def run(self):
@@ -746,7 +785,9 @@ class NWChemWrapper(QMWrapperInterface):
         infile = os.path.join(self.temp_dir.name, self.geom.basename + '.nw')
         outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
-        subprocess.call('nwchem {} > {} 2> {}'.format(infile, outfile, logfile), shell=True)
+        subprocess.call('nwchem {} > {} 2> {}'.format(infile,
+                                                      outfile,
+                                                      logfile), shell=True)
 
     def finish(self, keep_files=False, path=None):
         '''
@@ -755,29 +796,43 @@ class NWChemWrapper(QMWrapperInterface):
         Parameters
         ----------
         keep_files : bool
-            Indicate whether to keep all intermediate files (relevant will automatically be parsed).
+            Indicate whether to keep all intermediate files (relevant data will
+            automatically be parsed).
         path : str
-            Directory to copy intermediate files. Only used if `keep_files` is True.
+            Directory to copy intermediate files. Only used if `keep_files` is
+            True.
+
+        Returns
+        -------
+        :obj:`~isicle.parse.NWChemResult`
+            Parsed result data.
 
         '''
 
         parser = NWChemParser()
-        parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
-        result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'molden', 'frequency'])
+        parser.load(os.path.join(self.temp_dir.name,
+                                 self.geom.basename + '.out'))
+        result = parser.parse(to_parse=['energy', 'shielding', 'spin',
+                                        'molden', 'frequency'])
 
         if keep_files is True:
             import shutil
             import glob
 
             if path is None:
-                raise ValueError('Must supply `path`.') 
+                raise ValueError('Must supply `path`.')
             else:
                 # TODO: anything else to keep?
-                shutil.copy2(os.path.join(self.temp_dir.name, self.geom.basename + '.nw'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, self.geom.basename + '.out'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, self.geom.basename + '.log'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name,
+                                          self.geom.basename + '.nw'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name,
+                                          self.geom.basename + '.out'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name,
+                                          self.geom.basename + '.log'), path)
 
-                geoms = glob.glob(os.path.join(self.temp_dir.name, '*.{}'.format(self.fmt)))
+                geoms = glob.glob(os.path.join(self.temp_dir.name,
+                                               '*.{}'.format(self.fmt)))
+
                 [shutil.copy2(x, path) for x in geoms]
 
         # Remove temporary files
