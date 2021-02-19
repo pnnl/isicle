@@ -15,6 +15,7 @@ def localfile(path):
 def nwc():
     return NWChemWrapper()
 
+
 @pytest.mark.parametrize('program,expected',
                          [('NWChem', NWChemWrapper),
                           ('nwchem', NWChemWrapper),
@@ -39,7 +40,7 @@ def test_dft(nwc):
     geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
     # Run dft
-    result = dft(geom, program='NWChem', fmt='xyz')
+    dft(geom, program='NWChem', fmt='xyz')
 
 
 class TestNWChemWrapper:
@@ -113,7 +114,7 @@ class TestNWChemWrapper:
         nwc.save_geometry(fmt='pdb')
 
         # Configure
-        config = nwc.configure(tasks=tasks, ao_basis=ao_basis, cosmo=cosmo)
+        nwc.configure(tasks=tasks, ao_basis=ao_basis, cosmo=cosmo)
 
         # Clean up
         nwc.temp_dir.cleanup()
@@ -134,10 +135,10 @@ class TestNWChemWrapper:
         nwc.save_geometry(fmt='pdb')
 
         # Configure from template
-        config = nwc.configure_from_template(localfile('resources/nwchem_template.txt'),
-                                             basename_override=basename,
-                                             dirname_override=dirname,
-                                             charge=0)
+        nwc.configure_from_template(localfile('resources/nwchem_template.txt'),
+                                    basename_override=basename,
+                                    dirname_override=dirname,
+                                    charge=0)
 
         # Clean up
         nwc.temp_dir.cleanup()
