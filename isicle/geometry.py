@@ -99,7 +99,7 @@ def load_xyz(path: str):
 
     '''
     geom = _load_generic_geom(path)
-    geom.mol = _gen_3D_coord(Chem.MolFromXYZFile(path))
+    # geom.mol = _gen_3D_coord(Chem.MolFromXYZFile(path))
     return geom
 
 
