@@ -4,7 +4,7 @@ import pandas as pd
 
 def safelist(x):
     """
-    Ensures passed object is of correct list-like format.
+    Ensures passed object is of correct format.
 
     Parameters
     ----------
@@ -12,7 +12,7 @@ def safelist(x):
         Object to be cast as list.
     Returns
     -------
-    out : list_like
+    list, :obj:`~pd.core.series.Series`, or :obj:`~np.ndarray`
         Input safely cast to list-like.
 
     """
