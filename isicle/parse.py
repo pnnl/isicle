@@ -176,7 +176,9 @@ class NWChemParser(FileParserInterface):
             df.Number = df.Number.astype('int')
             df.Charge = df.Number - df.Charge.astype('float')
 
-        return energy, df.Charge.tolist()
+            return energy, df.Charge.tolist()
+
+        return energy, None
 
     def _parse_shielding(self):
 
