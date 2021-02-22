@@ -168,6 +168,7 @@ class NWChemWrapper(QMWrapperInterface):
         # All other formats
         self.geom.save(outfile)
 
+    # TODO: move to geometry, rename get_atom_indices (not private)
     def _atom_indices(self, atoms=['C', 'H'],
                       lookup={'C': 6, 'H': 1, 'N': 7,
                               'O': 8, 'F': 9, 'P': 15}):
