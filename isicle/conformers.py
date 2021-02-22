@@ -16,12 +16,26 @@ def _method_selector(method):
         raise ValueError('{} not a supported reduction method.'.format(method))
 
 
+def _energy_based(f):
+    if f in [boltzmann, lowest_energy, threshold]:
+        return True
+
+    return False
+
+
 def reduce(value, method='boltzmann', **kwargs):
     f = _method_selector(method)
+
+    # Energy-based method
+    if _energy_based(f):
+        energy = kwargs.pop('energy')
+        return f(value, energy, **kwargs)
+
+    # Other method
     return f(value, **kwargs)
 
 
-def boltzmann(value, energy=None, index=None):
+def boltzmann(value, energy, index=None):
     if index is None:
         index = -1
 
@@ -63,7 +77,7 @@ def simple_average(value, index=None):
     return res
 
 
-def lowest_energy(value, energy=None, index=None):
+def lowest_energy(value, energy, index=None):
     if index is None:
         index = -1
 
@@ -77,7 +91,7 @@ def lowest_energy(value, energy=None, index=None):
     return res
 
 
-def threshold(value, energy=None, threshold=5, index=None):
+def threshold(value, energy, threshold=5, index=None):
     if index is None:
         index = -1
 
@@ -111,14 +125,51 @@ def build_conformational_ensemble(geometries):
 
 class ConformationalEnsemble(list):
 
-    def reduce(self):
-        raise NotImplementedError()
+    def _check_attributes(self, attr):
+        if not all(hasattr(x, attr) for x in self):
+            raise AttributeError('"{}" not found for entire conformational'
+                                 'sample members.'.format(attr))
+
+    def reduce(self, attr, method='boltzmann', index=False, **kwargs):
+        f = _method_selector(method)
+
+        # Check for primary attribute
+        self._check_attributes(attr)
+
+        # Check for energy attribute
+        if _energy_based(f):
+            self._check_attributes('energy')
+
+        # Check for index attribute
+        if index is True:
+            self._check_attributes('index')
+
+            # Extract attribute
+            index = np.array([getattr(x, 'index') for x in self]).flatten()
+            pad = int(len(index) / len(self))
+
+        # No index
+        else:
+            index = None
+            pad = 1
+
+        # Extract value attribute
+        value = np.array([getattr(x, attr) for x in self]).flatten()
+
+        # Extract energy attribute
+        if _energy_based(f):
+            energy = np.array([[getattr(x, 'energy')] * pad for x in self])
+            energy = energy.flatten()
+
+            # Exectue energy-based method
+            return f(value, energy, index=index, **kwargs)
+
+        # Execute other method
+        return f(value, index=index, **kwargs)
 
     def _apply_method(self, method, **kwargs):
         # Check for attribute
-        if not all(hasattr(x, method) for x in self):
-            raise AttributeError('{} not found for all conformational sample'
-                                 'members.')
+        self._check_attributes(method)
 
         # Apply method to collection
         result = [getattr(x, method)(**kwargs) for x in self]
