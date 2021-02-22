@@ -98,8 +98,8 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    # NOTE: currently cannot cast to RDKit Mol object
     geom = _load_generic_geom(path)
+    # geom.mol = _gen_3D_coord(Chem.MolFromXYZFile(path))
     return geom
 
 
@@ -163,6 +163,30 @@ def load_pdb(path: str):
     return geom
 
 
+def check_mol(mol, string_struct):
+    if mol is None:
+        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
+    return
+
+
+def _gen_3D_coord(mol, string_struct):
+
+    # Check given input
+    check_mol(mol, string_struct)
+
+    # Add explicit hydrogens
+    mol = Chem.AddHs(mol)
+    check_mol(mol, string_struct)
+
+    # Gen 3d coord
+    Chem.AllChem.EmbedMolecule(mol)
+    check_mol(mol, string_struct)
+    Chem.AllChem.MMFFOptimizeMolecule(mol)
+    check_mol(mol, string_struct)
+
+    return mol
+
+
 def _load_2D(path, convert_fxn):
     '''
     Load string file and return as a Geometry instance.
@@ -183,13 +207,13 @@ def _load_2D(path, convert_fxn):
     geom = _load_generic_geom(path)
     string_struct = geom.contents[0].strip()
     mol = convert_fxn(string_struct)
+    check_mol(mol, string_struct)
 
-    if mol is None:
-        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
-
-    # Hs not explicit, must be added. Not done for MolFromSmarts.
+    # Hs not explicit, must be added.
+    # Not done for MolFromSmarts since it crashes at the AddHs step.
     if convert_fxn is not Chem.MolFromSmarts:
-        mol = Chem.AddHs(mol)
+        mol = _gen_3D_coord(mol, string_struct)
+    check_mol(mol, string_struct)
 
     geom.mol = mol
     return geom
@@ -545,10 +569,10 @@ class Geometry(GeometryInterface):
         return Chem.MolToSmarts(self.get_mol())
 
     def to_xyzblock(self):
-        #     '''Get XYZ text for this structure.'''
-        #     return Chem.MolToXYZBlock(self.mol)
-        # NOTE: Depricated, returns nothing for C2H4
-        raise NotImplementedError
+        '''Get XYZ text for this structure.'''
+        return Chem.MolToXYZBlock(self.mol)
+        # # NOTE: Depricated, returns nothing for C2H4
+        # raise NotImplementedError
 
     def to_pdbblock(self):
         '''Get PDB text for this structure'''
@@ -577,10 +601,8 @@ class Geometry(GeometryInterface):
         return 'Success'
 
     def save_xyz(self, path: str):
-        #     '''Save XYZ file for this structure.'''
-        #     return Chem.MolToXYZFile(self.get_mol(), path)
-        # NOTE: Depricated, creates blank files for C2H4
-        raise NotImplementedError
+        '''Save XYZ file for this structure.'''
+        return Chem.MolToXYZFile(self.get_mol(), path)
 
     def save_mol(self, path):
         '''Save Mol file for this structure.'''

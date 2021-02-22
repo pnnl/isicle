@@ -1,0 +1,37 @@
+title "${basename}"
+start ${basename}
+
+memory global 1600 mb heap 100 mb stack 600 mb
+
+permanent_dir ${dirname}
+scratch_dir /scratch
+
+echo
+print low
+
+charge ${charge}
+geometry noautoz noautosym
+ load ${dirname}/${basename}.${fmt}
+end
+
+basis
+ * library 6-31G*
+end
+
+dft
+ direct
+ xc b3lyp
+ mulliken
+ print "mulliken ao"
+end
+
+driver
+ maxiter 150
+ xyz ${basename}_geom
+end
+
+set lindep:n_dep 0
+
+task dft energy ignore
+task dft optimize ignore
+task dft energy

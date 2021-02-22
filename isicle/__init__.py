@@ -1,4 +1,5 @@
 # from isicle import adducts
+from isicle import conformers
 from isicle import geometry
 from isicle import md
 from isicle import parse
