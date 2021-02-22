@@ -16,7 +16,7 @@ def _program_selector(program):
     Parameters
     ----------
     program : str
-        Alias for program selection (NWChem).
+        Alias for program selection (e.g. NWChem).
 
     Returns
     -------
@@ -54,8 +54,8 @@ def dft(geom, program='NWChem', template=None, **kwargs):
 
     Returns
     -------
-    result
-        Object containing relevant outputs from the simulation.
+    :obj:`~isicle.parse.NWChemResult`
+        Result object containing relevant outputs from the simulation.
 
     '''
 
@@ -463,8 +463,8 @@ class NWChemWrapper(QMWrapperInterface):
         '''
         Generate meta shielding block of NWChem configuration.
 
-        Includes basis and DFT; can include COSMO and/or single-point energy
-        calculation blocks.
+        Includes basis and DFT blocks; can include COSMO and/or single-point
+        energy calculation blocks.
 
         Parameters
         ----------
@@ -483,7 +483,7 @@ class NWChemWrapper(QMWrapperInterface):
         gas : bool
             Indicate whether to use gas phase calculations. Only used if
             `cosmo` is True.
-        energy : True
+        energy : bool
             Indicate whether to include single-point energy calculation block.
         **kwargs
             Arbitrary additional arguments (unused).
@@ -528,8 +528,8 @@ class NWChemWrapper(QMWrapperInterface):
         '''
         Generate meta spin-spin coupling block of NWChem configuration.
 
-        Includes basis and DFT; can include COSMO and/or single-point energy
-        calculation blocks.
+        Includes basis and DFT blocks; can include COSMO and/or single-point
+        energy calculation blocks.
 
         Parameters
         ----------
@@ -549,7 +549,7 @@ class NWChemWrapper(QMWrapperInterface):
         gas : bool
             Indicate whether to use gas phase calculations. Only used if
             `cosmo` is True.
-        energy : True
+        energy : bool
             Indicate whether to include single-point energy calculation block.
         **kwargs
             Arbitrary additional arguments (unused).
@@ -620,7 +620,7 @@ class NWChemWrapper(QMWrapperInterface):
             Nominal charge of the molecule to be optimized.
         atoms : list of str
             Atom types of interest.
-        energy : True
+        energy : bool
             Indicate whether to include single-point energy calculation block.
         frequency : bool
             Indicate whether to include frequency block.
