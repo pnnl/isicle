@@ -34,8 +34,8 @@ class NWChemResult():
         # TODO: change how this info is stored?
         df = pd.DataFrame(shield_values, columns=[
                           'index', 'atom', 'shielding'])
-        df['dft_energy'] = energy[-1]
-        df['index'] = true_idx
+        df['dft_energy'] = dft_energy
+        df['index'] = index
         return self.shielding
 
     def set_spin(self, spin):
