@@ -297,7 +297,7 @@ class NWChemParser(FileParserInterface):
                 freq_stop = i + 2 + 3 * natoms
 
         return np.array([float(x.split()[1])
-                         for x in self.contents[freq_start:freq_stop]])
+                         for x in self.contents[freq_start:freq_stop + 1]])
 
     def _parse_meta(self):
 
