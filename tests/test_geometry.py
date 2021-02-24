@@ -25,41 +25,43 @@ def compare(geom1, geom2, check_path=True, check_contents=True, check_mol=True):
 
 @pytest.fixture()
 def geom():
-    return isicle.geometry.load_smiles('tests/resources/geom_test.smi')
+    return isicle.geometry.load_smiles('resources/geom_test.smi')
 
 
 @pytest.fixture()
 def geom_salt():
-    return isicle.geometry.load_smiles('tests/resources/geom_test_salt.smi')
+    return isicle.geometry.load_smiles('resources/geom_test_salt.smi')
 
 
 @pytest.fixture()
 def geom_taut():
-    return isicle.geometry.load_smiles('tests/resources/geom_test_taut.smi')
+    return isicle.geometry.load_smiles('resources/geom_test_taut.smi')
 
 
 class TestLoad:
 
     @pytest.mark.parametrize('path,expected',
-                             [('tests/resources/geom_test.pkl', ['C=C'])])
+                             [('resources/geom_test.pkl', ['C=C'])])
     def test_load_pickle(self, path, expected):
 
         # Initialize correctly saved pickle
-        geom = isicle.geometry.load_pickle(path)
+        geom = isicle.geometry.load_pickle(localfile(path))
 
         # Test for expected smiles
         assert geom.contents == expected
 
     @pytest.mark.parametrize('path,expected',
-                             [('tests/resources/geom_test.smi', IOError),
-                              ('tests/resources/geom_test_bad.pkl', TypeError)])
+                             [('resources/geom_test.smi', IOError),
+                              ('resources/geom_test_bad.pkl', TypeError)])
     def test_load_pickle_fail(self, path, expected):
         with pytest.raises(expected):
-            isicle.geometry.load_pickle(path)
+            isicle.geometry.load_pickle(localfile(path))
 
     @ pytest.mark.parametrize('path,expected,saved_pkl',
-                              [('tests/resources/geom_test.smi', ['C=C'], 'tests/resources/geom_test.pkl')])
+                              [('resources/geom_test.smi', ['C=C'], 'resources/geom_test.pkl')])
     def test_load_smiles(self, path, expected, saved_pkl):
+
+        path = localfile(path)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_smiles(path)
@@ -80,8 +82,10 @@ class TestLoad:
         assert compare(geom1, geom3)
 
     @ pytest.mark.parametrize('path,expected,saved_pkl',
-                              [('tests/resources/geom_test.inchi', ['InChI=1S/C2H4/c1-2/h1-2H2'], 'tests/resources/geom_test.pkl')])
+                              [('resources/geom_test.inchi', ['InChI=1S/C2H4/c1-2/h1-2H2'], 'resources/geom_test.pkl')])
     def test_load_inchi(self, path, expected, saved_pkl):
+
+        path = localfile(path)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_inchi(path)
@@ -102,8 +106,10 @@ class TestLoad:
         assert compare(geom1, geom3, check_path=False, check_contents=False)
 
     @ pytest.mark.parametrize('path,expected',
-                              [('tests/resources/geom_test.smarts', ['[#6]=[#6]'])])
+                              [('resources/geom_test.smarts', ['[#6]=[#6]'])])
     def test_load_smarts(self, path, expected):
+
+        path = localfile(path)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_smarts(path)
@@ -121,8 +127,10 @@ class TestLoad:
         # SMARTS are different from those returned from other Mol gen fxns.
 
     @ pytest.mark.parametrize('path',
-                              [('tests/resources/geom_test.mol')])
+                              [('resources/geom_test.mol')])
     def test_load_mol(self, path):
+
+        path = localfile(path)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_mol(path)
@@ -137,8 +145,10 @@ class TestLoad:
         # load_mol do not have Hs explicitly added.
 
     @ pytest.mark.parametrize('path',
-                              [('tests/resources/geom_test.mol2')])
+                              [('resources/geom_test.mol2')])
     def test_load_mol2(self, path):
+
+        path = localfile(path)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_mol2(path)
@@ -153,8 +163,10 @@ class TestLoad:
         # load_mol2 do not have Hs explicitly added.
 
     @ pytest.mark.parametrize('path',
-                              [('tests/resources/geom_test.pdb')])
+                              [('resources/geom_test.pdb')])
     def test_load_pdb(self, path):
+
+        path = localfile(path)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_pdb(path)
