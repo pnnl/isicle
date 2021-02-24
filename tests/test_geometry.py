@@ -25,17 +25,17 @@ def compare(geom1, geom2, check_path=True, check_contents=True, check_mol=True):
 
 @pytest.fixture()
 def geom():
-    return isicle.geometry.load_smiles('resources/geom_test.smi')
+    return isicle.geometry.load_smiles(localfile('resources/geom_test.smi'))
 
 
 @pytest.fixture()
 def geom_salt():
-    return isicle.geometry.load_smiles('resources/geom_test_salt.smi')
+    return isicle.geometry.load_smiles(localfile('resources/geom_test_salt.smi'))
 
 
 @pytest.fixture()
 def geom_taut():
-    return isicle.geometry.load_smiles('resources/geom_test_taut.smi')
+    return isicle.geometry.load_smiles(localfile('resources/geom_test_taut.smi'))
 
 
 class TestLoad:
@@ -62,6 +62,7 @@ class TestLoad:
     def test_load_smiles(self, path, expected, saved_pkl):
 
         path = localfile(path)
+        saved_pkl = localfile(saved_pkl)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_smiles(path)
@@ -79,13 +80,14 @@ class TestLoad:
         assert compare(geom1, geom2)
 
         # Test this matches saved result
-        assert compare(geom1, geom3)
+        assert compare(geom1, geom3, check_path=False)
 
     @ pytest.mark.parametrize('path,expected,saved_pkl',
                               [('resources/geom_test.inchi', ['InChI=1S/C2H4/c1-2/h1-2H2'], 'resources/geom_test.pkl')])
     def test_load_inchi(self, path, expected, saved_pkl):
 
         path = localfile(path)
+        saved_pkl = localfile(saved_pkl)
 
         # Initialize using direct call
         geom1 = isicle.geometry.load_inchi(path)
