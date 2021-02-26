@@ -12,8 +12,11 @@ issued in, no matter where the input is. Can direct the .log file, but no other 
 '''
 
 # TO DO : Add implicit solvation, frequency
-# TO DO : if optimize is requested along with a crest calculation, need to have the opt ignore the energy window in cycle
-# TO DO : Add in dry run option for adduct to make sure that the adduct of interest is included in crest
+# TO DO : if optimize is requested along with a crest calculation, need to have the opt 
+#         ignore the energy window in cycle
+# TO DO : Add in dry run option for adduct to make sure that the adduct of interest is 
+#        included in crest
+
 
 def _program_selector(program):
     '''
@@ -38,9 +41,11 @@ def _program_selector(program):
     if program.lower() in program_map.keys():
         return program_map[program.lower()]()
     else:
-        raise ValueError('{} not a supported molecular dyanmics program.'.format(program))
+        raise ValueError(
+            '{} not a supported molecular dynamics program.'.format(program))
 
-def md(self, path, program='xtb', **kwargs):
+
+def md(geom, program='xtb', **kwargs):
     '''
     Optimize geometry via molecular dyanmics using supplied forcefield
     and basis set.
@@ -65,11 +70,11 @@ def md(self, path, program='xtb', **kwargs):
     # Select program
     mdw = _program_selector(program)
 
-    # Load geometry
-    mdw.load_geometry(path)
+    # Set geometry
+    mdw.set_geometry(geom)
 
     # Save geometry
-    mdw.save_geometry(path, fmt=kwargs.pop('fmt'))
+    mdw.save_geometry(fmt=kwargs.pop('fmt'))
 
     # Job type
     mdw.job_type()
@@ -80,7 +85,8 @@ def md(self, path, program='xtb', **kwargs):
     # Finish/clean up
     return mdw.finish()
 
-#check lenths block if you have parameters that are global configure at one time
+# check lenths block if you have parameters that are global configure at one time
+
 
 class XTBWrapper(MDWrapperInterface):
     '''
@@ -94,7 +100,7 @@ class XTBWrapper(MDWrapperInterface):
     temp_dir : str
         Path to temporary directory used for simulation.
     task_map : dict
-        Alias mapper for supported molecular dynamic presets. Thses include
+        Alias mapper for supported molecular dynamic presets. These include
         "optimize", "crest", "nmr", "protonate", "deprtonate", and "tautomer".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
@@ -136,7 +142,8 @@ class XTBWrapper(MDWrapperInterface):
         self.geom = geom
 
         # Extract filename
-        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
+        self.geom.basename = os.path.splitext(
+            os.path.basename(self.geom.path))[0]
 
     def save_geometry(self, fmt='xyz'):
         '''
@@ -179,17 +186,18 @@ class XTBWrapper(MDWrapperInterface):
             self.geom = load(path)
 
         # Extract filename
-        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
+        self.geom.basename = os.path.splitext(
+            os.path.basename(self.geom.path))[0]
 
     def set_geometry(self, geom):
         # Assign geometry
         self.geom = geom
 
         # Extract filename
-        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
+        self.geom.basename = os.path.splitext(
+            os.path.basename(self.geom.path))[0]
 
-    def _job_type_optimize(self, input, forcefield='gff', optlevel='normal'):
-
+    def _job_type_optimize(self, forcefield='gff', optlevel='normal', ewin=False, ion=False, dryrun=False):
         '''
         Save molecule
         Parameters
@@ -205,37 +213,77 @@ class XTBWrapper(MDWrapperInterface):
             Optimization convergence level
             Default : normal
             Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
-    
+
         Returns
         -------
         xyz file
         '''
 
-        return 'xtb {self.geom} --opt {optlevel} --{method} --scratch'
+        d = {'forcefield': forcefield,
+             'optlevel': optlevel,
+             'basename': self.geom.basename,
+             'fmt': self.fmt}
 
-    def _job_type_crest(self, input, forcefield='gff', optlevel='vtight', ewin=6):
+        return ('xtb {basename}.{fmt} --opt {optlevel} --{forcefield} --scratch').format(**d)
 
-        return 'crest {self.geom} --ewin {ewin} --optlevel {optlevel} -{forcefield} --scratch'
+    def _job_type_crest(self, forcefield='gff', optlevel='vtight', ewin=6, ion=False, dryrun=False):
 
-    def _job_type_nmr(self, input):
+        d = {'forcefield': forcefield,
+             'optlevel': optlevel,
+             'ewin': ewin,
+             'basename': self.geom.basename,
+             'fmt': self.fmt}
+
+        return ('crest {basename}.{fmt} --ewin {ewin} --optlevel {optlevel} -{forcefield} --scratch').format(**d)
+
+    def _job_type_nmr(self):
         # self.directory = 'xtb_nmr/'
         # TO DO: get protocol for enso/anmr
         raise NotImplementedError
 
-    def _job_type_protonate(self, input, ion='H+', ewin=6, dryrun=False):
+    def _job_type_protonate(self, forcefield='gff', optlevel='normal', ion='H+', ewin=6, dryrun=False):
 
-        return 'crest {self.geom} -protonate --swel {ion} --ewin {ewin} --scratch'
+        if dryrun == True:
+            d = {'forcefield': forcefield,
+                 'optlevel': optlevel,
+                 'ewin': ewin,
+                 'ion': ion,
+                 'basename': self.geom.basename,
+                 'fmt': self.fmt}
 
-    def _job_type_deprotonate(self, input, ewin=6):
+            return ('crest {basename}.{fmt} -protonate --swel {ion} --optlevel {optlevel} --ewin {ewin} -{forcefield} --scratch --dryrun').format(**d)
 
-        return 'deprotonate/', 'crest {self.geom} -deprotonate --ewin {ewin} --scratch'
+        if dryrun == False:
+            d = {'forcefield': forcefield,
+                 'optlevel': optlevel,
+                 'ewin': ewin,
+                 'ion': ion,
+                 'basename': self.geom.basename,
+                 'fmt': self.fmt}
 
-    def _job_type_tautomer(self, input, ewin=6):
+            return ('crest {basename}.{fmt} -protonate --swel {ion} --optlevel {optlevel} --ewin {ewin} -{forcefield} --scratch').format(**d)
 
-        return 'crest {self.geom} --scratch, --ewin {ewin}'
+    def _job_type_deprotonate(self, forcefield='gff', optlevel='normal', ewin=6, ion=False, dryrun=False):
 
+        d = {'forcefield': forcefield,
+             'optlevel': optlevel,
+             'ewin': ewin,
+             'basename': self.geom.basename,
+             'fmt': self.fmt}
 
-    def job_type(self, tasks='optimize', forcefield='gff', ewin=1, ion='H+', optlevel='Normal',dryrun=False):
+        return ('crest {basename}.{fmt} -deprotonate --optlevel {optlevel} --ewin {ewin} -{forcefield} --scratch').format(**d)
+
+    def _job_type_tautomer(self, forcefield='gff', optlevel='normal', ewin=6, ion=False, dryrun=False):
+
+        d = {'forcefield': forcefield,
+             'optlevel': optlevel,
+             'ewin': ewin,
+             'basename': self.geom.basename,
+             'fmt': self.fmt}
+
+        return ('crest {basename}.{fmt} --scratch -{forcefield} --optlevel {optlevel} --ewin {ewin}').format(**d)
+
+    def job_type(self, tasks='optimize', forcefield='gff', ewin=1, ion='H+', optlevel='Normal', dryrun=False):
         '''
         Set up list of xtb jobs
 
@@ -253,40 +301,50 @@ class XTBWrapper(MDWrapperInterface):
             Set optimization level. Supply globally or per task. 
 
         '''
-        
+
         # Cast to list safely
         tasks = safelist(tasks)
         optlevel = safelist(optlevel)
         forcefield = safelist(forcefield)
-        energywindow = safelist(energywindow)
+ #       energywindow = safelist(ewin)
 
-        job_list =[]
-
+        job_list = []
 
         # Check lengths
-        if not ((len(tasks) == len(forcefield)) or (len(functional) == 1)):
+        if not ((len(tasks) == len(forcefield)) or (len(forcefield) == 1)):
             raise ValueError('Forcefield must be assigned globally or per'
                              'task.')
         if not ((len(tasks) == len(optlevel)) or (len(optlevel) == 1)):
             raise ValueError('Optimization level must be assigned globally or per'
                              'task.')
-        if 'optimize' in tasks:   
-            if not ((len(tasks) == len(ewin)) or (len(ewin) == 1)):
-                raise ValueError('Energy window must be assigned globally or per'
-                                 'task.')
+#        if not ((len(tasks) == count(ewin)) or (count(ewin) == 1)):
+#            raise ValueError('Energy window must be assigned globally or per'
+#                             'task.')
 
-        for task, f, o, e in zip(tasks, cycle(forcefield), cycle(optlevel), cycle(ewin)):
-            job_list.append(self.task_map[task](forcefield=f, 
-                                                ewin=ewin,
+# TO DO: cycle so ewin and ion only goes to ''
+        for task, f, o in zip(tasks, cycle(forcefield), cycle(optlevel)):
+            job_list.append(self.task_map[task](forcefield=f,
                                                 optlevel=o,
-                                                ion=ion))
+                                                ewin=ewin,
+                                                ion=ion,
+                                                dryrun=dryrun))
 
         self.job_list = job_list
 
         return self.job_list
 
+    def save_job_type(self):
+        '''
+        Write 
 
-    def run(self, keep_files=True, path=None):
+        '''
+
+        # Write to file
+        with open(os.path.join(self.temp_dir.name,
+                               self.geom.basename + '.nw'), 'w') as f:
+            f.write(self.config)
+
+    def run(self):
         '''
         subprocess.run change to working directory then runs job from command line
 
@@ -297,10 +355,10 @@ class XTBWrapper(MDWrapperInterface):
         os.chdir(self.temp_dir.name)
 
         for i in self.job_list:
-            subprocess.run(i)
+            print(i)
+            subprocess.call(i, shell=True)
 
-
-    def finish(self, keep_files=True, path=None):
+    def finish(self, keep_files=False, path=None):
         '''
         Save XTB output files and clean temporary direc
 
@@ -315,34 +373,37 @@ class XTBWrapper(MDWrapperInterface):
 
         '''
 
-        #TO DO : Option if the file isn't abailale? I.e. you didn't run that job or the job failed.
-
         if keep_files is True:
             import shutil
             import glob
 
             if path is None:
-                raise ValueError('Must supply `path`.') 
+                raise ValueError('Must supply `path`.')
             else:
                 # TODO: anything else to keep?
-                shutil.copy2(os.path.join(self.temp_dir.name, 
-                                          'xtbopt.xyz'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, 
-                                          'crest.energies'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, 
-                                          'crest_conformers.xyz'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, 
-                                          'crest_best.xyz'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, 
-                                          'protomers.xyz'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name, 
-                                          'deprotonated.xyz'), path)
-
-                geoms = glob.glob(os.path.join(self.temp_dir.name, '*.{}'.format(self.fmt)))
-                [shutil.copy2(x, path) for x in geoms]
+                if 'xtbopt.xyz' in glob.glob(self.temp_dir):
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'xtbopt.xyz'), path)
+                if 'crest*' in glob.glob(self.temp_dir):
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'crest.energies'), path)
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'crest_conformers.xyz'), path)
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'crest_best.xyz'), path)
+                if 'prot*' in glob.glob(self.temp_dir):
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'protomers.xyz'), path)
+                if 'deprot*' in glob.glob(self.temp_dir):
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'deprotonated.xyz'), path)
+                if 'taut*' in glob.glob(self.temp_dir):
+                    shutil.copy2(os.path.join(self.temp_dir.name,
+                                              'tautomers.xyz'), path)
 
         # Remove temporary files
         self.temp_dir.cleanup()
+
 
 def amber():
     # Don't work on this one yet

@@ -459,7 +459,7 @@ class NWChemWrapper(QMWrapperInterface):
         return s
 
     def _configure_shielding(self, basis_set='6-31G*', ao_basis='cartesian',
-                             functional='b3lyp', cosmo=True, solvent='H20',
+                             functional='b3lyp', cosmo=True, solvent='H2O',
                              gas=False, energy=True, **kwargs):
         '''
         Generate meta shielding block of NWChem configuration.
@@ -525,7 +525,7 @@ class NWChemWrapper(QMWrapperInterface):
 
     def _configure_spin(self, max_pairs=30, basis_set='6-31G*',
                         ao_basis='cartesian', functional='b3lyp', cosmo=True,
-                        solvent='H20', gas=False, energy=True, **kwargs):
+                        solvent='H2O', gas=False, energy=True, **kwargs):
         '''
         Generate meta spin-spin coupling block of NWChem configuration.
 
