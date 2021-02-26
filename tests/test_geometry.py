@@ -197,15 +197,15 @@ class TestXYZGeometry:
     def test_dft_optimize(self, xgeom):
         raise NotImplementedError
 
-    def test__get_global_properties(self, xgeom):
-        assert xgeom.global_properties == xgeom._get_global_properties()
+    def test_get_global_properties(self, xgeom):
+        xgeom.calculate_global_properties()
+        assert xgeom.global_properties == xgeom.get_global_properties()
 
     def test_get_natoms(self, xgeom):
         assert xgeom.get_natoms() == 6
 
-    def test_get_global_properties(self, xgeom):
-        d = xgeom.get_global_properties(calc_all=True)
-
+    def test_calculate_global_properties(self, xgeom):
+        d = xgeom.calculate_global_properties()
         assert d['natoms'] == 6
 
     def test_get_atom_indices(self, xgeom):
@@ -233,8 +233,8 @@ class TestXYZGeometry:
 
         # Test objects are not linked
         xgeom.global_properties['natoms'] = -1
-        assert xgeom._get_global_properties()['natoms'] != starting_natoms
-        assert xgeom_cp._get_global_properties()['natoms'] == starting_natoms
+        assert xgeom.get_global_properties()['natoms'] != starting_natoms
+        assert xgeom_cp.get_global_properties()['natoms'] == starting_natoms
 
     def _test_save(self, geom, temp_path, expected=None):
 
