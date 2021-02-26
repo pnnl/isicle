@@ -16,9 +16,9 @@ def compare(geom1, geom2, check_path=True, check_contents=True, check_mol=True):
     '''
     Compares two NWChemResult objects and returns if they are equivalent
     '''
-    if not check_path or (check_path and geom1.path == geom2.path):
-        if not check_contents or (check_contents and geom1.contents == geom2.contents):
-            if not check_mol or (check_mol and MolToSmiles(geom1.mol) == MolToSmiles(geom2.mol)):
+    if not check_path or geom1.path == geom2.path:
+        if not check_contents or geom1.contents == geom2.contents:
+            if not check_mol or MolToSmiles(geom1.mol) == MolToSmiles(geom2.mol):
                 return True
     return False
 
