@@ -112,6 +112,18 @@ class NWChemResult():
         self.molden = saved_result.get_molden()
         return
 
+    def to_dict(self):
+        d = {}
+
+        d['geometry'] = self.geometry
+        d['energy'] = self.energy
+        d['shielding'] = self.shielding
+        d['spin'] = self.spin
+        d['frequency'] = self.frequency
+        d['molden'] = self.molden
+
+        return d
+
 
 class NWChemParser(FileParserInterface):
     '''Extract text from an NWChem simulation output file.'''
