@@ -197,6 +197,10 @@ class TestXYZGeometry:
     def test_dft_optimize(self, xgeom):
         raise NotImplementedError
 
+    # TODO: implement test
+    def test_md_optimize(self, xgeom):
+        raise NotImplementedError
+
     def test_get_global_properties(self, xgeom):
         xgeom.calculate_global_properties()
         assert xgeom.global_properties == xgeom.get_global_properties()
@@ -315,6 +319,10 @@ class TestGeometry:
 
     # TODO: implement test
     def test_dft_optimize(self, geom):
+        raise NotImplementedError
+
+    # TODO: implement test
+    def test_md_optimize(self, geom):
         raise NotImplementedError
 
     def test_get_total_partial_charge(self, geom_salt):
