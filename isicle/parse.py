@@ -16,6 +16,7 @@ class NWChemResult():
         self.spin = None  # Not set
         self.frequency = None  # Dictionary, see function for keys
         self.molden = None  # String, filename (for now)
+        self.meta = None  # Dictionary, see function for keys
 
     def set_energy(self, energy):
         result = {'energy': [energy[0]], 'charges': energy[1]}
@@ -119,6 +120,7 @@ class NWChemResult():
         self.spin = saved_result.get_spin()
         self.frequency = saved_result.get_frequency()
         self.molden = saved_result.get_molden()
+        self.meta = saved_result.get_meta()
         return
 
     def to_dict(self):
@@ -130,6 +132,7 @@ class NWChemResult():
         d['spin'] = self.spin
         d['frequency'] = self.frequency
         d['molden'] = self.molden
+        d['meta'] = self.meta
 
         return d
 
