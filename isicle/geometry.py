@@ -171,24 +171,6 @@ def check_mol(mol, string_struct):
     return
 
 
-def _gen_3D_coord(mol, string_struct):
-
-    # Check given input
-    check_mol(mol, string_struct)
-
-    # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
-    check_mol(mol, string_struct)
-
-    # Gen 3d coord
-    Chem.AllChem.EmbedMolecule(mol)
-    check_mol(mol, string_struct)
-    Chem.AllChem.MMFFOptimizeMolecule(mol)
-    check_mol(mol, string_struct)
-
-    return mol
-
-
 def _load_2D(path, convert_fxn):
     '''
     Load string file and return as a Geometry instance.
@@ -214,7 +196,20 @@ def _load_2D(path, convert_fxn):
     # Hs not explicit, must be added.
     # Not done for MolFromSmarts since it crashes at the AddHs step.
     if convert_fxn is not Chem.MolFromSmarts:
-        mol = _gen_3D_coord(mol, string_struct)
+
+        # Check initial mol passed
+        check_mol(mol, string_struct)
+
+        # Add explicit hydrogens
+        mol = Chem.AddHs(mol)
+        check_mol(mol, string_struct)
+
+        # Gen 3d coord
+        Chem.AllChem.EmbedMolecule(mol)
+        check_mol(mol, string_struct)
+        Chem.AllChem.MMFFOptimizeMolecule(mol)
+        check_mol(mol, string_struct)
+
     check_mol(mol, string_struct)
 
     geom.mol = mol
