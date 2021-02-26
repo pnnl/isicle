@@ -522,6 +522,15 @@ class Geometry(XYZGeometry, GeometryInterface):
         '''
         return self.mol.__copy__()
 
+    def md_optimize(self, program='xtb', template=None, **kwargs):
+        res = isicle.qm.md(self.__copy__, program=program, template=template, **kwargs)
+
+        # TODO: complete result handling
+        # Cases: 1+ XYZ or PDB files returned
+        # Create a new XYZGeometry or Geometry for each depending on type returned
+
+        raise NotImplementedError
+
     def _handle_inplace(self, mol, inplace):
         '''
         Return updated Geometry object with given structure.
@@ -689,15 +698,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return self._handle_inplace(res[0], inplace)
 
-    def dft_optimize(self, program='NWChem', template=None, **kwargs):
-        '''
-        Optimize geometry, either XYZ or PDB, using stated functional and basis set.
-        Additional inputs can be grid size, optimization criteria level,
-        '''
-        return isicle.qm.dft(self, program=program, template=template, **kwargs)
-
-    # TODO: update
-    def total_partial_charge(self):
+    def get_total_partial_charge(self):
         '''Sum the partial charge across all atoms.'''
         mol = self.get_mol()
         Chem.AllChem.ComputeGasteigerCharges(mol)
@@ -705,14 +706,57 @@ class Geometry(XYZGeometry, GeometryInterface):
                     for i in range(mol.GetNumAtoms())]
         return np.nansum(contribs)
 
-    def natoms(self):
+    def get_natoms(self):
         '''Calculate total number of atoms.'''
-        return Chem.Mol.GetNumAtoms(self.get_mol())
+        natoms = Chem.Mol.GetNumAtoms(self.get_mol())
+        self.global_properties['natoms'] = natoms
+        return self.global_properties['natoms']
+
+    def get_atom_indices(self, atoms=['C', 'H'],
+                         lookup={'C': 6, 'H': 1, 'N': 7,
+                                 'O': 8, 'F': 9, 'P': 15}):
+        '''
+        Extract indices of each atom from the internal geometry.
+
+        Parameters
+        ----------
+        atoms : list of str
+            Atom types of interest.
+        lookup : dict
+            Mapping between atom symbol and atomic number.
+
+        Returns
+        -------
+        list of int
+            Atom indices.
+
+        '''
+
+        atoms = [lookup[x] for x in atoms]
+        idx = []
+        for a in self.mol.GetAtoms():
+            if a.GetAtomicNum() in atoms:
+                idx.append(a.GetIdx())
+
+        return idx
+
+    def get_global_properties(self, calc_all=True):
+
+        if calc_all:
+
+            if 'natoms' not in self.global_properties:
+                self.get_natoms()
+
+            if 'total_partial_charge' not in self.global_properties:
+                self.get_total_partial_charge()
+
+        return self._get_global_properties()
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
         return type(self)(self.path, self.contents,
-                          self.filetype, self.get_mol())
+                          self.filetype, self.get_mol(),
+                          self._get_global_properties())
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
@@ -729,8 +773,6 @@ class Geometry(XYZGeometry, GeometryInterface):
     def to_xyzblock(self):
         '''Get XYZ text for this structure.'''
         return Chem.MolToXYZBlock(self.mol)
-        # # NOTE: Depricated, returns nothing for C2H4
-        # raise NotImplementedError
 
     def to_pdbblock(self):
         '''Get PDB text for this structure'''
@@ -765,12 +807,6 @@ class Geometry(XYZGeometry, GeometryInterface):
     def save_mol(self, path):
         '''Save Mol file for this structure.'''
         return Chem.MolToMolFile(self.get_mol(), path)
-
-    def save_pickle(self, path):
-        '''Pickle this class instance.'''
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-        return 'Success'
 
     def save_pdb(self, path: str):
         '''Save PDB file for this structure.'''
@@ -826,7 +862,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         # TODO: enable Compute2DCoords, https://www.rdkit.org/docs/source/rdkit.Chem.rdDepictor.html
 
-        raise TypeError('Input format {} not supported.'.format(fmt))
+        raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
 
 
 class MDOptimizedGeometry(Geometry):
