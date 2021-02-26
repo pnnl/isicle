@@ -1,13 +1,13 @@
-import numpy as np
-import os
-import copy
-from rdkit.Chem.SaltRemover import SaltRemover
-from rdkit.Chem.MolStandardize import rdMolStandardize
-from rdkit import Chem
-import pybel
-import pickle
-import isicle
 from isicle.interfaces import GeometryInterface
+import isicle
+import pickle
+import pybel
+from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
+from rdkit.Chem.SaltRemover import SaltRemover
+import copy
+import os
+import numpy as np
 
 
 def load_pickle(path: str):
@@ -381,7 +381,7 @@ class XYZGeometry():
             new_xgeom.contents = self.contents[:]
 
         # Update properties
-        new_xgeom.get_global_properties()  # Calculate any available w/in class
+        new_xgeom.calculate_global_properties()  # Calculate any available w/in class
         new_xgeom.global_properties.update(res)  # Update with DFT results
 
         return new_xgeom, res
@@ -422,19 +422,14 @@ class XYZGeometry():
                 idx.append(i - 2)
         return idx
 
-    def _get_global_properties(self):
+    def get_global_properties(self):
         '''Return a copy of this object's global_properties dictionary'''
         return self.global_properties.copy()
 
-    def get_global_properties(self, calc_all=True):
+    def calculate_global_properties(self):
         '''
-        Fetch the global_properties for this object.
-
-        Parameters
-        ----------
-        calc_all : bool
-            Calculate simple properties for this structure before
-            returning the dictionary
+        Calculate the global_properties for this object (does not include
+        calculations that take > 5 seconds).
 
         Returns
         -------
@@ -442,18 +437,16 @@ class XYZGeometry():
             Properties for this struture.
         '''
 
-        if calc_all:
+        if 'natoms' not in self.global_properties:
+            self.get_natoms()
 
-            if 'natoms' not in self.global_properties:
-                self.get_natoms()
-
-        return self._get_global_properties()
+        return self.get_global_properties()
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
         return type(self)(self.path, self.contents,
                           self.filetype,
-                          self._get_global_properties())
+                          self.get_global_properties())
 
     def to_xyzblock(self):
         '''Get XYZ text for this structure.'''
@@ -774,36 +767,30 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return idx
 
-    def get_global_properties(self, calc_all=True):
+    def calculate_global_properties(self):
         '''
-        Fetch the global_properties for this object.
-
-        Parameters
-        ----------
-        calc_all : bool
-            Calculate simple properties for this structure before
-            returning the dictionary
+        Calculate the global_properties for this object (does not include
+        calculations that take > 5 seconds).
 
         Returns
         -------
         dict
             Properties for this struture.
         '''
-        if calc_all:
 
-            if 'natoms' not in self.global_properties:
-                self.get_natoms()
+        if 'natoms' not in self.global_properties:
+            self.get_natoms()
 
-            if 'total_partial_charge' not in self.global_properties:
-                self.get_total_partial_charge()
+        if 'total_partial_charge' not in self.global_properties:
+            self.get_total_partial_charge()
 
-        return self._get_global_properties()
+        return self.get_global_properties()
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
         return type(self)(self.path, self.contents,
                           self.filetype, self.get_mol(),
-                          self._get_global_properties())
+                          self.get_global_properties())
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
