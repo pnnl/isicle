@@ -230,13 +230,21 @@ class TestGeometry:
     def test_dft_optimize(self, geom):
         raise NotImplementedError
 
-    def test_total_partial_charge(self, geom_salt):
-        assert geom_salt.total_partial_charge() == 2
+    def test_get_total_partial_charge(self, geom_salt):
+        assert geom_salt.get_total_partial_charge() == 2
 
-    def test_natoms(self, geom_salt):
-        assert geom_salt.natoms() == 7
+    def test_get_natoms(self, geom_salt):
+        assert geom_salt.get_natoms() == 7
 
-    def test_copy(self, geom_salt):
+    def test_get_atom_indices(self, geom):
+
+        # Test default (C & H)
+        assert geom.get_atom_indices() == list(range(6))
+
+        # Test H only
+        assert geom.get_atom_indices(atoms=['H']) == list(range(2, 6))
+
+    def test__copy__(self, geom_salt):
 
         # Record original smiles
         starting_smi = geom_salt.to_smiles()
