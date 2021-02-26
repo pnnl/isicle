@@ -98,9 +98,11 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    # geom.mol = _gen_3D_coord(Chem.MolFromXYZFile(path))
-    return geom
+    xgeom = XYZGeometry()
+    xgeom.path = path
+    xgeom.contents = _load_text(path)
+    xgeom.filetype = os.path.splitext(path)[-1].lower().strip()
+    return xgeom
 
 
 def load_mol(path: str):
@@ -320,7 +322,7 @@ def load(path: str):
     raise IOError('Extension {} not recognized.'.format(extension))
 
 
-class Geometry(GeometryInterface):
+class XYZGeometry():
     '''
     Molecule information, including information on the file it was
     generated from. It is not recommended to manipulate or retrieve
@@ -340,11 +342,167 @@ class Geometry(GeometryInterface):
 
     '''
 
-    def __init__(self, path=None, contents=None, filetype=None, mol=None):
+    def __init__(self, path=None, contents=None, filetype=None,
+                 global_properties=None):
+        self.path = path
+        self.contents = contents
+        self.filetype = filetype
+
+        if global_properties is None:
+            self.global_properties = dict()
+        else:
+            self.global_properties = global_properties
+
+    def dft_optimize(self, program='NWChem', template=None, **kwargs):
+        '''
+        Optimize geometry, either XYZ or PDB, using stated functional and basis set.
+        Additional inputs can be grid size, optimization criteria level,
+        '''
+        res = isicle.qm.dft(self.__copy__, program=program, template=template, **kwargs)
+
+        # Check if a dictionary was returned. If not, convert to dictionary.
+        if type(res) != dict:
+            res = res.to_dict()
+
+        # Create new XYZGeometry object for user
+        new_xgeom = self.__copy__()
+
+        # Update geometry if needed
+        if res['geometry'] is not None:
+            new_xgeom = load_xyz(res['geometry'])
+        else:
+            new_xgeom = XYZGeometry()
+            new_xgeom.contents = self.contents[:]
+
+        # Update properties
+        new_xgeom.get_global_properties()  # Calculate any available w/in class
+        new_xgeom.global_properties.update(res)  # Update with DFT results
+
+        return new_xgeom, res
+
+    def md_optimize(self, program='xtb', template=None, **kwargs):
+        res = isicle.qm.md(self.__copy__, program=program, template=template, **kwargs)
+
+        # TODO: complete result handling
+        # Cases: 1+ XYZ returned
+        # Create a new XYZGeometry for each
+
+        raise NotImplementedError
+
+    def get_natoms(self):
+        self.global_properties['natoms'] = int(self.contents[0].strip())
+        return self.global_properties['natoms']
+
+    def get_atom_indices(self, atoms=['C', 'H']):
+        idx = []
+
+        for i in range(2, len(self.contents)):
+            atom = self.contents[i].split(' ')[0]
+            if atom in atoms:
+                idx.append(i - 2)
+        return idx
+
+    def _get_global_properties(self):
+        return self.global_properties.copy()
+
+    def get_global_properties(self, calc_all=True):
+
+        if calc_all:
+
+            if 'natoms' not in self.global_properties:
+                self.get_natoms()
+
+        return self._get_global_properties()
+
+    def __copy__(self):
+        '''Return hard copy of this class instance.'''
+        return type(self)(self.path, self.contents,
+                          self.filetype,
+                          self._get_global_properties())
+
+    def to_xyzblock(self):
+        '''Get XYZ text for this structure.'''
+        return '\n'.join(self.contents)
+
+    def save_xyz(self, path):
+        with open(path, 'w') as f:
+            f.write(self.to_xyzblock())
+        return 'Success'
+
+    def save_pickle(self, path):
+        '''Pickle this class instance.'''
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        return 'Success'
+
+    def save(self, path, fmt=None):
+        '''
+        Save molecule
+
+        Parameters
+        ----------
+        path : str
+            Path to save file.
+        fmt : str (optional)
+            Format to save this molecule in. If None, determined from given
+            path's extension. If .pkl. pickles this full object.
+            Default: None.
+            Supported formats: .xyz, .pkl.
+
+        Returns
+        -------
+        str
+            Status of save.
+
+        '''
+
+        if fmt is None:
+            # Decide format based on path
+            fmt = os.path.splitext(path)[-1]
+        fmt = fmt.lower()
+
+        if 'xyz' in fmt:
+            return self.save_xyz(path)
+
+        if 'pkl' in fmt:
+            return self.save_pickle(path)
+
+        raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
+
+# spin couplings, shielding, shifts
+
+
+class Geometry(XYZGeometry, GeometryInterface):
+    '''
+    Molecule information, including information on the file it was
+    generated from. It is not recommended to manipulate or retrieve
+    attributes of this class without using class functions.
+
+    Attributes
+    ----------
+    path : str
+        Path provided to generate original instance.
+    contents : list(str)
+        Contents of file used to create original instance.
+    filetype : str
+        File type used to create original instance.
+    mol : RDKit Mol object
+        Current structure, potentially updated from its original
+        form using functions in this class.
+
+    '''
+
+    def __init__(self, path=None, contents=None, filetype=None, mol=None,
+                 global_properties=None):
         self.path = path
         self.contents = contents
         self.filetype = filetype
         self.mol = mol
+
+        if global_properties is None:
+            self.global_properties = dict()
+        else:
+            self.global_properties = global_properties
 
     def get_mol(self, hard_copy=True):
         '''
