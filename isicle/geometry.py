@@ -166,6 +166,17 @@ def load_pdb(path: str):
 
 
 def check_mol(mol, string_struct):
+    '''
+    Check if mol failed to generate. If so, throw error.
+
+    Parameters
+    ----------
+    mol : RDKit Mol object
+        RDKit representation of compound structure
+    string_struct : str
+        Input used to initialize Mol object
+    '''
+
     if mol is None:
         raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
     return
@@ -320,7 +331,8 @@ def load(path: str):
 class XYZGeometry():
     '''
     Molecule information, including information on the file it was
-    generated from. It is not recommended to manipulate or retrieve
+    generated from, specialized for XYZ files (bonding info not provided).
+    It is not recommended to manipulate or retrieve
     attributes of this class without using class functions.
 
     Attributes
@@ -331,10 +343,9 @@ class XYZGeometry():
         Contents of file used to create original instance.
     filetype : str
         File type used to create original instance.
-    mol : RDKit Mol object
-        Current structure, potentially updated from its original
-        form using functions in this class.
-
+    global_properties : dict
+        Dictionary of properties calculated for this structure. To
+        generate, use get_* and *_optimize functions.
     '''
 
     def __init__(self, path=None, contents=None, filetype=None,
@@ -350,7 +361,7 @@ class XYZGeometry():
 
     def dft_optimize(self, program='NWChem', template=None, **kwargs):
         '''
-        Optimize geometry, either XYZ or PDB, using stated functional and basis set.
+        Optimize geometry from XYZ, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
         res = isicle.qm.dft(self.__copy__, program=program, template=template, **kwargs)
@@ -385,10 +396,24 @@ class XYZGeometry():
         raise NotImplementedError
 
     def get_natoms(self):
+        '''Calculate total number of atoms.'''
         self.global_properties['natoms'] = int(self.contents[0].strip())
         return self.global_properties['natoms']
 
     def get_atom_indices(self, atoms=['C', 'H']):
+        '''
+        Extract indices of each atom from the internal geometry.
+
+        Parameters
+        ----------
+        atoms : list of str
+            Atom types of interest.
+
+        Returns
+        -------
+        list of int
+            Atom indices.
+        '''
         idx = []
 
         for i in range(2, len(self.contents)):
@@ -398,9 +423,24 @@ class XYZGeometry():
         return idx
 
     def _get_global_properties(self):
+        '''Return a copy of this object's global_properties dictionary'''
         return self.global_properties.copy()
 
     def get_global_properties(self, calc_all=True):
+        '''
+        Fetch the global_properties for this object.
+
+        Parameters
+        ----------
+        calc_all : bool
+            Calculate simple properties for this structure before
+            returning the dictionary
+
+        Returns
+        -------
+        dict
+            Properties for this struture.
+        '''
 
         if calc_all:
 
@@ -464,8 +504,6 @@ class XYZGeometry():
 
         raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
 
-# spin couplings, shielding, shifts
-
 
 class Geometry(XYZGeometry, GeometryInterface):
     '''
@@ -484,7 +522,9 @@ class Geometry(XYZGeometry, GeometryInterface):
     mol : RDKit Mol object
         Current structure, potentially updated from its original
         form using functions in this class.
-
+    global_properties : dict
+        Dictionary of properties calculated for this structure. To
+        generate, use get_* and *_optimize functions.
     '''
 
     def __init__(self, path=None, contents=None, filetype=None, mol=None,
@@ -724,7 +764,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         -------
         list of int
             Atom indices.
-
         '''
 
         atoms = [lookup[x] for x in atoms]
@@ -736,7 +775,20 @@ class Geometry(XYZGeometry, GeometryInterface):
         return idx
 
     def get_global_properties(self, calc_all=True):
+        '''
+        Fetch the global_properties for this object.
 
+        Parameters
+        ----------
+        calc_all : bool
+            Calculate simple properties for this structure before
+            returning the dictionary
+
+        Returns
+        -------
+        dict
+            Properties for this struture.
+        '''
         if calc_all:
 
             if 'natoms' not in self.global_properties:
