@@ -38,7 +38,7 @@ class GeometryInterface(metaclass=abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls, subclass):
         return (hasattr(subclass, 'optimize')
-                and callable(subclass.optimze)
+                and callable(subclass.optimize)
                 and hasattr(subclass, 'save')
                 and callable(subclass.save)
                 and hasattr(subclass, 'save')
@@ -123,7 +123,7 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
                 and callable(subclass.save_config)
                 and hasattr(subclass, 'run')
                 and callable(subclass.run)
-                and hasattr(subclass, 'finsih')
+                and hasattr(subclass, 'finish')
                 and callable(subclass.finish)
                 or NotImplemented)
 
@@ -140,6 +140,46 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def save_config(self):
         '''Configure the run.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def run(self):
+        '''Execute/submit the run.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def finish(self, path: str):
+        '''Finalize, parse, return result object.'''
+        raise NotImplementedError
+
+class MDWrapperInterface(metaclass=abc.ABCMeta):
+    '''
+    Abstract base class for molecular dynamics wrapper interface. All QM
+    wrappers conform to this definition.
+    '''
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'load_geometry')
+                and callable(subclass.load_geometry)
+                and hasattr(subclass, 'set_geometry')
+                and callable(subclass.set_geometry)
+                and hasattr(subclass, 'job_type')
+                and callable(subclass.job_type)
+                and hasattr(subclass, 'run')
+                and callable(subclass.run)
+                and hasattr(subclass, 'finish')
+                and callable(subclass.finish)
+                or NotImplemented)
+
+    @abc.abstractmethod
+    def set_geometry(self):
+        '''Load the input geometry file'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def job_type(self):
+        '''Make list of jobs.'''
         raise NotImplementedError
 
     @abc.abstractmethod

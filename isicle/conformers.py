@@ -36,10 +36,10 @@ def reduce(value, method='boltzmann', **kwargs):
 
 
 def boltzmann(value, energy, index=None):
-    if index is None:
-        index = -1
+    df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
 
-    df = pd.DataFrame({'value': value, 'energy': energy, 'index': index})
+    if index is not None:
+        df['index'] = index
 
     res = []
     for name, group in df.groupby(['index']):
@@ -55,47 +55,47 @@ def boltzmann(value, energy, index=None):
 
     res = pd.DataFrame(res, columns=['index', 'mean', 'std', 'n'])
 
-    if index == -1:
+    if index is None:
         return res.drop(columns='index').iloc[0]
 
     return res
 
 
 def simple_average(value, index=None):
-    if index is None:
-        index = -1
+    df = pd.DataFrame({'value': value, 'index': -1})
 
-    df = pd.DataFrame({'value': value, 'index': index})
+    if index is not None:
+        df['index'] = index
 
     res = df.groupby(['index'], as_index=False).agg({'value':
                                                      ['mean', 'std', 'count']})
     res.columns = ['index', 'mean', 'std', 'n']
 
-    if index == -1:
+    if index is None:
         return res.drop(columns='index').iloc[0]
 
     return res
 
 
 def lowest_energy(value, energy, index=None):
-    if index is None:
-        index = -1
+    df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
 
-    df = pd.DataFrame({'value': value, 'energy': energy, 'index': index})
+    if index is not None:
+        df['index'] = index
 
     res = df.loc[df.groupby('index')['energy'].idxmin()]
 
-    if index == -1:
+    if index is None:
         return res.drop(columns='index').iloc[0]
 
     return res
 
 
 def threshold(value, energy, threshold=5, index=None):
-    if index is None:
-        index = -1
+    df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
 
-    df = pd.DataFrame({'value': value, 'energy': energy, 'index': index})
+    if index is not None:
+        df['index'] = index
 
     df = df.loc[df['energy'] <= threshold, :]
 
@@ -103,7 +103,7 @@ def threshold(value, energy, threshold=5, index=None):
                                                      ['mean', 'std', 'count']})
     res.columns = ['index', 'mean', 'std', 'n']
 
-    if index == -1:
+    if index is None:
         return res.drop(columns='index').iloc[0]
 
     return res

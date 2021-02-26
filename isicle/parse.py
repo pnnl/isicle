@@ -32,10 +32,12 @@ class NWChemResult():
         shield_values, dft_energy, index = shielding
 
         # TODO: change how this info is stored?
-        df = pd.DataFrame(shield_values, columns=[
-                          'index', 'atom', 'shielding'])
-        df['dft_energy'] = energy[-1]
-        df['index'] = true_idx
+        df = pd.DataFrame(shield_values,
+                          columns=['index', 'atom', 'shielding'])
+        df['dft_energy'] = dft_energy
+        df['index'] = index
+
+        self.shielding = df
         return self.shielding
 
     def set_spin(self, spin):
@@ -43,6 +45,10 @@ class NWChemResult():
         return self.spin
 
     def set_frequency(self, frequency):
+        self.frequency = frequency
+        return self.frequency
+
+    def set_meta(self, meta):
         '''
         Create dictionary from results and save as attribute.
 
@@ -51,14 +57,14 @@ class NWChemResult():
         '''
 
         # Make dictionary with results
-        frequency_d = {}
+        meta_d = {}
         names = ['natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
                  'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe']
         for i, name in enumerate(names):
-            frequency_d[name] = frequency[i]
+            meta_d[name] = meta[i]
 
-        self.frequency = frequency_d
-        return self.frequency
+        self.meta = meta_d
+        return self.meta
 
     def set_molden(self, molden_filename):
         # TODO: any processing on file contents?
@@ -78,13 +84,16 @@ class NWChemResult():
         return self.spin
 
     def get_frequency(self):
+        return self.frequency
+
+    def get_meta(self):
         '''
         Return dictionary with frequency-related results
 
         Keys: 'natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
                'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe'
         '''
-        return self.frequency
+        return self.meta
 
     def get_molden(self):
         return self.molden
@@ -290,6 +299,21 @@ class NWChemParser(FileParserInterface):
         return coup_freqs
 
     def _parse_frequency(self):
+        natoms = None
+        for i, line in enumerate(self.contents):
+            if ('Geometry' in line) and (natoms is None):
+                atom_start = i + 7
+            if ('Atomic Mass' in line) and (natoms is None):
+                atom_stop = i - 2
+                natoms = atom_stop - atom_start + 1
+            if 'Normal Eigenvalue' in line:
+                freq_start = i + 3
+                freq_stop = i + 2 + 3 * natoms
+
+        return np.array([float(x.split()[1])
+                         for x in self.contents[freq_start:freq_stop + 1]])
+
+    def _parse_meta(self):
 
         # Init
         indices = []
