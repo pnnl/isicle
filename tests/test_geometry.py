@@ -24,6 +24,11 @@ def compare(geom1, geom2, check_path=True, check_contents=True, check_mol=True):
 
 
 @pytest.fixture()
+def xgeom():
+    return isicle.geometry.load_xyz(localfile('resources/geom_test.xyz'))
+
+
+@pytest.fixture()
 def geom():
     return isicle.geometry.load_smiles(localfile('resources/geom_test.smi'))
 
@@ -181,6 +186,88 @@ class TestLoad:
 
         # Note: not comparing to saved molecule because Mols returned from
         # load_mol2 do not have Hs explicitly added.
+
+
+class TestXYZGeometry:
+
+    def test_init(self, xgeom):
+        assert isinstance(xgeom, isicle.geometry.XYZGeometry)
+
+    # TODO: implement test
+    def test_dft_optimize(self, xgeom):
+        raise NotImplementedError
+
+    def test__get_global_properties(self, xgeom):
+        assert xgeom.global_properties == xgeom._get_global_properties()
+
+    def test_get_natoms(self, xgeom):
+        assert xgeom.get_natoms() == 6
+
+    def test_get_global_properties(self, xgeom):
+        d = xgeom.get_global_properties(calc_all=True)
+
+        assert d['natoms'] == 6
+
+    def test_get_atom_indices(self, xgeom):
+
+        # Test default (C & H)
+        assert xgeom.get_atom_indices() == list(range(6))
+
+        # Test H only
+        assert xgeom.get_atom_indices(atoms=['H']) == list(range(2, 6))
+
+    def test_to_xyzblock(self, xgeom):
+        assert xgeom.to_xyzblock().split('\n') == xgeom.contents
+
+    def test__copy__(self, xgeom):
+
+        # Record original number of atoms
+        # This is automatically stored in the obj's dict.
+        starting_natoms = xgeom.get_natoms()
+
+        # Make copy
+        xgeom_cp = xgeom.__copy__()
+
+        # Test copy is correct
+        assert compare(xgeom, xgeom_cp, check_mol=False)
+
+        # Test objects are not linked
+        xgeom.global_properties['natoms'] = -1
+        assert xgeom._get_global_properties()['natoms'] != starting_natoms
+        assert xgeom_cp._get_global_properties()['natoms'] == starting_natoms
+
+    def _test_save(self, geom, temp_path, expected=None):
+
+        # Check file exists
+        assert os.path.exists(temp_path)
+
+        # Check smiles in file
+        if expected is not None:
+            assert isicle.geometry._load_text(temp_path) == expected
+
+        # Remove temp file
+        os.remove(temp_path)
+#
+
+    def test_save_xyz(self, xgeom, temp_path='temp.xyz'):
+
+        # Test direct call
+        xgeom.save_xyz(temp_path)
+        self._test_save(xgeom, temp_path, None)
+
+        # Test indirect callable
+        xgeom.save(temp_path)
+        self._test_save(xgeom, temp_path, None)
+
+    def test_save_pickle(self, xgeom, temp_path='temp.pkl'):
+
+        # Test direct call
+        xgeom.save_pickle(temp_path)
+        self._test_save(xgeom, temp_path, None)
+
+        # Test indirect callable
+        xgeom.save(temp_path)
+        self._test_save(xgeom, temp_path, None)
 
 
 class TestGeometry:
