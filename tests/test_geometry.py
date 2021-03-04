@@ -8,7 +8,7 @@ from rdkit.Chem import AllChem, MolToSmiles
 
 
 def localfile(path):
-    "Returns path relative to this file."
+    '''Returns path relative to this file.'''
     return os.path.join(os.path.dirname(__file__), path)
 
 
