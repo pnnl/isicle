@@ -418,6 +418,13 @@ class NWChemParser(FileParserInterface):
               geom_path=None, molden_path=None):
         '''Extract relevant information from data'''
 
+        # Check that the file is valid first
+        if len(self.contents) == 0:
+            raise RuntimeError('No contents to parse: {}'.format(path))
+        if 'Total times  cpu' not in self.contents[-1]:
+            raise RuntimeError('Incomplete NWChem run: {}'.format(path))
+
+        # Initialize result object to store info
         result = NWChemResult()
 
         if 'geometry' in to_parse:
