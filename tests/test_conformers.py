@@ -2,7 +2,7 @@ import pytest
 import isicle
 import numpy as np
 import os
-from isicle.geometry import Geometry, MDOptimizedGeometry, DFTOptimizedGeometry
+from isicle.geometry import Geometry, XYZGeometry
 
 
 def localfile(path):
@@ -121,14 +121,14 @@ def test_threshold(random_values, random_energies, index):
 
 @pytest.mark.parametrize('objects',
                          [([Geometry(), Geometry(), Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), Geometry()])])
+                          ([XYZGeometry(), XYZGeometry(), Geometry()])])
 def test_build_conformational_ensemble(objects):
     isicle.conformers.build_conformational_ensemble(objects)
 
 
 @pytest.mark.parametrize('objects',
                          [([Geometry(), 'abc', Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), list()])])
+                          ([XYZGeometry(), Geometry(), list()])])
 def test_build_conformational_ensemble_fail(objects):
     with pytest.raises(TypeError):
         isicle.conformers.build_conformational_ensemble(objects)
