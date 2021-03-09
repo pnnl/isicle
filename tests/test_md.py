@@ -119,7 +119,7 @@ class TestXTBWrapper:
         # Clean up
         xtb.temp_dir.cleanup()
 
-    def test_run(self, xtb):
+    def test_run(self, xtb):abns   
         # Load geometry externally
         geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
