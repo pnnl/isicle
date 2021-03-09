@@ -1,6 +1,6 @@
 from statsmodels.stats.weightstats import DescrStatsW
 import pandas as pd
-from isicle.geometry import Geometry, MDOptimizedGeometry, DFTOptimizedGeometry
+from isicle.geometry import Geometry, XYZGeometry
 import numpy as np
 from isicle.utils import TypedList
 
@@ -11,7 +11,7 @@ def _function_selector(func):
 
     Parameters
     ----------
-    function : str
+    func : str
         Alias for function selection (one of "boltzmann", "simple", "lowest",
         or "threshold").
 
@@ -33,14 +33,49 @@ def _function_selector(func):
         raise ValueError('{} not a supported reduction function.'.format(func))
 
 
-def _energy_based(f):
-    if f in [boltzmann, lowest_energy, threshold]:
+def _energy_based(func):
+    '''
+    Checks whether function employs an energy-based reduction operation.
+
+    Parameters
+    ----------
+    func : func
+        Conformer reduction function.
+
+    Returns
+    -------
+    bool
+        True if energy based, otherwise False.
+
+    '''
+
+    if func in [boltzmann, lowest_energy, threshold]:
         return True
 
     return False
 
 
 def reduce(value, func='boltzmann', **kwargs):
+    '''
+    Combine values according to indicated function.
+
+    Parameters
+    ----------
+    value : :obj:`~numpy.array`
+        Array containing values that will be combined.
+    func : str
+        Alias for function selection (one of "boltzmann", "simple", "lowest",
+        or "threshold").
+    **kwargs
+        Additional keyword arguments passed to `func`.
+
+    Returns
+    -------
+    :obj:`~pandas.DataFrame`
+        Result of reduction operation.
+
+    '''
+
     f = _function_selector(func)
 
     # Energy-based method
@@ -53,6 +88,25 @@ def reduce(value, func='boltzmann', **kwargs):
 
 
 def boltzmann(value, energy, index=None):
+    '''
+    Combine values according to a Boltzmann-weighted average.
+
+    Parameters
+    ----------
+    value : :obj:`~numpy.array`
+        Array containing values that will be combined.
+    energy : :obj:`~numpy.array`
+        Array containing energy values that correspond to entries in `value`.
+    index : None or :obj:`~numpy.array`
+        Index by which to group values for averaging.
+
+    Returns
+    -------
+    :obj:`~pandas.DataFrame`
+        Result of reduction operation.
+
+    '''
+
     df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
 
     if index is not None:
@@ -79,6 +133,23 @@ def boltzmann(value, energy, index=None):
 
 
 def simple_average(value, index=None):
+    '''
+    Combine values according to a simple average.
+
+    Parameters
+    ----------
+    value : :obj:`~numpy.array`
+        Array containing values that will be combined.
+    index : None or :obj:`~numpy.array`
+        Index by which to group values for averaging.
+
+    Returns
+    -------
+    :obj:`~pandas.DataFrame`
+        Result of reduction operation.
+
+    '''
+
     df = pd.DataFrame({'value': value, 'index': -1})
 
     if index is not None:
@@ -95,6 +166,25 @@ def simple_average(value, index=None):
 
 
 def lowest_energy(value, energy, index=None):
+    '''
+    Combine values according to lowest energy.
+
+    Parameters
+    ----------
+    value : :obj:`~numpy.array`
+        Array containing values that will be combined.
+    energy : :obj:`~numpy.array`
+        Array containing energy values that correspond to entries in `value`.
+    index : None or :obj:`~numpy.array`
+        Index by which to group values for averaging.
+
+    Returns
+    -------
+    :obj:`~pandas.DataFrame`
+        Result of reduction operation.
+
+    '''
+
     df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
 
     if index is not None:
@@ -109,6 +199,26 @@ def lowest_energy(value, energy, index=None):
 
 
 def threshold(value, energy, threshold=5, index=None):
+    '''
+    Combine values with energy below a given threshold according to a simple
+    average.
+
+    Parameters
+    ----------
+    value : :obj:`~numpy.array`
+        Array containing values that will be combined.
+    energy : :obj:`~numpy.array`
+        Array containing energy values that correspond to entries in `value`.
+    index : None or :obj:`~numpy.array`
+        Index by which to group values for averaging.
+
+    Returns
+    -------
+    :obj:`~pandas.DataFrame`
+        Result of reduction operation.
+
+    '''
+
     df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
 
     if index is not None:
@@ -127,20 +237,87 @@ def threshold(value, energy, threshold=5, index=None):
 
 
 def build_conformational_ensemble(geometries):
+    '''
+    Create a conformational ensemble from a collection of geometries.
+
+    Parameters
+    ----------
+    geometries : list of :obj:`~isicle.geometry.Geometry` or related subclass
+        Collection of geometry instances.
+
+    Returns
+    -------
+    :obj:`~isicle.conformers.ConformationalEnsemble`
+        Conformational ensemble.
+
+    '''
+
     return ConformationalEnsemble(geometries)
 
 
 class ConformationalEnsemble(TypedList):
+    '''
+    Collection of :obj:`~isicle.geometry.Geometry`, or related subclass,
+    instances.
+
+    '''
+
     def __init__(self, *args):
-        super().__init__((Geometry, MDOptimizedGeometry, DFTOptimizedGeometry),
-                         *args)
+        '''
+        Initialize :obj:`~isicle.conformers.ConformationalEnsemble` instance.
+
+        Parameters
+        ----------
+        *args
+            Objects to comprise the conformational ensemble.
+
+        '''
+
+        super().__init__((Geometry, XYZGeometry), *args)
 
     def _check_attributes(self, attr):
+        '''
+        Check if all ensemble members have the supplied attribute.
+
+        Parameters
+        ----------
+        attr : str
+            Attribute to check.
+
+        Raises
+        ------
+        AttributeError
+            If all members do not have `attr`.
+
+        '''
+
         if not all(hasattr(x, attr) for x in self):
-            raise AttributeError('"{}" not found for entire conformational'
-                                 'sample members.'.format(attr))
+            raise AttributeError('"{}" not found for all conformational'
+                                 'ensemble members.'.format(attr))
 
     def reduce(self, attr, func='boltzmann', index=False, **kwargs):
+        '''
+        Combine attribute values according to indicated function.
+
+        Parameters
+        ----------
+        attr : str
+            Attribute that will be combined.
+        func : str
+            Alias for function selection (one of "boltzmann", "simple",
+            "lowest", or "threshold").
+        index : bool
+            Signal whether index should be used to combine attribute values.
+        **kwargs
+            Additional keyword arguments passed to `func`.
+
+        Returns
+        -------
+        :obj:`~pandas.DataFrame`
+            Result of reduction operation.
+
+        '''
+
         f = _function_selector(func)
 
         # Check for primary attribute
@@ -178,6 +355,23 @@ class ConformationalEnsemble(TypedList):
         return f(value, index=index, **kwargs)
 
     def _apply_method(self, method, **kwargs):
+        '''
+        Process conformational ensemble members according to supplied method.
+
+        Parameters
+        ----------
+        method : str
+            Method by which ensemble members will be processed.
+        **kwargs
+            Keyword arguments passed to `method`.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble` or list
+            Result of operation, type depends on `method` return type.
+
+        '''
+
         # Check for attribute
         self._check_attributes(method)
 
@@ -193,6 +387,23 @@ class ConformationalEnsemble(TypedList):
             return result
 
     def _apply_function(self, func, **kwargs):
+        '''
+        Process conformational ensemble members according to supplied function.
+
+        Parameters
+        ----------
+        func : str
+            Function by which ensemble members will be processed.
+        **kwargs
+            Keyword arguments passed to `func`.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble` or list
+            Result of operation, type depends on `func` return type.
+
+        '''
+
         # Apply method to collection
         result = [func(x, **kwargs) for x in self]
 
@@ -205,6 +416,30 @@ class ConformationalEnsemble(TypedList):
             return result
 
     def apply(self, func=None, method=None, **kwargs):
+        '''
+        Process conformational ensemble members according to supplied function
+        or method.
+
+        Parameters
+        ----------
+        func : str
+            Function by which ensemble members will be processed.
+        method : str
+            Method by which ensemble members will be processed.
+        **kwargs
+            Keyword arguments passed to `method`.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble` or list
+            Result of operation, type depends on `method` return type.
+
+        Raises
+        ------
+        ValueError
+            If neither `func` nor `method` is supplied.
+
+        '''
         if func is not None:
             return self._apply_function(func, **kwargs)
 
