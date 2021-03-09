@@ -1,13 +1,13 @@
-import numpy as np
-import os
-import copy
-from rdkit.Chem.SaltRemover import SaltRemover
-from rdkit.Chem.MolStandardize import rdMolStandardize
-from rdkit import Chem
-import pybel
-import pickle
-import isicle
 from isicle.interfaces import GeometryInterface
+import isicle
+import pickle
+import pybel
+from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
+from rdkit.Chem.SaltRemover import SaltRemover
+import copy
+import os
+import numpy as np
 
 
 def load_pickle(path: str):
@@ -98,9 +98,11 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
-    # geom.mol = _gen_3D_coord(Chem.MolFromXYZFile(path))
-    return geom
+    xgeom = XYZGeometry()
+    xgeom.path = path
+    xgeom.contents = _load_text(path)
+    xgeom.filetype = os.path.splitext(path)[-1].lower().strip()
+    return xgeom
 
 
 def load_mol(path: str):
@@ -164,27 +166,20 @@ def load_pdb(path: str):
 
 
 def check_mol(mol, string_struct):
+    '''
+    Check if mol failed to generate. If so, throw error.
+
+    Parameters
+    ----------
+    mol : RDKit Mol object
+        RDKit representation of compound structure
+    string_struct : str
+        Input used to initialize Mol object
+    '''
+
     if mol is None:
         raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
     return
-
-
-def _gen_3D_coord(mol, string_struct):
-
-    # Check given input
-    check_mol(mol, string_struct)
-
-    # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
-    check_mol(mol, string_struct)
-
-    # Gen 3d coord
-    Chem.AllChem.EmbedMolecule(mol)
-    check_mol(mol, string_struct)
-    Chem.AllChem.MMFFOptimizeMolecule(mol)
-    check_mol(mol, string_struct)
-
-    return mol
 
 
 def _load_2D(path, convert_fxn):
@@ -212,7 +207,20 @@ def _load_2D(path, convert_fxn):
     # Hs not explicit, must be added.
     # Not done for MolFromSmarts since it crashes at the AddHs step.
     if convert_fxn is not Chem.MolFromSmarts:
-        mol = _gen_3D_coord(mol, string_struct)
+
+        # Check initial mol passed
+        check_mol(mol, string_struct)
+
+        # Add explicit hydrogens
+        mol = Chem.AddHs(mol)
+        check_mol(mol, string_struct)
+
+        # Gen 3d coord
+        Chem.AllChem.EmbedMolecule(mol)
+        check_mol(mol, string_struct)
+        Chem.AllChem.MMFFOptimizeMolecule(mol)
+        check_mol(mol, string_struct)
+
     check_mol(mol, string_struct)
 
     geom.mol = mol
@@ -320,7 +328,177 @@ def load(path: str):
     raise IOError('Extension {} not recognized.'.format(extension))
 
 
-class Geometry(GeometryInterface):
+class XYZGeometry():
+    '''
+    Molecule information, including information on the file it was
+    generated from, specialized for XYZ files (bonding info not provided).
+    It is not recommended to manipulate or retrieve
+    attributes of this class without using class functions.
+
+    Attributes
+    ----------
+    path : str
+        Path provided to generate original instance.
+    contents : list(str)
+        Contents of file used to create original instance.
+    filetype : str
+        File type used to create original instance.
+    global_properties : dict
+        Dictionary of properties calculated for this structure. To
+        generate, use get_* and *_optimize functions.
+    '''
+
+    def __init__(self, path=None, contents=None, filetype=None,
+                 global_properties=None):
+        self.path = path
+        self.contents = contents
+        self.filetype = filetype
+
+        if global_properties is None:
+            self.global_properties = dict()
+        else:
+            self.global_properties = global_properties
+
+    def dft_optimize(self, program='NWChem', template=None, **kwargs):
+        '''
+        Optimize geometry from XYZ, using stated functional and basis set.
+        Additional inputs can be grid size, optimization criteria level,
+        '''
+        res = isicle.qm.dft(self.__copy__, program=program, template=template, **kwargs)
+
+        # Check if a dictionary was returned. If not, convert to dictionary.
+        if type(res) != dict:
+            res = res.to_dict()
+
+        # Create new XYZGeometry object for user
+        new_xgeom = self.__copy__()
+
+        # Update geometry if needed
+        if res['geometry'] is not None:
+            new_xgeom = load_xyz(res['geometry'])
+        else:
+            new_xgeom = XYZGeometry()
+            new_xgeom.contents = self.contents[:]
+
+        # Update properties
+        new_xgeom.calculate_global_properties()  # Calculate any available w/in class
+        new_xgeom.global_properties.update(res)  # Update with DFT results
+
+        return new_xgeom, res
+
+    def md_optimize(self, program='xtb', template=None, **kwargs):
+        res = isicle.qm.md(self.__copy__, program=program, template=template, **kwargs)
+
+        # TODO: complete result handling
+        # Cases: 1+ XYZ returned
+        # Create a new XYZGeometry for each
+
+        raise NotImplementedError
+
+    def get_natoms(self):
+        '''Calculate total number of atoms.'''
+        self.global_properties['natoms'] = int(self.contents[0].strip())
+        return self.global_properties['natoms']
+
+    def get_atom_indices(self, atoms=['C', 'H']):
+        '''
+        Extract indices of each atom from the internal geometry.
+
+        Parameters
+        ----------
+        atoms : list of str
+            Atom types of interest.
+
+        Returns
+        -------
+        list of int
+            Atom indices.
+        '''
+        idx = []
+
+        for i in range(2, len(self.contents)):
+            atom = self.contents[i].split(' ')[0]
+            if atom in atoms:
+                idx.append(i - 2)
+        return idx
+
+    def get_global_properties(self):
+        '''Return a copy of this object's global_properties dictionary'''
+        return self.global_properties.copy()
+
+    def calculate_global_properties(self):
+        '''
+        Calculate the global_properties for this object (does not include
+        calculations that take > 5 seconds).
+
+        Returns
+        -------
+        dict
+            Properties for this struture.
+        '''
+
+        if 'natoms' not in self.global_properties:
+            self.get_natoms()
+
+        return self.get_global_properties()
+
+    def __copy__(self):
+        '''Return hard copy of this class instance.'''
+        return type(self)(self.path, self.contents,
+                          self.filetype,
+                          self.get_global_properties())
+
+    def to_xyzblock(self):
+        '''Get XYZ text for this structure.'''
+        return '\n'.join(self.contents)
+
+    def save_xyz(self, path):
+        with open(path, 'w') as f:
+            f.write(self.to_xyzblock())
+        return 'Success'
+
+    def save_pickle(self, path):
+        '''Pickle this class instance.'''
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        return 'Success'
+
+    def save(self, path, fmt=None):
+        '''
+        Save molecule
+
+        Parameters
+        ----------
+        path : str
+            Path to save file.
+        fmt : str (optional)
+            Format to save this molecule in. If None, determined from given
+            path's extension. If .pkl. pickles this full object.
+            Default: None.
+            Supported formats: .xyz, .pkl.
+
+        Returns
+        -------
+        str
+            Status of save.
+
+        '''
+
+        if fmt is None:
+            # Decide format based on path
+            fmt = os.path.splitext(path)[-1]
+        fmt = fmt.lower()
+
+        if 'xyz' in fmt:
+            return self.save_xyz(path)
+
+        if 'pkl' in fmt:
+            return self.save_pickle(path)
+
+        raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
+
+
+class Geometry(XYZGeometry, GeometryInterface):
     '''
     Molecule information, including information on the file it was
     generated from. It is not recommended to manipulate or retrieve
@@ -337,14 +515,22 @@ class Geometry(GeometryInterface):
     mol : RDKit Mol object
         Current structure, potentially updated from its original
         form using functions in this class.
-
+    global_properties : dict
+        Dictionary of properties calculated for this structure. To
+        generate, use get_* and *_optimize functions.
     '''
 
-    def __init__(self, path=None, contents=None, filetype=None, mol=None):
+    def __init__(self, path=None, contents=None, filetype=None, mol=None,
+                 global_properties=None):
         self.path = path
         self.contents = contents
         self.filetype = filetype
         self.mol = mol
+
+        if global_properties is None:
+            self.global_properties = dict()
+        else:
+            self.global_properties = global_properties
 
     def get_mol(self, hard_copy=True):
         '''
@@ -363,6 +549,15 @@ class Geometry(GeometryInterface):
 
         '''
         return self.mol.__copy__()
+
+    def md_optimize(self, program='xtb', template=None, **kwargs):
+        res = isicle.qm.md(self.__copy__, program=program, template=template, **kwargs)
+
+        # TODO: complete result handling
+        # Cases: 1+ XYZ or PDB files returned
+        # Create a new XYZGeometry or Geometry for each depending on type returned
+
+        raise NotImplementedError
 
     def _handle_inplace(self, mol, inplace):
         '''
@@ -531,15 +726,7 @@ class Geometry(GeometryInterface):
 
         return self._handle_inplace(res[0], inplace)
 
-    def dft_optimize(self, program='NWChem', template=None, **kwargs):
-        '''
-        Optimize geometry, either XYZ or PDB, using stated functional and basis set.
-        Additional inputs can be grid size, optimization criteria level,
-        '''
-        return isicle.qm.dft(self, program=program, template=template, **kwargs)
-
-    # TODO: update
-    def total_partial_charge(self):
+    def get_total_partial_charge(self):
         '''Sum the partial charge across all atoms.'''
         mol = self.get_mol()
         Chem.AllChem.ComputeGasteigerCharges(mol)
@@ -547,14 +734,63 @@ class Geometry(GeometryInterface):
                     for i in range(mol.GetNumAtoms())]
         return np.nansum(contribs)
 
-    def natoms(self):
+    def get_natoms(self):
         '''Calculate total number of atoms.'''
-        return Chem.Mol.GetNumAtoms(self.get_mol())
+        natoms = Chem.Mol.GetNumAtoms(self.get_mol())
+        self.global_properties['natoms'] = natoms
+        return self.global_properties['natoms']
+
+    def get_atom_indices(self, atoms=['C', 'H'],
+                         lookup={'C': 6, 'H': 1, 'N': 7,
+                                 'O': 8, 'F': 9, 'P': 15}):
+        '''
+        Extract indices of each atom from the internal geometry.
+
+        Parameters
+        ----------
+        atoms : list of str
+            Atom types of interest.
+        lookup : dict
+            Mapping between atom symbol and atomic number.
+
+        Returns
+        -------
+        list of int
+            Atom indices.
+        '''
+
+        atoms = [lookup[x] for x in atoms]
+        idx = []
+        for a in self.mol.GetAtoms():
+            if a.GetAtomicNum() in atoms:
+                idx.append(a.GetIdx())
+
+        return idx
+
+    def calculate_global_properties(self):
+        '''
+        Calculate the global_properties for this object (does not include
+        calculations that take > 5 seconds).
+
+        Returns
+        -------
+        dict
+            Properties for this struture.
+        '''
+
+        if 'natoms' not in self.global_properties:
+            self.get_natoms()
+
+        if 'total_partial_charge' not in self.global_properties:
+            self.get_total_partial_charge()
+
+        return self.get_global_properties()
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
         return type(self)(self.path, self.contents,
-                          self.filetype, self.get_mol())
+                          self.filetype, self.get_mol(),
+                          self.get_global_properties())
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
@@ -571,8 +807,6 @@ class Geometry(GeometryInterface):
     def to_xyzblock(self):
         '''Get XYZ text for this structure.'''
         return Chem.MolToXYZBlock(self.mol)
-        # # NOTE: Depricated, returns nothing for C2H4
-        # raise NotImplementedError
 
     def to_pdbblock(self):
         '''Get PDB text for this structure'''
@@ -607,12 +841,6 @@ class Geometry(GeometryInterface):
     def save_mol(self, path):
         '''Save Mol file for this structure.'''
         return Chem.MolToMolFile(self.get_mol(), path)
-
-    def save_pickle(self, path):
-        '''Pickle this class instance.'''
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-        return 'Success'
 
     def save_pdb(self, path: str):
         '''Save PDB file for this structure.'''
@@ -668,7 +896,7 @@ class Geometry(GeometryInterface):
 
         # TODO: enable Compute2DCoords, https://www.rdkit.org/docs/source/rdkit.Chem.rdDepictor.html
 
-        raise TypeError('Input format {} not supported.'.format(fmt))
+        raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
 
 
 class MDOptimizedGeometry(Geometry):

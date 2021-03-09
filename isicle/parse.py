@@ -16,6 +16,7 @@ class NWChemResult():
         self.spin = None  # Not set
         self.frequency = None  # Dictionary, see function for keys
         self.molden = None  # String, filename (for now)
+        self.meta = None  # Dictionary, see function for keys
 
     def set_energy(self, energy):
         result = {'energy': [energy[0]], 'charges': energy[1]}
@@ -119,7 +120,21 @@ class NWChemResult():
         self.spin = saved_result.get_spin()
         self.frequency = saved_result.get_frequency()
         self.molden = saved_result.get_molden()
+        self.meta = saved_result.get_meta()
         return
+
+    def to_dict(self):
+        d = {}
+
+        d['geometry'] = self.geometry
+        d['energy'] = self.energy
+        d['shielding'] = self.shielding
+        d['spin'] = self.spin
+        d['frequency'] = self.frequency
+        d['molden'] = self.molden
+        d['meta'] = self.meta
+
+        return d
 
 
 class NWChemParser(FileParserInterface):
@@ -403,6 +418,13 @@ class NWChemParser(FileParserInterface):
               geom_path=None, molden_path=None):
         '''Extract relevant information from data'''
 
+        # Check that the file is valid first
+        if len(self.contents) == 0:
+            raise RuntimeError('No contents to parse: {}'.format(path))
+        if 'Total times  cpu' not in self.contents[-1]:
+            raise RuntimeError('Incomplete NWChem run: {}'.format(path))
+
+        # Initialize result object to store info
         result = NWChemResult()
 
         if 'geometry' in to_parse:
