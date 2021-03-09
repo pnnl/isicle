@@ -420,9 +420,9 @@ class NWChemParser(FileParserInterface):
 
         # Check that the file is valid first
         if len(self.contents) == 0:
-            raise RuntimeError('No contents to parse: {}'.format(path))
+            raise RuntimeError('No contents to parse: {}'.format(self.path))
         if 'Total times  cpu' not in self.contents[-1]:
-            raise RuntimeError('Incomplete NWChem run: {}'.format(path))
+            raise RuntimeError('Incomplete NWChem run: {}'.format(self.path))
 
         # Initialize result object to store info
         result = NWChemResult()
