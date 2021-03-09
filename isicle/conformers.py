@@ -392,7 +392,7 @@ class ConformationalEnsemble(TypedList):
 
         Parameters
         ----------
-        func : str
+        func : function
             Function by which ensemble members will be processed.
         **kwargs
             Keyword arguments passed to `func`.
@@ -422,7 +422,7 @@ class ConformationalEnsemble(TypedList):
 
         Parameters
         ----------
-        func : str
+        func : function
             Function by which ensemble members will be processed.
         method : str
             Method by which ensemble members will be processed.
