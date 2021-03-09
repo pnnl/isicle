@@ -5,16 +5,32 @@ import numpy as np
 from isicle.utils import TypedList
 
 
-def _method_selector(method):
-    method_map = {'boltzmann': boltzmann,
-                  'simple': simple_average,
-                  'lowest': lowest_energy,
-                  'threshold': threshold}
+def _function_selector(func):
+    '''
+    Selects a supported reduction function for reducing a set of conformers.
 
-    if method.lower() in method_map.keys():
-        return method_map[method.lower()]
+    Parameters
+    ----------
+    function : str
+        Alias for function selection (one of "boltzmann", "simple", "lowest",
+        or "threshold").
+
+    Returns
+    -------
+    func
+        Conformer reduction function.
+
+    '''
+
+    func_map = {'boltzmann': boltzmann,
+                'simple': simple_average,
+                'lowest': lowest_energy,
+                'threshold': threshold}
+
+    if func.lower() in func_map.keys():
+        return func_map[func.lower()]
     else:
-        raise ValueError('{} not a supported reduction method.'.format(method))
+        raise ValueError('{} not a supported reduction function.'.format(func))
 
 
 def _energy_based(f):
@@ -24,8 +40,8 @@ def _energy_based(f):
     return False
 
 
-def reduce(value, method='boltzmann', **kwargs):
-    f = _method_selector(method)
+def reduce(value, func='boltzmann', **kwargs):
+    f = _function_selector(func)
 
     # Energy-based method
     if _energy_based(f):
@@ -116,15 +132,16 @@ def build_conformational_ensemble(geometries):
 
 class ConformationalEnsemble(TypedList):
     def __init__(self, *args):
-        super().__init__((Geometry, MDOptimizedGeometry, DFTOptimizedGeometry), *args)
+        super().__init__((Geometry, MDOptimizedGeometry, DFTOptimizedGeometry),
+                         *args)
 
     def _check_attributes(self, attr):
         if not all(hasattr(x, attr) for x in self):
             raise AttributeError('"{}" not found for entire conformational'
                                  'sample members.'.format(attr))
 
-    def reduce(self, attr, method='boltzmann', index=False, **kwargs):
-        f = _method_selector(method)
+    def reduce(self, attr, func='boltzmann', index=False, **kwargs):
+        f = _function_selector(func)
 
         # Check for primary attribute
         self._check_attributes(attr)
