@@ -2,6 +2,7 @@ from statsmodels.stats.weightstats import DescrStatsW
 import pandas as pd
 from isicle.geometry import Geometry, MDOptimizedGeometry, DFTOptimizedGeometry
 import numpy as np
+from isicle.utils import TypedList
 
 
 def _method_selector(method):
@@ -109,21 +110,13 @@ def threshold(value, energy, threshold=5, index=None):
     return res
 
 
-def _are_Geometry_instances(objects):
-    return all(isinstance(x, (Geometry,
-                              MDOptimizedGeometry,
-                              DFTOptimizedGeometry)) for x in objects)
-
-
 def build_conformational_ensemble(geometries):
-    if _are_Geometry_instances(geometries) is True:
-        return ConformationalEnsemble(geometries)
-    else:
-        raise TypeError('Conformers must be of type Geometry or related'
-                        'subclass.')
+    return ConformationalEnsemble(geometries)
 
 
-class ConformationalEnsemble(list):
+class ConformationalEnsemble(TypedList):
+    def __init__(self, *args):
+        super().__init__((Geometry, MDOptimizedGeometry, DFTOptimizedGeometry), *args)
 
     def _check_attributes(self, attr):
         if not all(hasattr(x, attr) for x in self):
@@ -175,11 +168,11 @@ class ConformationalEnsemble(list):
         result = [getattr(x, method)(**kwargs) for x in self]
 
         # Return ConformationalEnsemble if correct result type
-        if _are_Geometry_instances(result) is True:
+        try:
             return ConformationalEnsemble(result)
 
         # Return result as-is
-        else:
+        except:
             return result
 
     def _apply_function(self, func, **kwargs):
@@ -187,11 +180,11 @@ class ConformationalEnsemble(list):
         result = [func(x, **kwargs) for x in self]
 
         # Return ConformationalEnsemble if correct result type
-        if _are_Geometry_instances(result) is True:
+        try:
             return ConformationalEnsemble(result)
 
         # Return result as-is
-        else:
+        except:
             return result
 
     def apply(self, func=None, method=None, **kwargs):

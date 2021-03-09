@@ -119,18 +119,18 @@ def test_threshold(random_values, random_energies, index):
     assert result['n'] == 15
 
 
-@pytest.mark.parametrize('objects',
-                         [([Geometry(), Geometry(), Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), Geometry()])])
-def test__are_Geometry_instances(objects):
-    assert isicle.conformers._are_Geometry_instances(objects) is True
+# @pytest.mark.parametrize('objects',
+#                          [([Geometry(), Geometry(), Geometry()]),
+#                           ([MDOptimizedGeometry(), DFTOptimizedGeometry(), Geometry()])])
+# def test__are_Geometry_instances(objects):
+#     assert isicle.conformers._are_Geometry_instances(objects) is True
 
 
-@pytest.mark.parametrize('objects',
-                         [([Geometry(), 'abc', Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), list()])])
-def test__are_Geometry_instances_fail(objects):
-    assert isicle.conformers._are_Geometry_instances(objects) is False
+# @pytest.mark.parametrize('objects',
+#                          [([Geometry(), 'abc', Geometry()]),
+#                           ([MDOptimizedGeometry(), DFTOptimizedGeometry(), list()])])
+# def test__are_Geometry_instances_fail(objects):
+#     assert isicle.conformers._are_Geometry_instances(objects) is False
 
 
 @pytest.mark.parametrize('objects',
@@ -167,7 +167,7 @@ class TestConformationalEnsemble:
         assert result['n'] == 30
 
     def test__apply_method(self, conformers):
-        result = conformers._apply_method('natoms')
+        result = conformers._apply_method('get_natoms')
         assert all(x == 2 for x in result)
 
     def test__apply_function(self, conformers):
@@ -176,5 +176,5 @@ class TestConformationalEnsemble:
                                             fmt='xyz')
 
     def test_apply(self, conformers):
-        result = conformers.apply(method='natoms')
+        result = conformers.apply(method='get_natoms')
         assert all(x == 2 for x in result)
