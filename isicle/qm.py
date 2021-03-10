@@ -98,7 +98,7 @@ class NWChemWrapper(QMWrapperInterface):
     task_map : dict
         Alias mapper for supported quantum mechanical presets. Thses include
         "optimze", "shielding", and "spin".
-    geom : :obj:`isicle.geometry.Geometry`
+    geom : :obj:`~isicle.geometry.Geometry`
         Internal molecule representation.
     fmt : str
         File extension indicator.
@@ -109,7 +109,7 @@ class NWChemWrapper(QMWrapperInterface):
 
     def __init__(self):
         '''
-        Initialize :obj:`NWChemWrapper` instance.
+        Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
         Creates temporary directory for intermediate files, establishes aliases
         for preconfigured tasks.
@@ -147,6 +147,11 @@ class NWChemWrapper(QMWrapperInterface):
         fmt : str
             Filetype used by NWChem. Must be "xyz" or "pdb."
 
+        Raises
+        ------
+        TypeError
+            If geometry loaded from .xyz is saved to another format.
+
         '''
 
         # Path operations
@@ -161,44 +166,8 @@ class NWChemWrapper(QMWrapperInterface):
             if self.fmt != 'xyz':
                 raise TypeError('Input .xyz files cannot be converted.')
 
-            with open(outfile, 'w') as f:
-                f.write('\n'.join(self.geom.contents))
-            return
-
         # All other formats
         self.geom.save(outfile)
-
-    # TODO: move to geometry, rename get_atom_indices (not private)
-    def _atom_indices(self, atoms=['C', 'H'],
-                      lookup={'C': 6, 'H': 1, 'N': 7,
-                              'O': 8, 'F': 9, 'P': 15}):
-        '''
-        Extract indices of each atom from the internal geometry.
-
-        Note: currently incompatible with xyz (i.e. non :obj:`rdkit.Chem.mol`
-        instances).
-
-        Parameters
-        ----------
-        atoms : list of str
-            Atom types of interest.
-        lookup : dict
-            Mapping between atom symbol and atomic number.
-
-        Returns
-        -------
-        list of int
-            Atom indices.
-
-        '''
-
-        atoms = [lookup[x] for x in atoms]
-        idx = []
-        for a in self.geom.mol.GetAtoms():
-            if a.GetAtomicNum() in atoms:
-                idx.append(a.GetIdx())
-        self.idx = idx
-        return idx
 
     def _configure_header(self, scratch_dir='/scratch', mem_global=1600,
                           mem_heap=100, mem_stack=600):
@@ -344,7 +313,7 @@ class NWChemWrapper(QMWrapperInterface):
                 ' {fmt} {basename}_geom\n'
                 'end\n').format(**d)
 
-    def _configure_cosmo(self, solvent='H20', gas=False):
+    def _configure_cosmo(self, solvent='H2O', gas=False):
         '''
         Generate COSMO block of NWChem configuration.
 
@@ -392,7 +361,7 @@ class NWChemWrapper(QMWrapperInterface):
 
     def _configure_optimize(self, basis_set='6-31G*', ao_basis='cartesian',
                             functional='b3lyp', max_iter=150,
-                            cosmo=False, solvent='H20', gas=False,
+                            cosmo=False, solvent='H2O', gas=False,
                             frequency=True, temp=298.15, **kwargs):
         '''
         Generate meta optimization block of NWChem configuration.
@@ -600,7 +569,7 @@ class NWChemWrapper(QMWrapperInterface):
     def configure(self, tasks='optimize', functional='b3lyp',
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
                   atoms=['C', 'H'], energy=True, frequency=True, temp=298.15,
-                  cosmo=False, solvent='H20', gas=False, max_iter=150,
+                  cosmo=False, solvent='H2O', gas=False, max_iter=150,
                   mem_global=1600, mem_heap=100, mem_stack=600,
                   scratch_dir='/scratch'):
         '''
@@ -683,7 +652,7 @@ class NWChemWrapper(QMWrapperInterface):
                              'per task.')
 
         # Extract atom index information
-        self._atom_indices(atoms=atoms)
+        self.idx = self.geom.get_atom_indices(atoms=atoms)
 
         # Generate header information
         config += self._configure_header(scratch_dir=scratch_dir,
