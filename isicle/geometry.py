@@ -359,6 +359,27 @@ class XYZGeometry():
         else:
             self.global_properties = global_properties
 
+    def _update(self, result):
+        # Check if a dictionary was returned. If not, convert to dictionary.
+        if type(result) != dict:
+            result = result.to_dict()
+
+        # Create new XYZGeometry object for user
+        new_xgeom = self.__copy__()
+
+        # Update geometry if needed
+        if result['geometry'] is not None:
+            new_xgeom = load_xyz(res['geometry'])
+        # else:
+        #     new_xgeom = XYZGeometry()
+        #     new_xgeom.contents = self.contents[:]
+
+        # Update properties
+        # new_xgeom.calculate_global_properties()  # Calculate any available w/in class
+        new_xgeom.global_properties.update(result)  # Update with DFT results
+
+        return new_xgeom
+
     def dft_optimize(self, program='NWChem', template=None, **kwargs):
         '''
         Optimize geometry from XYZ, using stated functional and basis set.
@@ -366,23 +387,7 @@ class XYZGeometry():
         '''
         res = isicle.qm.dft(self.__copy__, program=program, template=template, **kwargs)
 
-        # Check if a dictionary was returned. If not, convert to dictionary.
-        if type(res) != dict:
-            res = res.to_dict()
-
-        # Create new XYZGeometry object for user
-        new_xgeom = self.__copy__()
-
-        # Update geometry if needed
-        if res['geometry'] is not None:
-            new_xgeom = load_xyz(res['geometry'])
-        else:
-            new_xgeom = XYZGeometry()
-            new_xgeom.contents = self.contents[:]
-
-        # Update properties
-        new_xgeom.calculate_global_properties()  # Calculate any available w/in class
-        new_xgeom.global_properties.update(res)  # Update with DFT results
+        new_xgeom = self._update(res)
 
         return new_xgeom, res
 
