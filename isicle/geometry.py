@@ -327,7 +327,7 @@ def load(path: str):
     raise IOError('Extension {} not recognized.'.format(extension))
 
 
-class XYZGeometry():
+class XYZGeometry(XYZGeometryInterface):
     '''
     Molecule information, including information on the file it was
     generated from, specialized for XYZ files (bonding info not provided).
