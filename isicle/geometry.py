@@ -457,6 +457,7 @@ class XYZGeometry():
         return '\n'.join(self.contents)
 
     def save_xyz(self, path):
+        '''Save molecule as XYZ file'''
         with open(path, 'w') as f:
             f.write(self.to_xyzblock())
         return 'Success'
