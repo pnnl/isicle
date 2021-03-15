@@ -1,7 +1,8 @@
 from statsmodels.stats.weightstats import DescrStatsW
 import pandas as pd
-from isicle.geometry import Geometry, XYZGeometry
 import numpy as np
+import pickle
+from isicle.geometry import Geometry, XYZGeometry
 from isicle.utils import TypedList
 
 
@@ -255,6 +256,64 @@ def build_conformational_ensemble(geometries):
     return ConformationalEnsemble(geometries)
 
 
+def load_pickle(path):
+    '''
+    Load pickled file.
+
+    Parameters
+    ----------
+    path : str
+        Path to pickle.
+
+    Returns
+    -------
+    :obj:`~isicle.conformers.ConformationalEnsemble`
+        Previously pickled :obj:`~isicle.conformers.ConformationalEnsemble` instance.
+
+    Raises
+    ------
+    IOError
+        If file cannot be read.
+    TypeError
+        If file is not a supported class instance.
+
+    '''
+
+    # Load file
+    with open(path, 'rb') as f:
+        try:
+            ensemble = pickle.load(f)
+        except pickle.UnpicklingError:
+            raise IOError('Could not read file as pickle: {}'.format(path))
+
+    # Check for valid class type
+    if isinstance(ensemble, ConformationalEnsemble):
+        return ensemble
+
+    # Failure. This is not a ConformationalEnsemble instance
+    raise TypeError('Unsupported geometry format: {}.'.format(ensemble.__class__))
+
+
+def load(path):
+    '''
+    Load file.
+
+    Parameters
+    ----------
+    path : str
+        Path to file.
+
+    Returns
+    -------
+    :obj:`~isicle.conformers.ConformationalEnsemble`
+        Previously pickled :obj:`~isicle.conformers.ConformationalEnsemble` instance.
+
+    '''
+
+    return load_pickle(path)
+
+
+
 class ConformationalEnsemble(TypedList):
     '''
     Collection of :obj:`~isicle.geometry.Geometry`, or related subclass,
@@ -447,3 +506,30 @@ class ConformationalEnsemble(TypedList):
             return self._apply_method(method, **kwargs)
 
         raise ValueError('Must supply `func` or `method`.')
+
+    def save_pickle(self, path):
+        '''
+        Pickle this class instance.
+
+        Parameters
+        ----------
+        path : str
+            Path to save pickle object to.
+
+        '''
+
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+
+    def save(self, path):
+        '''
+        Save this class instance.
+
+        Parameters
+        ----------
+        path : str
+            Path to save object to.
+
+        '''
+
+        self.save_pickle(path)
