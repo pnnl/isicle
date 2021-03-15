@@ -1,7 +1,6 @@
 from isicle.interfaces import GeometryInterface
 import isicle
 import pickle
-import pybel
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
