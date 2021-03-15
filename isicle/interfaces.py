@@ -45,8 +45,6 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
                 and callable(subclass.get_natoms)
                 and hasattr(subclass, 'get_atom_indices')
                 and callable(subclass.get_atom_indices)
-                and hasattr(subclass, 'get_total_partial_charge')
-                and callable(subclass.get_total_partial_charge)
                 and hasattr(subclass, 'get_global_properties')
                 and callable(subclass.get_global_properties)
                 and hasattr(subclass, '__copy__')
@@ -79,11 +77,6 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_atom_indices(self):
         '''Extract indices of each atom from the internal geometry.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_total_partial_charge(self):
-        '''Determine total partial charge of molecule'''
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -123,6 +116,8 @@ class GeometryInterface(XYZGeometryInterface):
     def __subclasshook__(cls, subclass):
         return (hasattr(subclass, 'get_mol')
                 and callable(subclass.get_mol)
+                and hasattr(subclass, 'get_total_partial_charge')
+                and callable(subclass.get_total_partial_charge)
                 and hasattr(subclass, 'to_smiles')
                 and callable(subclass.to_smiles)
                 and hasattr(subclass, 'to_inchi')
@@ -134,6 +129,11 @@ class GeometryInterface(XYZGeometryInterface):
     @abc.abstractmethod
     def get_mol(self, path: str):
         '''Returns RDKit Mol object for this Geometry.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_total_partial_charge(self):
+        '''Determine total partial charge of molecule'''
         raise NotImplementedError
 
     @abc.abstractmethod

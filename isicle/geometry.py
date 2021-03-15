@@ -1,4 +1,4 @@
-from isicle.interfaces import GeometryInterface
+from isicle.interfaces import XYZGeometryInterface, GeometryInterface
 import isicle
 import pickle
 from rdkit import Chem

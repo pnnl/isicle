@@ -251,7 +251,6 @@ class TestXYZGeometry:
 
         # Remove temp file
         os.remove(temp_path)
-#
 
     def test_save_xyz(self, xgeom, temp_path='temp.xyz'):
 
