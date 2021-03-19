@@ -12,7 +12,7 @@ class NWChemResult():
     def __init__(self):
         self.energy = None  # Dictionary, keys: energy, charges
         self.geometry = None  # String, filename (for now)
-        self.shielding = None  # DataFrame
+        self.shielding = None  # Dictionary
         self.spin = None  # Not set
         self.frequency = None  # Dictionary, see function for keys
         self.molden = None  # String, filename (for now)
@@ -24,28 +24,23 @@ class NWChemResult():
         return self.energy
 
     def set_geometry(self, geometry_filename):
-        # TODO: save geometry object instead
-        self.geometry = geometry_filename
+        # TODO: save xyz block as well
+        self.geometry['filename'] = geometry_filename
         return self.geometry
 
     def set_shielding(self, shielding):
-
-        shield_values, dft_energy, index = shielding
-
-        # TODO: change how this info is stored?
-        df = pd.DataFrame(shield_values,
-                          columns=['index', 'atom', 'shielding'])
-        df['dft_energy'] = dft_energy
-        df['index'] = index
-
-        self.shielding = df
+        result = {'index': shielding[0], 'atom': shielding[1],
+                  'shielding': shielding[2]}
+        self.shielding = result
         return self.shielding
 
     def set_spin(self, spin):
+        # TODO
         self.spin = spin
         return self.spin
 
     def set_frequency(self, frequency):
+        # TODO
         self.frequency = frequency
         return self.frequency
 
@@ -207,30 +202,24 @@ class NWChemParser(FileParserInterface):
     def _parse_shielding(self):
 
         # Init
-        energy = []
-        shield_values = []
         ready = False
-
-        # TODO: maybe this?
         shield_idxs = []
         shield_atoms = []
         shields = []
 
         for line in self.contents:
-            if "Total DFT energy" in line:  # TODO: should this go elsewhere?
-                energy.append(float(line.split()[-1]))
-            elif "Atom:" in line:
+            if "Atom:" in line:
                 idx = int(line.split()[1])
                 atom = line.split()[2]
                 ready = True
             elif "isotropic" in line and ready is True:
                 shield = float(line.split()[-1])
-                shield_values.append([idx, atom, shield])
+                shield_idxs.append(idx)
+                shield_atoms.append(atom)
+                shields.append(shield)
                 ready = False
-            elif 'SHIELDING' in line:
-                true_idx = [int(x) for x in line.split()[2:]]
 
-        return shield_values, energy[-1], true_idx
+        return shield_idxs, shield_atoms, shields
 
     def _parse_spin(self):
         coor_substr = 'Output coordinates in angstroms'
