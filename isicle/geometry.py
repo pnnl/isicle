@@ -379,6 +379,19 @@ class XYZGeometry(XYZGeometryInterface):
 
         return new_xgeom
 
+
+    def add_global_properties(self, d):
+        '''Accepts a dictionary of values and adds any non-conflicting
+        information to the global_properties dictionary'''
+
+        # Remove keys that are already present in global_properties
+        [d.pop(k, None) for k in self.global_properties.keys()]
+
+        # Add to global_properties
+        self.global_properties.update(d)
+
+        return
+
     def dft_optimize(self, program='NWChem', template=None, **kwargs):
         '''
         Optimize geometry from XYZ, using stated functional and basis set.
