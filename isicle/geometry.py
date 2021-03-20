@@ -476,9 +476,11 @@ class XYZGeometry(XYZGeometryInterface):
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
-        return type(self)(self.path, self.contents,
-                          self.filetype,
-                          self.get_global_properties())
+        # TODO: manage what should be passed, rather than all
+        d = self.__dict__.copy()
+        d['contents'] = self.contents[:]
+        d['global_properties'] = self.get_global_properties()
+        return type(self)(**kwargs)
 
     def to_xyzblock(self):
         '''Get XYZ text for this structure.'''
@@ -612,13 +614,14 @@ class Geometry(XYZGeometry, GeometryInterface):
             Updated structure instance.
 
         '''
-        if inplace:
+        if inplace:  # Modify this object
             self.mol = mol
-            return self
+            geom = self
+        else:  # Make a new object and populate its mol with the given mol
+            geom = self.__copy__()
 
-        # Make a new object and populate its mol with the given mol
-        return type(self)(self.path, self.contents,
-                          self.filetype, mol)
+        geom._update_history(event)
+        return geom
 
     def desalt(self, salts=None, inplace=False):
         '''
@@ -823,9 +826,12 @@ class Geometry(XYZGeometry, GeometryInterface):
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
-        return type(self)(self.path, self.contents,
-                          self.filetype, self.get_mol(),
-                          self.get_global_properties())
+        # TODO: manage what should be passed, rather than all
+        d = self.__dict__.copy()
+        d['contents'] = self.contents[:]
+        d['mol'] = self.get_mol()
+        d['global_properties'] = self.get_global_properties()
+        return type(self)(**kwargs)
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
