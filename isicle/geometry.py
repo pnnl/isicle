@@ -347,16 +347,20 @@ class XYZGeometry(XYZGeometryInterface):
         generate, use get_* and *_optimize functions.
     '''
 
-    def __init__(self, path=None, contents=None, filetype=None,
-                 global_properties=None):
-        self.path = path
-        self.contents = contents
-        self.filetype = filetype
+    _defaults = 'path', 'contents', 'filetype', 'global_properties', 'history'
+    _default_value = None
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(kwargs)
 
         if global_properties is None:
-            self.global_properties = dict()
-        else:
-            self.global_properties = global_properties
+            global_properties = dict()
+        self.global_properties = global_properties
+
+        if history is None:
+            history = []
+        self.history = history
 
     def _update(self, result):
         # Check if a dictionary was returned. If not, convert to dictionary.
@@ -379,6 +383,13 @@ class XYZGeometry(XYZGeometryInterface):
 
         return new_xgeom
 
+    def _update_history(self, event):
+        if event is not None:
+            self.history.append(event)
+        return self.get_history()
+
+    def get_history(self):
+        return self.history[:]
 
     def add_global_properties(self, d):
         '''Accepts a dictionary of values and adds any non-conflicting
@@ -401,6 +412,8 @@ class XYZGeometry(XYZGeometryInterface):
 
         new_xgeom = self._update(res)
 
+        self._update_history('dft')
+
         return new_xgeom, res
 
     def md_optimize(self, program='xtb', template=None, **kwargs):
@@ -409,6 +422,8 @@ class XYZGeometry(XYZGeometryInterface):
         # TODO: complete result handling
         # Cases: 1+ XYZ returned
         # Create a new XYZGeometry for each
+
+        # self._update_history('md')
 
         raise NotImplementedError
 
@@ -575,9 +590,11 @@ class Geometry(XYZGeometry, GeometryInterface):
         # Cases: 1+ XYZ or PDB files returned
         # Create a new XYZGeometry or Geometry for each depending on type returned
 
+        # self._update_history('md')
+
         raise NotImplementedError
 
-    def _handle_inplace(self, mol, inplace):
+    def _handle_inplace(self, mol, inplace, event=None):
         '''
         Return updated Geometry object with given structure.
 
@@ -638,7 +655,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        return self._handle_inplace(mol, inplace)
+        return self._handle_inplace(mol, inplace, event='desalt')
 
     def neutralize(self, inplace=False):
         '''
@@ -697,7 +714,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         # else:
         #     res = self.to_smiles(self.smiles, frm='smi')
 
-        return self._handle_inplace(mol, inplace)
+        return self._handle_inplace(mol, inplace, event='neutralize')
 
     # TODO: Refactor based on new class structure
     def tautomerize(self, return_all=False, inplace=False):
