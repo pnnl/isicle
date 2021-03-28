@@ -79,6 +79,7 @@ def _load_generic_geom(path: str):
     geom.path = path
     geom.contents = _load_text(path)
     geom.filetype = os.path.splitext(path)[-1].lower().strip()
+    geom._update_history(calling_function)
     return geom
 
 
@@ -102,6 +103,7 @@ def load_xyz(path: str):
     xgeom.contents = _load_text(path)
     xgeom.filetype = os.path.splitext(path)[-1].lower().strip()
     return xgeom
+    geom._update_history('load_xyz')
 
 
 def load_mol(path: str):
@@ -119,7 +121,7 @@ def load_mol(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
+    geom = _load_generic_geom(path, 'load_mol')
     geom.mol = Chem.MolFromMolFile(path)
     return geom
 
@@ -139,7 +141,7 @@ def load_mol2(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
+    geom = _load_generic_geom(path, 'load_mol2')
     geom.mol = Chem.MolFromMol2File(path)
     return geom
 
@@ -159,7 +161,7 @@ def load_pdb(path: str):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
+    geom = _load_generic_geom(path, 'load_pdb')
     geom.mol = Chem.MolFromPDBFile(path)
     return geom
 
@@ -181,7 +183,7 @@ def check_mol(mol, string_struct):
     return
 
 
-def _load_2D(path, convert_fxn):
+def _load_2D(path, convert_fxn, calling_function):
     '''
     Load string file and return as a Geometry instance.
 
@@ -198,8 +200,8 @@ def _load_2D(path, convert_fxn):
         Provided file and molecule information
 
     '''
-    geom = _load_generic_geom(path)
     string_struct = geom.contents[0].strip()
+    geom = _load_generic_geom(path, calling_function)
     mol = convert_fxn(string_struct)
     check_mol(mol, string_struct)
 
@@ -241,7 +243,7 @@ def load_smiles(path: str):
         Provided file and molecule information
 
     '''
-    return _load_2D(path, Chem.MolFromSmiles)
+    return _load_2D(path, Chem.MolFromSmiles, 'load_smiles')
 
 
 def load_inchi(path: str):
@@ -259,7 +261,7 @@ def load_inchi(path: str):
         Provided file and molecule information
 
     '''
-    return _load_2D(path, Chem.MolFromInchi)
+    return _load_2D(path, Chem.MolFromInchi, 'load_inchi')
 
 
 def load_smarts(path: str):
@@ -277,7 +279,7 @@ def load_smarts(path: str):
         Provided file and molecule information
 
     '''
-    return _load_2D(path, Chem.MolFromSmarts)
+    return _load_2D(path, Chem.MolFromSmarts, 'load_smarts')
 
 
 def load(path: str):
@@ -386,6 +388,7 @@ class XYZGeometry(XYZGeometryInterface):
     def _update_history(self, event):
         if event is not None:
             self.history.append(event)
+            self.global_properties['from'] = event
         return self.get_history()
 
     def get_history(self):
