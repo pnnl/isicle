@@ -32,6 +32,8 @@ def load_pickle(path: str):
         except pickle.UnpicklingError:
             raise IOError('Could not read file as pickle: {}'.format(path))
 
+    # TODO: should "load_pickle" be added to history?
+
     # Check for valid Geometry class type
     if isinstance(geom, (Geometry, MDOptimizedGeometry, DFTOptimizedGeometry)):
         return geom
@@ -509,29 +511,11 @@ class XYZGeometry(XYZGeometryInterface):
         '''Return a copy of this object's global_properties dictionary'''
         return self.global_properties.copy()
 
-    def calculate_global_properties(self):
-        '''
-        Calculate the global_properties for this object (does not include
-        calculations that take > 5 seconds).
-
-        Returns
-        -------
-        dict
-            Properties for this struture.
-        '''
-
-        if 'natoms' not in self.global_properties:
-            self.get_natoms()
-
-        return self.get_global_properties()
-
     def __copy__(self):
         '''Return hard copy of this class instance.'''
-        # TODO: manage what should be passed, rather than all
+        # TODO: manage what should be passed, rather than all?
         d = self.__dict__.copy()
-        d['contents'] = self.contents[:]
         d['global_properties'] = self.get_global_properties()
-        return type(self)(**kwargs)
         d['history'] = self.get_history()
         d['xyz'] = self.xyz[:]
         return type(self)(**d)
@@ -820,9 +804,8 @@ class Geometry(XYZGeometry, GeometryInterface):
         self.global_properties['natoms'] = natoms
         return self.global_properties['natoms']
 
-    def get_atom_indices(self, atoms=['C', 'H'],
-                         lookup={'C': 6, 'H': 1, 'N': 7,
-                                 'O': 8, 'F': 9, 'P': 15}):
+    def get_atom_indices(self, atoms=['C', 'H'], lookup={'C': 6, 'H': 1, 'N': 7,
+                                                         'O': 8, 'F': 9, 'P': 15}):
         '''
         Extract indices of each atom from the internal geometry.
 
@@ -847,7 +830,14 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return idx
 
-    def calculate_global_properties(self):
+    def get_total_partial_charge(self):
+        '''Sum the partial charge across all atoms.'''
+        mol = self.to_mol()
+        Chem.AllChem.ComputeGasteigerCharges(mol)
+        contribs = [mol.GetAtomWithIdx(i).GetDoubleProp('_GasteigerCharge')
+                    for i in range(mol.GetNumAtoms())]
+        return np.nansum(contribs)
+
     def __copy__(self):
         '''Return hard copy of this class instance.'''
         # TODO: manage what should be passed, rather than all?
