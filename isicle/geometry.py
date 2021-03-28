@@ -692,16 +692,17 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         '''
 
+        # TODO: should this raise an error instead?
         # If no salts given, skip desalting
         if salts is None:
-            return self._handle_inplace(self.get_mol(), inplace)
+            return self._handle_inplace(inplace, mol=self.to_mol())
 
         remover = SaltRemover(defnFormat='smiles', defnData=salts)
         # defnData="[Cl,Br,Na]" *sample definition of salts to be removed*
         # add iterator for salts listed in config?
         # set potential salts to be removed in a config file
 
-        mol, deleted = remover.StripMolWithDeleted(self.get_mol())
+        mol, deleted = remover.StripMolWithDeleted(self.to_mol())
         # using StripMolWithDeleted instead of StripMol
         # add functionality to track removed salts
         # atomno = res.GetNumAtoms
@@ -752,7 +753,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         reactions = _initialize_neutralisation_reactions()
 
-        mol = self.get_mol()
+        mol = self.to_mol()
         replaced = False
         for i, (reactant, product) in enumerate(reactions):
             while mol.HasSubstructMatch(reactant):
@@ -787,7 +788,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         # Discuss noted double bond changes
         enumerator = rdMolStandardize.TautomerEnumerator()
 
-        mol = self.get_mol()
+        mol = self.to_mol()
         res = [mol]
         tauts = enumerator.Enumerate(mol)
         smis = [Chem.MolToSmiles(x) for x in tauts]
@@ -807,7 +808,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
-        natoms = Chem.Mol.GetNumAtoms(self.get_mol())
+        natoms = Chem.Mol.GetNumAtoms(self.to_mol())
         self.global_properties['natoms'] = natoms
         return self.global_properties['natoms']
 
@@ -847,6 +848,8 @@ class Geometry(XYZGeometry, GeometryInterface):
         d['history'] = self.get_history()
         d['mol'] = self.to_mol()
         return type(self)(**d)
+
+    def to_mol(self, hard_copy=True):
         '''
         Returns RDKit Mol object for this Geometry.
 
@@ -864,46 +867,47 @@ class Geometry(XYZGeometry, GeometryInterface):
         '''
         return self.mol.__copy__()
 
-        if 'natoms' not in self.global_properties:
-            self.get_natoms()
+    def get_mol(self, hard_copy=True):
+        '''
+        Returns RDKit Mol object for this Geometry.
 
-        if 'total_partial_charge' not in self.global_properties:
-            self.get_total_partial_charge()
+        Parameters
+        ----------
+        hard_copy : boolean
+            Return a hard copy of the mol object. If false, returns pointer to
+            this instance's mol object (not recommended). Default: True.
 
-        return self.get_global_properties()
+        Returns
+        -------
+        RDKit Mol object
+            Current structure
 
-    def __copy__(self):
-        '''Return hard copy of this class instance.'''
-        # TODO: manage what should be passed, rather than all
-        d = self.__dict__.copy()
-        d['contents'] = self.contents[:]
-        d['mol'] = self.get_mol()
-        d['global_properties'] = self.get_global_properties()
-        return type(self)(**kwargs)
+        '''
+        return self.mol.__copy__()
 
     def to_smiles(self):
         '''Get SMILES for this structure.'''
-        return Chem.MolToSmiles(self.get_mol())
+        return Chem.MolToSmiles(self.to_mol())
 
     def to_inchi(self):
         '''Get InChI for this structure.'''
-        return Chem.MolToInchi(self.get_mol())
+        return Chem.MolToInchi(self.to_mol())
 
     def to_smarts(self):
         '''Get SMARTS for this structure.'''
-        return Chem.MolToSmarts(self.get_mol())
+        return Chem.MolToSmarts(self.to_mol())
 
     def to_xyzblock(self):
         '''Get XYZ text for this structure.'''
-        return Chem.MolToXYZBlock(self.mol)
+        return Chem.MolToXYZBlock(self.to_mol())
 
     def to_pdbblock(self):
         '''Get PDB text for this structure'''
-        return Chem.MolToPDBBlock(self.get_mol())
+        return Chem.MolToPDBBlock(self.to_mol())
 
     def to_molblock(self):
         '''Get PDB text for this structure'''
-        return Chem.MolToMolBlock(self.get_mol())
+        return Chem.MolToMolBlock(self.to_mol())
 
     def save_smiles(self, path: str):
         '''Save this structure's SMILES to file.'''
@@ -925,11 +929,11 @@ class Geometry(XYZGeometry, GeometryInterface):
 
     def save_xyz(self, path: str):
         '''Save XYZ file for this structure.'''
-        return Chem.MolToXYZFile(self.get_mol(), path)
+        return Chem.MolToXYZFile(self.to_mol(), path)
 
     def save_mol(self, path):
         '''Save Mol file for this structure.'''
-        return Chem.MolToMolFile(self.get_mol(), path)
+        return Chem.MolToMolFile(self.to_mol(), path)
 
     def save_pdb(self, path: str):
         '''Save PDB file for this structure.'''
