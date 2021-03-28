@@ -438,41 +438,43 @@ class XYZGeometry(XYZGeometryInterface):
     def get_history(self):
         return self.history[:]
 
-    def add_global_properties(self, d):
+    def add_global_properties(self, d, override=False):
         '''Accepts a dictionary of values and adds any non-conflicting
         information to the global_properties dictionary'''
 
-        # Remove keys that are already present in global_properties
-        [d.pop(k, None) for k in self.global_properties.keys()]
+        if not override:
+            # Remove keys that are already present in global_properties
+            [d.pop(k, None) for k in self.global_properties.keys()]
 
         # Add to global_properties
         self.global_properties.update(d)
 
         return
 
-    def dft_optimize(self, program='NWChem', template=None, **kwargs):
+    def dft_optimize(self, program='NWChem', template=None, inplace=False,
+                     **kwargs):
         '''
         Optimize geometry from XYZ, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        res = isicle.qm.dft(self.__copy__, program=program, template=template, **kwargs)
+        res = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
+        res = res.to_dict()
 
         # Create new Geometry with updated structure
         geom = self._handle_inplace(inplace, xyz_filename=res['geometry'],
                                     event='dft')
 
-        self._update_history('dft')
+        # Add other properties to the Geometry being returned
+        geom = geom.add_global_properties(res, override=True)
 
-        return new_xgeom, res
+        return geom, res
 
     def md_optimize(self, program='xtb', template=None, **kwargs):
-        res = isicle.qm.md(self.__copy__, program=program, template=template, **kwargs)
+        res = isicle.qm.md(self.__copy__(), program=program, template=template, **kwargs)
 
         # TODO: complete result handling
         # Cases: 1+ XYZ returned
         # Create a new XYZGeometry for each
-
-        # self._update_history('md')
 
         raise NotImplementedError
 
