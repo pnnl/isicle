@@ -299,6 +299,9 @@ def load(path: str):
         Molecule information.
 
     '''
+
+    # TODO: update doc to reflect possible return of xyzgeom
+
     path = path.strip()
     extension = os.path.splitext(path)[-1].lower()
 
@@ -349,41 +352,76 @@ class XYZGeometry(XYZGeometryInterface):
         generate, use get_* and *_optimize functions.
     '''
 
-    _defaults = 'path', 'contents', 'filetype', 'global_properties', 'history'
+    _defaults = ('path', 'contents', 'filetype', 'global_properties', 'history',
+                 'xyz')
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
-        if global_properties is None:
-            global_properties = dict()
-        self.global_properties = global_properties
+        # Overwrite Nones as needed
+        if self.global_properties is None:
+            self.global_properties = dict()
 
-        if history is None:
-            history = []
-        self.history = history
+        if self.history is None:
+            self.history = []
 
-    def _update(self, result):
-        # Check if a dictionary was returned. If not, convert to dictionary.
-        if type(result) != dict:
-            result = result.to_dict()
+    def _upgrade_to_Geometry(self, mol):
 
-        # Create new XYZGeometry object for user
-        new_xgeom = self.__copy__()
+        # Create dict to load in
+        d = self.__dict__.copy()
+        d['global_properties'] = self.get_global_properties()
+        d['history'] = self.get_history()
+        d['mol'] = mol
+        d.pop('xyz')
 
-        # Update geometry if needed
-        if result['geometry'] is not None:
-            new_xgeom = load_xyz(res['geometry'])
-        # else:
-        #     new_xgeom = XYZGeometry()
-        #     new_xgeom.contents = self.contents[:]
+        return Geometry(d)
 
-        # Update properties
-        # new_xgeom.calculate_global_properties()  # Calculate any available w/in class
-        new_xgeom.global_properties.update(result)  # Update with DFT results
+    def _handle_inplace(self, inplace, mol=None, xyz=None, xyz_filename=None,
+                        event=None):
+        '''
+        Return updated XYZGeometry object with given structure.
 
-        return new_xgeom
+        Parameters
+        ----------
+        mol : RDKit Mol object
+            Structure to use.
+        inplace : boolean
+            If true, update this instance with the new structure. Otherwise,
+            create a new Geometry instance and populate it with the structure.
+
+        Returns
+        -------
+        Geometry
+            Updated structure instance.
+
+        '''
+
+        if mol is not None:
+            # Upgrade to the Geometry class
+            geom = self._upgrade_to_Geometry(mol)
+
+        else:
+            if inplace:  # Modify this object
+                geom = self
+            else:  # Make a new object
+                geom = self.__copy__()
+
+            # Ensure exactly one of xyz or a filename is provided
+            # Add as structure of the new XYZGeometry
+            if xyz_filename is not None:
+                geom.xyz = load_xyz(xyz_filename)
+            elif xyz is not None:
+                geom.xyz = xyz_file
+            else:
+                raise ValueError('No structure passed for object')
+
+        # Add event that led to this change in structure
+        # If event is None, nothing will happen
+        geom._update_history(event)
+
+        return geom
 
     def _update_history(self, event):
         if event is not None:
@@ -413,7 +451,9 @@ class XYZGeometry(XYZGeometryInterface):
         '''
         res = isicle.qm.dft(self.__copy__, program=program, template=template, **kwargs)
 
-        new_xgeom = self._update(res)
+        # Create new Geometry with updated structure
+        geom = self._handle_inplace(inplace, xyz_filename=res['geometry'],
+                                    event='dft')
 
         self._update_history('dft')
 
@@ -484,10 +524,13 @@ class XYZGeometry(XYZGeometryInterface):
         d['contents'] = self.contents[:]
         d['global_properties'] = self.get_global_properties()
         return type(self)(**kwargs)
+        d['history'] = self.get_history()
+        d['xyz'] = self.xyz[:]
+        return type(self)(**d)
 
     def to_xyzblock(self):
         '''Get XYZ text for this structure.'''
-        return '\n'.join(self.contents)
+        return '\n'.join(self.xyz)
 
     def save_xyz(self, path):
         '''Save molecule as XYZ file'''
@@ -558,48 +601,34 @@ class Geometry(XYZGeometry, GeometryInterface):
         generate, use get_* and *_optimize functions.
     '''
 
-    def __init__(self, path=None, contents=None, filetype=None, mol=None,
-                 global_properties=None):
-        self.path = path
-        self.contents = contents
-        self.filetype = filetype
-        self.mol = mol
+    _defaults = ('path', 'contents', 'filetype', 'global_properties', 'history',
+                 'mol')
+    _default_value = None
 
-        if global_properties is None:
+    def __init__(self, **kwargs):
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(kwargs)
+
+        # Overwrite Nones as needed
+        if self.global_properties is None:
             self.global_properties = dict()
-        else:
-            self.global_properties = global_properties
 
-    def get_mol(self, hard_copy=True):
-        '''
-        Returns RDKit Mol object for this Geometry.
+        if self.history is None:
+            self.history = []
 
-        Parameters
-        ----------
-        hard_copy : boolean
-            Return a hard copy of the mol object. If false, returns pointer to
-            this instance's mol object (not recommended). Default: True.
+    def _downgrade_to_XYZGeometry(self, xyz):
 
-        Returns
-        -------
-        RDKit Mol object
-            Current structure
+        # Create dict to load in
+        d = self.__dict__.copy()
+        d['global_properties'] = self.get_global_properties()
+        d['history'] = self.get_history()
+        d['xyz'] = xyz
+        d.pop('mol')
 
-        '''
-        return self.mol.__copy__()
+        return XYZGeometry(d)
 
-    def md_optimize(self, program='xtb', template=None, **kwargs):
-        res = isicle.qm.md(self.__copy__, program=program, template=template, **kwargs)
-
-        # TODO: complete result handling
-        # Cases: 1+ XYZ or PDB files returned
-        # Create a new XYZGeometry or Geometry for each depending on type returned
-
-        # self._update_history('md')
-
-        raise NotImplementedError
-
-    def _handle_inplace(self, mol, inplace, event=None):
+    def _handle_inplace(self, inplace, mol=None, xyz=None, xyz_filename=None,
+                        event=None):
         '''
         Return updated Geometry object with given structure.
 
@@ -617,13 +646,30 @@ class Geometry(XYZGeometry, GeometryInterface):
             Updated structure instance.
 
         '''
-        if inplace:  # Modify this object
-            self.mol = mol
-            geom = self
-        else:  # Make a new object and populate its mol with the given mol
-            geom = self.__copy__()
 
+        if mol is None:
+
+            if xyz_filename is not None:
+                # Load in file first
+                xyz = load_xyz(xyz_filename)
+
+            if xyz is not None:
+                # Downgrade to XYZGeometry class
+                geom = self._downgrade_to_XYZGeometry(xyz)
+            else:
+                raise ValueError('No structure passed for object')
+
+        else:
+            if inplace:  # Modify this object
+                geom = self
+            else:  # Make a new object
+                geom = self.__copy__()
+            geom.mol = mol
+
+        # Add event that led to this change in structure
+        # If event is None, nothing will happen
         geom._update_history(event)
+
         return geom
 
     def desalt(self, salts=None, inplace=False):
@@ -661,7 +707,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        return self._handle_inplace(mol, inplace, event='desalt')
+        return self._handle_inplace(inplace, mol=mol, event='desalt')
 
     def neutralize(self, inplace=False):
         '''
@@ -714,15 +760,8 @@ class Geometry(XYZGeometry, GeometryInterface):
                 rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
-        # # TODO: is this still necessary?
-        # if replaced:
-        #     res = self.to_smiles(mol, frm='mol')
-        # else:
-        #     res = self.to_smiles(self.smiles, frm='smi')
+        return self._handle_inplace(inplace, mol=mol, event='neutralize')
 
-        return self._handle_inplace(mol, inplace, event='neutralize')
-
-    # TODO: Refactor based on new class structure
     def tautomerize(self, return_all=False, inplace=False):
         '''
         Generate tautomers according to RDKit TautomerEnumerator() method.
@@ -760,20 +799,11 @@ class Geometry(XYZGeometry, GeometryInterface):
         if return_all:
             new_geoms = []
             for r in res:
-                geom = self.__copy__()
-                geom.mol = r
+                geom = self._handle_inplace(False, mol=r, event='tautomerize')
                 new_geoms.append(geom)
             return new_geoms
 
-        return self._handle_inplace(res[0], inplace)
-
-    def get_total_partial_charge(self):
-        '''Sum the partial charge across all atoms.'''
-        mol = self.get_mol()
-        Chem.AllChem.ComputeGasteigerCharges(mol)
-        contribs = [mol.GetAtomWithIdx(i).GetDoubleProp('_GasteigerCharge')
-                    for i in range(mol.GetNumAtoms())]
-        return np.nansum(contribs)
+        return self._handle_inplace(inplace, mol=res[0], event='tautomerize')
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
@@ -809,15 +839,30 @@ class Geometry(XYZGeometry, GeometryInterface):
         return idx
 
     def calculate_global_properties(self):
+    def __copy__(self):
+        '''Return hard copy of this class instance.'''
+        # TODO: manage what should be passed, rather than all?
+        d = self.__dict__.copy()
+        d['global_properties'] = self.get_global_properties()
+        d['history'] = self.get_history()
+        d['mol'] = self.to_mol()
+        return type(self)(**d)
         '''
-        Calculate the global_properties for this object (does not include
-        calculations that take > 5 seconds).
+        Returns RDKit Mol object for this Geometry.
+
+        Parameters
+        ----------
+        hard_copy : boolean
+            Return a hard copy of the mol object. If false, returns pointer to
+            this instance's mol object (not recommended). Default: True.
 
         Returns
         -------
-        dict
-            Properties for this struture.
+        RDKit Mol object
+            Current structure
+
         '''
+        return self.mol.__copy__()
 
         if 'natoms' not in self.global_properties:
             self.get_natoms()
