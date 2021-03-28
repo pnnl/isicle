@@ -60,7 +60,15 @@ def _load_text(path: str):
     return [x.strip() for x in contents]
 
 
-def _load_generic_geom(path: str):
+def _gen_load_properties(path: str):
+    d = {}
+    d['path'] = path
+    d['contents'] = _load_text(path)
+    d['filetype'] = os.path.splitext(path)[-1].lower().strip()
+    return d
+
+
+def _load_generic_geom(path: str, calling_function: str):
     '''
     Create new Geometry instance and populate file information.
 
@@ -76,9 +84,7 @@ def _load_generic_geom(path: str):
 
     '''
     geom = Geometry()
-    geom.path = path
-    geom.contents = _load_text(path)
-    geom.filetype = os.path.splitext(path)[-1].lower().strip()
+    geom.global_properties['load'] = _gen_load_properties(path)
     geom._update_history(calling_function)
     return geom
 
@@ -98,12 +104,11 @@ def load_xyz(path: str):
         Provided file and molecule information
 
     '''
-    xgeom = XYZGeometry()
-    xgeom.path = path
-    xgeom.contents = _load_text(path)
-    xgeom.filetype = os.path.splitext(path)[-1].lower().strip()
-    return xgeom
+    geom = XYZGeometry()
+    geom.global_properties['load'] = _gen_load_properties(path)
+    geom.xyz = _load_text(path)
     geom._update_history('load_xyz')
+    return geom
 
 
 def load_mol(path: str):
@@ -200,8 +205,8 @@ def _load_2D(path, convert_fxn, calling_function):
         Provided file and molecule information
 
     '''
-    string_struct = geom.contents[0].strip()
     geom = _load_generic_geom(path, calling_function)
+    string_struct = _load_text(path)[0].strip()
     mol = convert_fxn(string_struct)
     check_mol(mol, string_struct)
 
@@ -225,6 +230,7 @@ def _load_2D(path, convert_fxn, calling_function):
     check_mol(mol, string_struct)
 
     geom.mol = mol
+
     return geom
 
 
@@ -472,7 +478,7 @@ class XYZGeometry(XYZGeometryInterface):
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
-        self.global_properties['natoms'] = int(self.contents[0].strip())
+        self.global_properties['natoms'] = int(self.xyz[0].strip())
         return self.global_properties['natoms']
 
     def get_atom_indices(self, atoms=['C', 'H']):
@@ -491,8 +497,8 @@ class XYZGeometry(XYZGeometryInterface):
         '''
         idx = []
 
-        for i in range(2, len(self.contents)):
-            atom = self.contents[i].split(' ')[0]
+        for i in range(2, len(self.xyz)):
+            atom = self.xyz[i].split(' ')[0]
             if atom in atoms:
                 idx.append(i - 2)
         return idx
