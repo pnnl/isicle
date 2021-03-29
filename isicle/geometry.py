@@ -63,6 +63,20 @@ def _load_text(path: str):
 
 
 def _gen_load_properties(path: str):
+    '''
+    Create dictionary storing all load information.
+
+    Parameters
+    ----------
+    path : str
+        Path to text file.
+
+    Returns
+    -------
+    dict
+        Dictionary containing path, filetype, and contents of the file loaded.
+
+    '''
     d = {}
     d['path'] = path
     d['contents'] = _load_text(path)
@@ -342,26 +356,25 @@ def load(path: str):
 
 class XYZGeometry(XYZGeometryInterface):
     '''
-    Molecule information, including information on the file it was
-    generated from, specialized for XYZ files (bonding info not provided).
+    Molecule information, specialized for XYZ files (bonding info not provided).
     It is not recommended to manipulate or retrieve
     attributes of this class without using class functions.
 
     Attributes
     ----------
-    path : str
-        Path provided to generate original instance.
-    contents : list(str)
-        Contents of file used to create original instance.
-    filetype : str
-        File type used to create original instance.
+    xyz: list of str
+        Lines of XYZ block used to represent this compound's structure
     global_properties : dict
-        Dictionary of properties calculated for this structure. To
-        generate, use get_* and *_optimize functions.
+        Dictionary of properties calculated for this structure. Always at least
+        contains the "from" key, which reports the last operation performed on
+        this compound (e.g. load, dft_optimize). To generate compound
+        properties, use get_* and *_optimize functions.
+    history: list of str
+        All steps performed on this compound since initial generation. For
+        example, last step of history should always match "from".
     '''
 
-    _defaults = ('path', 'contents', 'filetype', 'global_properties', 'history',
-                 'xyz')
+    _defaults = ('global_properties', 'history', 'xyz')
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -376,6 +389,21 @@ class XYZGeometry(XYZGeometryInterface):
             self.history = []
 
     def _upgrade_to_Geometry(self, mol):
+        '''
+        Upgrade this class to the Geometry class using a provided mol object.
+        Hard copies everything but the xyz structure.
+
+        Parameters
+        ----------
+        mol : RDKit Mol object
+            Structure to use in new Geometry object
+
+        Returns
+        -------
+        Geometry
+            Instance containing the new mol representation.
+
+        '''
 
         # Create dict to load in
         d = self.__dict__.copy()
@@ -389,20 +417,35 @@ class XYZGeometry(XYZGeometryInterface):
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
         '''
-        Return updated XYZGeometry object with given structure.
+        Return object with given structure. If inplace and a xyz structure is
+        provided, manipulates the current instance. Otherwise, a new
+        XYZGeometry or Geometry object is created with hard copied attributes.
+        Only one of mol, xyz, or xyz_filename is to be provided. If multiple
+        are provided, they are prioritized in the following order: (1) mol,
+        (2) xyz_filename, (3) xyz. If none of these are provided, an error is
+        raised.
 
         Parameters
         ----------
-        mol : RDKit Mol object
-            Structure to use.
         inplace : boolean
             If true, update this instance with the new structure. Otherwise,
-            create a new Geometry instance and populate it with the structure.
+            create a new XYZGeometry or Geometry instance and populate it with
+            the structure.
+        mol : RDKit Mol object (optional)
+            Structure with 3D abilities.
+        xyz_filename: str (optional)
+            Path to file to load in xyz from
+        xyz: list of str (optional)
+            Lines from xyz block to use as structure representation.
+        event: str (optional)
+            Operation that led to this structure change, for history-tracking
+            purposes within the instance returned.
 
         Returns
         -------
-        Geometry
-            Updated structure instance.
+        XYZGeometry or Geometry
+            Updated structure instance. Geometry is returned if mol was
+            provided, otherwise XYZGeometry is returned.
 
         '''
 
@@ -432,12 +475,17 @@ class XYZGeometry(XYZGeometryInterface):
         return geom
 
     def _update_history(self, event):
+        '''Add event to this instance's history and update 'from' in the
+        global properties dictionary. If none, nothing is updated. Returns
+        a copy of the full history.'''
         if event is not None:
             self.history.append(event)
             self.global_properties['from'] = event
         return self.get_history()
 
     def get_history(self):
+        '''Returns a copy of this object's history (events that led to its
+        current state).'''
         return self.history[:]
 
     def add_global_properties(self, d, override=False):
@@ -593,28 +641,25 @@ class XYZGeometry(XYZGeometryInterface):
 
 class Geometry(XYZGeometry, GeometryInterface):
     '''
-    Molecule information, including information on the file it was
-    generated from. It is not recommended to manipulate or retrieve
+    Molecule information, specialized for 3D representations.
+    It is not recommended to manipulate or retrieve
     attributes of this class without using class functions.
 
     Attributes
     ----------
-    path : str
-        Path provided to generate original instance.
-    contents : list(str)
-        Contents of file used to create original instance.
-    filetype : str
-        File type used to create original instance.
     mol : RDKit Mol object
-        Current structure, potentially updated from its original
-        form using functions in this class.
+        Current structure.
     global_properties : dict
-        Dictionary of properties calculated for this structure. To
-        generate, use get_* and *_optimize functions.
+        Dictionary of properties calculated for this structure. Always at least
+        contains the "from" key, which reports the last operation performed on
+        this compound (e.g. load, dft_optimize). To generate compound
+        properties, use get_* and *_optimize functions.
+    history: list of str
+        All steps performed on this compound since initial generation. For
+        example, last step of history should always match "from".
     '''
 
-    _defaults = ('path', 'contents', 'filetype', 'global_properties', 'history',
-                 'mol')
+    _defaults = ('global_properties', 'history', 'mol')
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -629,6 +674,21 @@ class Geometry(XYZGeometry, GeometryInterface):
             self.history = []
 
     def _downgrade_to_XYZGeometry(self, xyz):
+        '''
+        Downgrade this class to the XYZGeometry class using a provided xyz.
+        Hard copies everything but the mol structure.
+
+        Parameters
+        ----------
+        xyz : list of str
+            Lines of xyz block to use for new object.
+
+        Returns
+        -------
+        XYZGeometry
+            Instance containing the new xyz representation.
+
+        '''
 
         # Create dict to load in
         d = self.__dict__.copy()
@@ -642,20 +702,35 @@ class Geometry(XYZGeometry, GeometryInterface):
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
         '''
-        Return updated Geometry object with given structure.
+        Return object with given structure. If inplace and a mol structure is
+        provided, manipulates the current instance. Otherwise, a new
+        XYZGeometry or Geometry object is created with hard copied attributes.
+        Only one of mol, xyz, or xyz_filename is to be provided. If multiple
+        are provided, they are prioritized in the following order: (1) mol,
+        (2) xyz_filename, (3) xyz. If none of these are provided, an error is
+        raised.
 
         Parameters
         ----------
-        mol : RDKit Mol object
-            Structure to use.
         inplace : boolean
             If true, update this instance with the new structure. Otherwise,
-            create a new Geometry instance and populate it with the structure.
+            create a new XYZGeometry or Geometry instance and populate it with
+            the structure.
+        mol : RDKit Mol object (optional)
+            Structure with 3D abilities.
+        xyz_filename: str (optional)
+            Path to file to load in xyz from
+        xyz: list of str (optional)
+            Lines from xyz block to use as structure representation.
+        event: str (optional)
+            Operation that led to this structure change, for history-tracking
+            purposes within the instance returned.
 
         Returns
         -------
-        Geometry
-            Updated structure instance.
+        XYZGeometry or Geometry
+            Updated structure instance. Geometry is returned if mol was
+            provided, otherwise XYZGeometry is returned.
 
         '''
 
@@ -898,6 +973,8 @@ class Geometry(XYZGeometry, GeometryInterface):
             Current structure
 
         '''
+        if not hard_copy:
+            return self.mol
         return self.mol.__copy__()
 
     def get_mol(self, hard_copy=True):
