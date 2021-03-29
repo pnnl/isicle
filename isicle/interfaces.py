@@ -127,7 +127,7 @@ class GeometryInterface(XYZGeometryInterface):
                 or NotImplemented)
 
     @abc.abstractmethod
-    def get_mol(self, path: str):
+    def to_mol(self, path: str):
         '''Returns RDKit Mol object for this Geometry.'''
         raise NotImplementedError
 
