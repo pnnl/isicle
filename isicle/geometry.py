@@ -480,6 +480,11 @@ class XYZGeometry(XYZGeometryInterface):
 
         raise NotImplementedError
 
+    def generate_adducts(self, alt=False, inplace=False, **kwargs):
+        # TODO: implement addut ionization available in adduct
+        # Add documention, mention Adduct object passed back
+        raise NotImplementedError
+
     def get_natoms(self):
         '''Calculate total number of atoms.'''
         self.global_properties['natoms'] = int(self.xyz[0].strip())
