@@ -463,16 +463,22 @@ class XYZGeometry(XYZGeometryInterface):
         res = res.to_dict()
 
         # Create new Geometry with updated structure
-        geom = self._handle_inplace(inplace, xyz_filename=res['geometry'],
-                                    event='dft')
+        geom = self._handle_inplace(inplace, xyz_filename=res['geometry'])
 
-        # Add other properties to the Geometry being returned
-        geom = geom.add_global_properties(res, override=True)
+        # Erase old properties and add new event and DFT properties
+        geom.global_properties = {}
+        geom._update_history('dft')
+        geom = geom.add_global_properties(res)
 
         return geom, res
 
     def md_optimize(self, program='xtb', template=None, **kwargs):
         res = isicle.qm.md(self.__copy__(), program=program, template=template, **kwargs)
+
+        # Erase old properties and add new event and DFT properties
+        geom.global_properties = {}
+        geom._update_history('md')
+        geom = geom.add_global_properties(res)
 
         # TODO: complete result handling
         # Cases: 1+ XYZ returned
@@ -483,6 +489,15 @@ class XYZGeometry(XYZGeometryInterface):
     def generate_adducts(self, alt=False, inplace=False, **kwargs):
         # TODO: implement addut ionization available in adduct
         # Add documention, mention Adduct object passed back
+
+        res = isicle.adducts.generate_adducts(self.__copy__(), alt=alt,
+                                              inplace=inplace)
+
+        # Erase old properties and add new event and DFT properties
+        geom.global_properties = {}
+        geom._update_history('generate_adducts')
+        geom = geom.add_global_properties(res)
+
         raise NotImplementedError
 
     def get_natoms(self):
@@ -705,7 +720,12 @@ class Geometry(XYZGeometry, GeometryInterface):
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        return self._handle_inplace(inplace, mol=mol, event='desalt')
+        geom = self._handle_inplace(inplace, mol=mol)
+        geom.global_properties = {}
+        geom._update_history('desalt')
+        # TODO: add any properties from this operation to global_props?
+
+        return geom
 
     def neutralize(self, inplace=False):
         '''
@@ -758,7 +778,12 @@ class Geometry(XYZGeometry, GeometryInterface):
                 rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
-        return self._handle_inplace(inplace, mol=mol, event='neutralize')
+        geom = self._handle_inplace(inplace, mol=mol)
+        geom.global_properties = {}
+        geom._update_history('neutralize')
+        # TODO: add any properties from this operation to global_props?
+
+        return geom
 
     def tautomerize(self, return_all=False, inplace=False):
         '''
@@ -801,7 +826,12 @@ class Geometry(XYZGeometry, GeometryInterface):
                 new_geoms.append(geom)
             return new_geoms
 
-        return self._handle_inplace(inplace, mol=res[0], event='tautomerize')
+        geom = self._handle_inplace(inplace, mol=res[0])
+        geom.global_properties = {}
+        geom._update_history('tautomerize')
+        # TODO: add any properties from this operation to global_props?
+
+        return geom
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
