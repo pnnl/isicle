@@ -386,8 +386,8 @@ class XYZGeometry(XYZGeometryInterface):
 
         return Geometry(d)
 
-    def _handle_inplace(self, inplace, mol=None, xyz=None, xyz_filename=None,
-                        event=None):
+    def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
+                          event=None):
         '''
         Return updated XYZGeometry object with given structure.
 
@@ -463,7 +463,7 @@ class XYZGeometry(XYZGeometryInterface):
         res = res.to_dict()
 
         # Create new Geometry with updated structure
-        geom = self._handle_inplace(inplace, xyz_filename=res['geometry'])
+        geom = self._update_structure(inplace, xyz_filename=res['geometry'])
 
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
@@ -639,8 +639,8 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return XYZGeometry(d)
 
-    def _handle_inplace(self, inplace, mol=None, xyz=None, xyz_filename=None,
-                        event=None):
+    def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
+                          event=None):
         '''
         Return updated Geometry object with given structure.
 
@@ -707,7 +707,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         # TODO: should this raise an error instead?
         # If no salts given, skip desalting
         if salts is None:
-            return self._handle_inplace(inplace, mol=self.to_mol())
+            return self._update_structure(inplace, mol=self.to_mol())
 
         remover = SaltRemover(defnFormat='smiles', defnData=salts)
         # defnData="[Cl,Br,Na]" *sample definition of salts to be removed*
@@ -720,7 +720,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        geom = self._handle_inplace(inplace, mol=mol)
+        geom = self._update_structure(inplace, mol=mol)
         geom.global_properties = {}
         geom._update_history('desalt')
         # TODO: add any properties from this operation to global_props?
@@ -778,7 +778,7 @@ class Geometry(XYZGeometry, GeometryInterface):
                 rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
-        geom = self._handle_inplace(inplace, mol=mol)
+        geom = self._update_structure(inplace, mol=mol)
         geom.global_properties = {}
         geom._update_history('neutralize')
         # TODO: add any properties from this operation to global_props?
@@ -822,11 +822,11 @@ class Geometry(XYZGeometry, GeometryInterface):
         if return_all:
             new_geoms = []
             for r in res:
-                geom = self._handle_inplace(False, mol=r, event='tautomerize')
+                geom = self._update_structure(False, mol=r, event='tautomerize')
                 new_geoms.append(geom)
             return new_geoms
 
-        geom = self._handle_inplace(inplace, mol=res[0])
+        geom = self._update_structure(inplace, mol=res[0])
         geom.global_properties = {}
         geom._update_history('tautomerize')
         # TODO: add any properties from this operation to global_props?
