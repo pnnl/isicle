@@ -2,6 +2,7 @@ import pytest
 import isicle
 import os
 import pandas as pd
+import numpy as np
 
 
 def localfile(path):
@@ -17,8 +18,8 @@ def compare(nwcr1, nwcr2):
             nwcr1.get_geometry().split('/')[-1] == nwcr2.get_geometry().split('/')[-1] and \
             nwcr1.get_energy() == nwcr2.get_energy() and \
             nwcr1.get_shielding() == nwcr2.get_shielding() and \
-            nwcr1.get_spin() == nwcr2.get_spin() and \
-            nwcr1.get_frequency() == nwcr2.get_frequency() and \
+            np.all(nwcr1.get_spin() == nwcr2.get_spin()) and \
+            np.all(nwcr1.get_frequency() == nwcr2.get_frequency()) and \
             nwcr1.get_molden() == nwcr2.get_molden():
         return True
     return False
@@ -168,8 +169,8 @@ class TestNWChemParser:
         assert len(contents) == expected
 
     @pytest.mark.parametrize('path,expected_filename',
-                             [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out',
-                              'resources/nwchem_output/1R3R_difenacoum_+H_001_s.pkl')])
+                             [('resources/nwchem_output/methane.out',
+                              'resources/nwchem_output/methane.pkl')])
     def test_parse(self, nparser, path, expected_filename):
         # initialize
         nparser.load(localfile(path))
@@ -185,7 +186,7 @@ class TestNWChemParser:
 
     # currently only tests success case
     @pytest.mark.parametrize('path',
-                             [('resources/nwchem_output/1R3R_difenacoum_+H_001_s.out')])
+                             [('resources/nwchem_output/methane.out')])
     def test_save(self, nparser, path, temp_path='dummy.pkl'):
 
         # initialize
