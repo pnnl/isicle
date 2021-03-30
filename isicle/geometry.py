@@ -464,9 +464,7 @@ class XYZGeometry(XYZGeometryInterface):
             if xyz_filename is not None:
                 geom.xyz = load_xyz(xyz_filename)
             elif xyz is not None:
-                geom.xyz = xyz_file
-            else:
-                raise ValueError('No structure passed for object')
+                geom.xyz = xyz
 
         # Add event that led to this change in structure
         # If event is None, nothing will happen
@@ -511,6 +509,7 @@ class XYZGeometry(XYZGeometryInterface):
         res = res.to_dict()
 
         # Create new Geometry with updated structure
+        # res['geometry'] will be None or a path to an xyz file.
         geom = self._update_structure(inplace, xyz_filename=res['geometry'])
 
         # Erase old properties and add new event and DFT properties
@@ -743,8 +742,6 @@ class Geometry(XYZGeometry, GeometryInterface):
             if xyz is not None:
                 # Downgrade to XYZGeometry class
                 geom = self._downgrade_to_XYZGeometry(xyz)
-            else:
-                raise ValueError('No structure passed for object')
 
         else:
             if inplace:  # Modify this object
