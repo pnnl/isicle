@@ -25,7 +25,7 @@ class NWChemResult():
 
     def set_geometry(self, geometry_filename):
         # TODO: save xyz block as well
-        self.geometry['filename'] = geometry_filename
+        self.geometry = geometry_filename
         return self.geometry
 
     def set_shielding(self, shielding):
@@ -148,15 +148,43 @@ class NWChemParser(FileParserInterface):
         return self.contents
 
     def _parse_geometry_filename(self, path):
+        '''Grab path to .xyz file or generate .xyz file from *.out file '''
         search = splitext(path)[0]
         geoms = glob.glob(search + '*.xyz')
+        coor_substr = 'Output coordinates in angstroms'
 
         if len(geoms) < 1:
-            raise IOError('No geometry files found.')
+             # Extracting Atoms & Coordinates
+            ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
+            ii.sort()
 
-        geoms.sort()
+            coord = ''
+            g = ii[-1]+4
+            natoms = 0
+            while g <= len(self.contents)-1:
+                if self.contents[g] != ' \n':
+                    line = self.contents[g].split()
+                    xyz_line = line[1] + '\t' + line[3] + '\t' + line[4] + '\t' +line[5] +'\n'
+                    coord += xyz_line
+                    natoms += 1
 
-        return geoms[-1]
+                else:
+                    break
+                g+=1
+
+            coord = str(natoms) + '\n\n' + coord 
+            name = search + '.xyz'
+            xyz_file = open(name, 'w')
+            f = xyz_file.write(coord)
+            xyz_file.close()
+
+            geom = [name]
+
+        else:
+            geoms.sort()
+            geom = geoms[-1]
+        
+        return geom[0]
 
     def _parse_energy(self):
 
@@ -242,45 +270,20 @@ class NWChemParser(FileParserInterface):
 
         # Declaring couplings
         coup_freqs = np.zeros((natoms, natoms))
+        coup_pairs = []
+        coup = []
+        ready = False
 
-        cst = []
-        # Search for spin-spin couplings and populate matrix
-        for ii in range(len(self.contents)):
-            currentline = self.contents[ii]
-            temp = currentline.split(' ')
-
-            # Extracting Isotopes/Atoms & Coordinates
-            if coor_substr in currentline:
-                # Indexing ii+3+natoms; up to and including
-                coor_cellarr = self.contents[ii + 4: ii + 3 + natoms]
-
-            # Extracting Full Chemical Shielding Tensors
-            # NOTE: Shielding Tensors only calculated for C&H; must match in
-            # handle_parsed.m
-            elif cst_substr in currentline:
-                cst.append(self.contents[ii + 1])
-                cst.append(self.contents[ii + 2])
-                cst.append(self.contents[ii + 3])
-
-            # Extracting Coupling Frequencies matrix
-            elif temp[0] == 'Atom' and temp[4] == 'Atom':
-                col_idx = int(temp[1].replace(':', ''))  # Needs to be int
-                row_idx = int(temp[5].replace(':', ''))  # Needs to be int
-                temp_freq = nwctext[ii + 41].split(' ')
-                if 'Spin-Spin' not in temp_freq[1]:
-                    print(
-                        'Exact line for coupling frequencies not found: Change search parameters in line above.')
-                    return None
-                temp_freq = float(temp_freq[4])
-
-                # Accounting for symmetry by switching row/column index
-                coup_freqs[row_idx, col_idx] += temp_freq
-                coup_freqs[col_idx, row_idx] += temp_freq
-
-        # Assert size of coordinate cell array matches number of atoms
-        if len(coor_cellarr) != natoms:
-            print('Coordinate cell array size does not match number of atoms.')
-            return None
+        for line in self.contents:
+            if "Atom  " in line:
+                line = line.split()
+                idx1 = int((line[1].split(":"))[0]) - 1
+                idx2 = int((line[5].split(":"))[0]) - 1
+                ready=True
+            elif "Isotropic Spin-Spin Coupling =" in line and ready is True:
+                coup = float(line.split()[4])
+                coup_freqs[idx1][idx2] += coup
+                coup_freqs[idx2][idx1] += coup
 
         # Ensuring diaganolized zeros
         for ii in range(natoms):
