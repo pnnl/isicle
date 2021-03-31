@@ -295,6 +295,7 @@ class NWChemParser(FileParserInterface):
 
     def _parse_frequency(self):
         natoms = None
+        has_frequency = False
         for i, line in enumerate(self.contents):
             if ('Geometry' in line) and (natoms is None):
                 atom_start = i + 7
@@ -302,11 +303,15 @@ class NWChemParser(FileParserInterface):
                 atom_stop = i - 2
                 natoms = atom_stop - atom_start + 1
             if 'Normal Eigenvalue' in line:
+                has_frequency = True
                 freq_start = i + 3
                 freq_stop = i + 2 + 3 * natoms
 
-        return np.array([float(x.split()[1])
-                         for x in self.contents[freq_start:freq_stop + 1]])
+        if has_frequency is True:
+            return np.array([float(x.split()[1])
+                             for x in self.contents[freq_start:freq_stop + 1]])
+        else:
+            return None
 
     def _parse_meta(self):
 

@@ -54,6 +54,8 @@ def dft(geom, program='NWChem', template=None, **kwargs):
 
     Returns
     -------
+    :obj:`~isicle.geometry.Geometry`
+        DFT-optimized molecule representation.
     :obj:`~isicle.parse.NWChemResult`
         Result object containing relevant outputs from the simulation.
 
@@ -81,7 +83,18 @@ def dft(geom, program='NWChem', template=None, **kwargs):
     qmw.run()
 
     # Finish/clean up
-    return qmw.finish()
+    res = qmw.finish()
+
+    # Create new Geometry with updated structure
+    # res['geometry'] will be None or a path to an xyz file.
+    geom = geom._update_structure(False, xyz_filename=res['geometry'])
+
+    # Erase old properties and add new event and DFT properties
+    geom.global_properties = {}
+    geom._update_history('dft')
+    geom = geom.add_global_properties(res.to_dict())
+
+    return geom, res
 
 
 class NWChemWrapper(QMWrapperInterface):
@@ -135,9 +148,6 @@ class NWChemWrapper(QMWrapperInterface):
         # Assign geometry
         self.geom = geom
 
-        # Extract filename
-        self.geom.basename = os.path.splitext(os.path.basename(self.geom.path))[0]
-
     def save_geometry(self, fmt='xyz'):
         '''
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
@@ -159,12 +169,6 @@ class NWChemWrapper(QMWrapperInterface):
         outfile = os.path.join(self.temp_dir.name,
                                '{}.{}'.format(self.geom.basename,
                                               self.fmt.lower()))
-
-        # Workaround for xyz input
-        # See `isicle.geometry.load_xyz`
-        if self.geom.filetype == '.xyz':
-            if self.fmt != 'xyz':
-                raise TypeError('Input .xyz files cannot be converted.')
 
         # All other formats
         self.geom.save(outfile)

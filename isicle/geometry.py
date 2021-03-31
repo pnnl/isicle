@@ -100,6 +100,7 @@ def _load_generic_geom(path: str, calling_function: str):
 
     '''
     geom = Geometry()
+    geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
     geom._update_history(calling_function)
     return geom
@@ -121,6 +122,7 @@ def load_xyz(path: str):
 
     '''
     geom = XYZGeometry()
+    geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
     geom.xyz = _load_text(path)
     geom._update_history('load_xyz')
@@ -464,9 +466,7 @@ class XYZGeometry(XYZGeometryInterface):
             if xyz_filename is not None:
                 geom.xyz = load_xyz(xyz_filename)
             elif xyz is not None:
-                geom.xyz = xyz_file
-            else:
-                raise ValueError('No structure passed for object')
+                geom.xyz = xyz
 
         # Add event that led to this change in structure
         # If event is None, nothing will happen
@@ -501,22 +501,12 @@ class XYZGeometry(XYZGeometryInterface):
 
         return
 
-    def dft_optimize(self, program='NWChem', template=None, inplace=False,
-                     **kwargs):
+    def dft_optimize(self, program='NWChem', template=None, **kwargs):
         '''
         Optimize geometry from XYZ, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        res = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
-        res = res.to_dict()
-
-        # Create new Geometry with updated structure
-        geom = self._update_structure(inplace, xyz_filename=res['geometry'])
-
-        # Erase old properties and add new event and DFT properties
-        geom.global_properties = {}
-        geom._update_history('dft')
-        geom = geom.add_global_properties(res)
+        geom, res = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
 
         return geom, res
 
@@ -743,8 +733,6 @@ class Geometry(XYZGeometry, GeometryInterface):
             if xyz is not None:
                 # Downgrade to XYZGeometry class
                 geom = self._downgrade_to_XYZGeometry(xyz)
-            else:
-                raise ValueError('No structure passed for object')
 
         else:
             if inplace:  # Modify this object
