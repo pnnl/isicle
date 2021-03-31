@@ -87,7 +87,7 @@ def dft(geom, program='NWChem', template=None, **kwargs):
 
     # Create new Geometry with updated structure
     # res['geometry'] will be None or a path to an xyz file.
-    geom = self._update_structure(False, xyz_filename=res['geometry'])
+    geom = geom._update_structure(False, xyz_filename=res['geometry'])
 
     # Erase old properties and add new event and DFT properties
     geom.global_properties = {}
