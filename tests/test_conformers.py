@@ -141,11 +141,10 @@ class TestConformationalEnsemble:
     def test_reduce(self, conformers, random_values, random_energies, index):
         # Set values
         for c, v, e in zip(conformers, random_values, random_energies):
-            c.dummy = v
-            c.energy = e
+            c.global_properties = {'dummy': v, 'energy': {'energy': [e]}}
 
         # Reduce attribute
-        result = conformers.reduce('dummy', func='boltzmann', index=index)
+        result = conformers.reduce('dummy', func='boltzmann')
 
         # Verify result
         assert abs(result['mean'] - 670.505) < 1E-3

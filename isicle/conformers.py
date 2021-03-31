@@ -268,7 +268,8 @@ def load_pickle(path):
     Returns
     -------
     :obj:`~isicle.conformers.ConformationalEnsemble`
-        Previously pickled :obj:`~isicle.conformers.ConformationalEnsemble` instance.
+        Previously pickled :obj:`~isicle.conformers.ConformationalEnsemble`
+        instance.
 
     Raises
     ------
@@ -291,7 +292,7 @@ def load_pickle(path):
         return ensemble
 
     # Failure. This is not a ConformationalEnsemble instance
-    raise TypeError('Unsupported geometry format: {}.'.format(ensemble.__class__))
+    raise TypeError('Unsupported format: {}.'.format(ensemble.__class__))
 
 
 def load(path):
@@ -306,12 +307,12 @@ def load(path):
     Returns
     -------
     :obj:`~isicle.conformers.ConformationalEnsemble`
-        Previously pickled :obj:`~isicle.conformers.ConformationalEnsemble` instance.
+        Previously pickled :obj:`~isicle.conformers.ConformationalEnsemble`
+        instance.
 
     '''
 
     return load_pickle(path)
-
 
 
 class ConformationalEnsemble(TypedList):
@@ -350,11 +351,11 @@ class ConformationalEnsemble(TypedList):
 
         '''
 
-        if not all(hasattr(x, attr) for x in self):
-            raise AttributeError('"{}" not found for all conformational'
+        if not all(attr in x.get_global_properties() for x in self):
+            raise AttributeError('"{}" not found for all conformational '
                                  'ensemble members.'.format(attr))
 
-    def reduce(self, attr, func='boltzmann', index=False, **kwargs):
+    def reduce(self, attr, func='boltzmann', **kwargs):
         '''
         Combine attribute values according to indicated function.
 
@@ -365,8 +366,6 @@ class ConformationalEnsemble(TypedList):
         func : str
             Alias for function selection (one of "boltzmann", "simple",
             "lowest", or "threshold").
-        index : bool
-            Signal whether index should be used to combine attribute values.
         **kwargs
             Additional keyword arguments passed to `func`.
 
@@ -386,25 +385,21 @@ class ConformationalEnsemble(TypedList):
         if _energy_based(f):
             self._check_attributes('energy')
 
-        # Check for index attribute
-        if index is True:
-            self._check_attributes('index')
+        # Extract value attribute
+        value = [x.get_global_properties()[attr] for x in self]
 
-            # Extract attribute
-            index = np.array([getattr(x, 'index') for x in self]).flatten()
-            pad = int(len(index) / len(self))
-
-        # No index
+        # Check for index
+        if type(value[0]) is dict and 'index' in value[0]:
+            index = np.array([x['index'] for x in value]).flatten()
+            value = np.array([x[attr] for x in value]).flatten()
+            pad = pad = int(len(index) / len(self))
         else:
             index = None
             pad = 1
 
-        # Extract value attribute
-        value = np.array([getattr(x, attr) for x in self]).flatten()
-
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array([[getattr(x, 'energy')] * pad for x in self])
+            energy = np.array([x.get_global_properties()['energy']['energy'] * pad for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method
@@ -432,7 +427,9 @@ class ConformationalEnsemble(TypedList):
         '''
 
         # Check for attribute
-        self._check_attributes(method)
+        if not all(hasattr(x, method) for x in self):
+            raise AttributeError('"{}" not found for all conformational '
+                                 'ensemble members.'.format(attr))
 
         # Apply method to collection
         result = [getattr(x, method)(**kwargs) for x in self]
