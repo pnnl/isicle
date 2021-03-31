@@ -40,7 +40,7 @@ def test_dft(nwc):
     geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
     # Run dft
-    dft(geom, program='NWChem', fmt='xyz')
+    isicle.qm.dft(geom, program='NWChem', fmt='xyz')
 
 
 class TestNWChemWrapper:

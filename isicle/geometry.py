@@ -100,6 +100,7 @@ def _load_generic_geom(path: str, calling_function: str):
 
     '''
     geom = Geometry()
+    geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
     geom._update_history(calling_function)
     return geom
@@ -121,6 +122,7 @@ def load_xyz(path: str):
 
     '''
     geom = XYZGeometry()
+    geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
     geom.xyz = _load_text(path)
     geom._update_history('load_xyz')
@@ -499,23 +501,12 @@ class XYZGeometry(XYZGeometryInterface):
 
         return
 
-    def dft_optimize(self, program='NWChem', template=None, inplace=False,
-                     **kwargs):
+    def dft_optimize(self, program='NWChem', template=None, **kwargs):
         '''
         Optimize geometry from XYZ, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        res = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
-        res = res.to_dict()
-
-        # Create new Geometry with updated structure
-        # res['geometry'] will be None or a path to an xyz file.
-        geom = self._update_structure(inplace, xyz_filename=res['geometry'])
-
-        # Erase old properties and add new event and DFT properties
-        geom.global_properties = {}
-        geom._update_history('dft')
-        geom = geom.add_global_properties(res)
+        geom, res = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
 
         return geom, res
 
