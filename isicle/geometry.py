@@ -660,6 +660,9 @@ class XYZGeometry(XYZGeometryInterface):
         if 'pkl' in fmt:
             return self.save_pickle(path)
 
+        if 'mfj' in fmt:
+            return self.save_mfj(path)
+
         raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
 
 
@@ -1053,6 +1056,9 @@ class Geometry(XYZGeometry, GeometryInterface):
         '''Save PDB file for this structure.'''
         return Chem.MolToPDBFile(self.mol, path)
 
+    # def save_mfj(self, path):
+    #     self._downgrade_to_XYZGeometry(self.to_xyzblock()).save_mfj(path)
+
     def save(self, path, fmt=None):
         '''
         Save molecule
@@ -1100,6 +1106,9 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         if 'pdb' in fmt:
             return self.save_pdb(path)
+
+        if 'mfj' in fmt:
+            return self.save_mfj(path)
 
         # TODO: enable Compute2DCoords, https://www.rdkit.org/docs/source/rdkit.Chem.rdDepictor.html
 
