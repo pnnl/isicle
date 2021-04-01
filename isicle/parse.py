@@ -19,7 +19,7 @@ class NWChemResult():
         self.meta = None  # Dictionary, see function for keys
 
     def set_energy(self, energy):
-        result = {'energy': [energy[0]], 'charges': energy[1]}
+        result = {'energy': [energy[0]]}
         self.energy = result
         return self.energy
 
@@ -40,9 +40,19 @@ class NWChemResult():
         return self.spin
 
     def set_frequency(self, frequency):
-        # TODO
         self.frequency = frequency
         return self.frequency
+
+    def set_timing(self, timing):
+        result = {'single point': timing[0], 'geometry optimization': timing[1],
+                  'frequency': timing[2], 'total': timing[3]}
+        self.timing = result
+        return self.timing
+
+    def set_charge(self,charge):
+        result = {'charge': charge}
+        self.charge = result
+        return self.charge
 
     def set_meta(self, meta):
         '''
@@ -82,14 +92,11 @@ class NWChemResult():
     def get_frequency(self):
         return self.frequency
 
-    def get_meta(self):
-        '''
-        Return dictionary with frequency-related results
+    def get_timing(self):
+        return self.timing
 
-        Keys: 'natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
-               'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe'
-        '''
-        return self.meta
+    def get_charge(self):
+        return self.charge
 
     def get_molden(self):
         return self.molden
@@ -115,7 +122,8 @@ class NWChemResult():
         self.spin = saved_result.get_spin()
         self.frequency = saved_result.get_frequency()
         self.molden = saved_result.get_molden()
-        self.meta = saved_result.get_meta()
+        self.timing = saved_result.get_timing()
+        self.charge = saved_result.get_charge()
         return
 
     def to_dict(self):
@@ -127,7 +135,8 @@ class NWChemResult():
         d['spin'] = self.spin
         d['frequency'] = self.frequency
         d['molden'] = self.molden
-        d['meta'] = self.meta
+        d['timing'] = self.timing
+        d['charge'] = self.charge
 
         return d
 
@@ -153,77 +162,44 @@ class NWChemParser(FileParserInterface):
         geoms = glob.glob(search + '*.xyz')
         coor_substr = 'Output coordinates in angstroms'
 
-        if len(geoms) < 1:
-             # Extracting Atoms & Coordinates
-            ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
-            ii.sort()
+        # Extracting Atoms & Coordinates
+        ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
+        ii.sort()
 
-            coord = ''
-            g = ii[-1]+4
-            natoms = 0
-            while g <= len(self.contents)-1:
-                if self.contents[g] != ' \n':
-                    line = self.contents[g].split()
-                    xyz_line = line[1] + '\t' + line[3] + '\t' + line[4] + '\t' +line[5] +'\n'
-                    coord += xyz_line
-                    natoms += 1
+        coord = ''
+        g = ii[-1]+4
+        natoms = 0
+        while g <= len(self.contents)-1:
+            if self.contents[g] != ' \n':
+                line = self.contents[g].split()
+                xyz_line = line[1] + '\t' + line[3] + '\t' + line[4] + '\t' +line[5] +'\n'
+                coord += xyz_line
+                natoms += 1
 
-                else:
-                    break
-                g+=1
+            else:
+                break
+            g+=1
 
-            coord = str(natoms) + '\n\n' + coord 
-            name = search + '.xyz'
-            xyz_file = open(name, 'w')
-            f = xyz_file.write(coord)
-            xyz_file.close()
-
-            geom = [name]
-
-        else:
-            geoms.sort()
-            geom = geoms[-1]
+        coord = str(natoms) + '\n\n' + coord 
+        name = search + '.xyz'
+        xyz_file = open(name, 'w')
+        f = xyz_file.write(coord)
+        xyz_file.close()
         
-        return geom[0]
+        return name
 
     def _parse_energy(self):
 
+        #TO DO: Add Initial energy and final energy if different
+
         # Init
         energy = None
-        ready = False
-        charges = []
 
         # Cycle through file
         for line in self.contents:
             if 'Total DFT energy' in line:
                 # Overwrite last saved energy
-                energy = float(line.split()[-1])
-
-            # Load charges from table
-            elif 'Atom       Charge   Shell Charges' in line:
-                # Table header found. Overwrite anything saved previously
-                ready = True
-                charges = []
-            elif ready is True and line.strip() in ['', 'Line search:']:
-                # Table end found
-                ready = False
-            elif ready is True:
-                # Still reading from charges table
-                charges.append(line)
-
-        # Process table if one was found
-        if len(charges) > 0:
-
-            # Remove blank line in charges (table edge)
-            charges = charges[1:]
-
-            # Process charge information
-            df = pd.DataFrame([x.split()[0:4] for x in charges],
-                              columns=['idx', 'Atom', 'Number', 'Charge'])
-            df.Number = df.Number.astype('int')
-            df.Charge = df.Number - df.Charge.astype('float')
-
-            return energy, df.Charge.tolist()
+                energy = line.split()[-1]
 
         return energy, None
 
@@ -250,6 +226,8 @@ class NWChemParser(FileParserInterface):
         return shield_idxs, shield_atoms, shields
 
     def _parse_spin(self):
+        # TO DO: Add g-factors
+
         coor_substr = 'Output coordinates in angstroms'
         cst_substr = 'Total Shielding Tensor'
 
@@ -294,8 +272,19 @@ class NWChemParser(FileParserInterface):
         return coup_freqs
 
     def _parse_frequency(self):
+        # TO DO: Add Thermo information (zpe, enthalpy, entropy, capacity, rotational constants) 
+        #        into the energy global property
+        # TO DO: Add freq intensities
+        # TO DO: Add rotational/translational/vibrational Cv and entropy
+        energies = []
+        zpe = []
+        enthalpies = []
+        entropies = []
+        capacities = []
+        temp = []
+        scaling = []
         natoms = None
-        has_frequency = False
+
         for i, line in enumerate(self.contents):
             if ('Geometry' in line) and (natoms is None):
                 atom_start = i + 7
@@ -303,26 +292,80 @@ class NWChemParser(FileParserInterface):
                 atom_stop = i - 2
                 natoms = atom_stop - atom_start + 1
             if 'Normal Eigenvalue' in line:
-                has_frequency = True
                 freq_start = i + 3
                 freq_stop = i + 2 + 3 * natoms
 
-        if has_frequency is True:
-            return np.array([float(x.split()[1])
-                             for x in self.contents[freq_start:freq_stop + 1]])
-        else:
-            return None
+            # Get values
+            if 'Total DFT energy' in line:
+                energies.append(float(line.rstrip().split('=')[-1]))
 
-    def _parse_meta(self):
+            if 'Zero-Point correction to Energy' in line:
+                zpe.append(line.rstrip().split('=')[-1])
+
+            if 'Thermal correction to Enthalpy' in line:
+                enthalpies.append(line.rstrip().split('=')[-1])
+
+            if 'Total Entropy' in line:
+                entropies.append(line.rstrip().split('=')[-1])
+
+            if 'constant volume heat capacity' in line:
+                capacities.append(line.rstrip().split('=')[-1])
+
+        return np.array([float(x.split()[1])
+                         for x in self.contents[freq_start:freq_stop + 1]]), \
+               energies, enthalpies, entropies, capacities, zpe
+
+    def _parse_charge(self):
+        # TO DO: Parse molecular charge and atomic charges
+        # TO DO: Add type of charge
+        # TO DO: Multiple instances of charge analysis seen (two Mulliken and one Lowdin, difference?)
+        charges = []
+        ready = False
+
+        for line in self.contents:
+
+            # Load charges from table
+            if 'Atom       Charge   Shell Charges' in line:
+                # Table header found. Overwrite anything saved previously
+                ready = True
+                charges = []
+            elif ready is True and line.strip() in ['', 'Line search:']:
+                # Table end found
+                ready = False
+            elif ready is True:
+                # Still reading from charges table
+                charges.append(line)
+
+            # Include? Commented or from past files
+            # elif ready is True:
+            #     lowdinIdx.append(i + 2)
+            #     ready = False
+            elif 'Shell Charges' in line and ready is True:  # Shell Charges
+                lowdinIdx.append(i + 2)
+                ready = False
+            elif 'Lowdin Population Analysis' in line:
+                ready = True
+
+        # Process table if one was found
+        if len(charges) > 0:
+
+            # Remove blank line in charges (table edge)
+            charges = charges[1:]
+
+            # Process charge information
+            df = pd.DataFrame([x.split()[0:4] for x in charges],
+                              columns=['idx', 'Atom', 'Number', 'Charge'])
+            df.Number = df.Number.astype('int')
+            df.Charge = df.Number - df.Charge.astype('float')
+
+            return energy, df.Charge.tolist()
+
+        return None
+
+    def _parse_timing(self):
 
         # Init
         indices = []
-        lowdinIdx = []
-        energies = []
-        zpe = []
-        enthalpies = []
-        entropies = []
-        capacities = []
         preoptTime = 0
         geomoptTime = 0
         freqTime = 0
@@ -342,39 +385,6 @@ class NWChemParser(FileParserInterface):
                 indices.append(i + 3)  # 2
             elif 'Effective nuclear repulsion energy' in line and len(indices) == 3:
                 indices.append(i - 2)  # 3
-            elif 'Optimization converged' in line:  # lowdin population
-                ready = True
-            elif 'Failed to converge in maximum number of steps or available time' in line:
-                ready = True
-            elif 'Output coordinates in angstroms' in line:  # Shell charges
-                lowdinIdx.append(i + 4)
-                ready = False
-
-            # Include? Commented or from past files
-            # elif ready is True:
-            #     lowdinIdx.append(i + 2)
-            #     ready = False
-            elif 'Shell Charges' in line and ready is True:  # Shell Charges
-                lowdinIdx.append(i + 2)
-                ready = False
-            elif 'Lowdin Population Analysis' in line:
-                ready = True
-
-            # Get values
-            if 'Total DFT energy' in line:
-                energies.append(float(line.rstrip().split('=')[-1]))
-
-            if 'Zero-Point correction to Energy' in line:
-                zpe.append(line.rstrip().split('=')[-1])
-
-            if 'Thermal correction to Enthalpy' in line:
-                enthalpies.append(line.rstrip().split('=')[-1])
-
-            if 'Total Entropy' in line:
-                entropies.append(line.rstrip().split('=')[-1])
-
-            if 'constant volume heat capacity' in line:
-                capacities.append(line.rstrip().split('=')[-1])
 
             # Check for optimization and frequency calcs
             if 'NWChem Geometry Optimization' in line:
@@ -397,8 +407,7 @@ class NWChemParser(FileParserInterface):
 
         natoms = int(self.contents[indices[1] - 1].split()[0])
 
-        return natoms, lowdinIdx, energies, enthalpies, entropies, capacities, \
-            preoptTime, geomoptTime, cpuTime, zpe
+        return preoptTime, geomoptTime, freqTime, cpuTime
 
     def _parse_molden(self, path):
 
@@ -409,6 +418,9 @@ class NWChemParser(FileParserInterface):
             return None
 
         return m[0]
+
+    def _parse_protocol(self):
+        raise NotImplementedError
 
     # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy'],
@@ -470,6 +482,20 @@ class NWChemParser(FileParserInterface):
                     molden_path = self.path
                 molden_filename = self._parse_molden(molden_path)
                 result.set_molden(molden_filename)
+            except IndexError:
+                pass
+
+        if 'charge' in to_parse:
+            try:
+                charge = self._parse_charge()
+                result.set_charge(charge)
+            except IndexError:
+                pass
+
+        if 'timing' in to_parse:
+            try:
+                timing = self._parse_timing()
+                result.set_timing(timing)
             except IndexError:
                 pass
 

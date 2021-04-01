@@ -82,6 +82,15 @@ def md(geom, program='xtb', **kwargs):
     # Run MD simulation
     mdw.run()
 
+    # Create new Geometry with updated structure
+    # res['geometry'] will be None or a path to an xyz file.
+    geom = geom._update_structure(False, xyz_filename=res['geometry'])
+
+    # Erase old properties and add new event and DFT properties
+    geom.global_properties = {}
+    geom._update_history('md')
+    geom = geom.add_global_properties(res.to_dict())
+
     # Finish/clean up
     return mdw.finish()
 
@@ -141,10 +150,6 @@ class XTBWrapper(MDWrapperInterface):
         # Assign geometry
         self.geom = geom
 
-        # Extract filename
-        self.geom.basename = os.path.splitext(
-            os.path.basename(self.geom.path))[0]
-
     def save_geometry(self, fmt='xyz'):
         '''
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
@@ -156,6 +161,14 @@ class XTBWrapper(MDWrapperInterface):
             ".pdb", ".pkl".
 
         '''
+        # Path operations
+        self.fmt = fmt.lower()
+        outfile = os.path.join(self.temp_dir.name,
+                               '{}.{}'.format(self.geom.basename,
+                                              self.fmt.lower()))
+
+        # All other formats
+        self.geom.save(outfile)
 
         # Path operations
         self.fmt = fmt.lower()
@@ -163,18 +176,6 @@ class XTBWrapper(MDWrapperInterface):
                                '{}.{}'.format(self.geom.basename,
                                               self.fmt.lower()))
 
-        # Workaround for xyz input
-        # See `isicle.geometry.load_xyz`
-        if self.geom.filetype == '.xyz':
-            if self.fmt != 'xyz':
-                raise TypeError('Input .xyz files cannot be converted.')
-
-            with open(outfile, 'w') as f:
-                f.write('\n'.join(self.geom.contents))
-            return
-
-        # All other formats
-        self.geom.save(outfile)
 
     def load_geometry(self, path):
         # Workaround for xyz input
