@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import collections
+from pkg_resources import resource_filename
 
 
 def safelist(x):
@@ -92,3 +93,8 @@ class TypedList(collections.abc.MutableSequence):
 
     def __repr__(self):
         return self.__str__()
+
+
+def atomic_masses():
+    path = resource_filename('isicle', 'resources/atomic_masses.tsv')
+    return pd.read_csv(path, sep='\t')

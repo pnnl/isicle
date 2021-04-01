@@ -4,7 +4,7 @@ import pickle
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
-import copy
+import pandas as pd
 import os
 import numpy as np
 
@@ -593,6 +593,40 @@ class XYZGeometry(XYZGeometryInterface):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
         return 'Success'
+
+    def save_mfj(self, path):
+        # Extract properties
+        props = self.get_global_properties()
+
+        # Check for charges in global properties
+        if ('energy' not in props) or (props['energy']['charges'] is None):
+            raise KeyError('DFT energy optimization required. '
+                           'See isicle.qm.dft.')
+
+        # Get XYZ coordinates
+        xyz = self.to_xyzblock()
+
+        # Extract and append charges
+        xyz['Charge'] = props['energy']['charges']
+
+        # Load masses and merge
+        masses = isicle.utils.atomic_masses()[['Symbol', 'Mass']]
+        mfj = pd.merge(xyz, masses, left_on='Atom', right_on='Symbol')
+
+        # Rename columns
+        mfj = mfj[['x', 'y', 'z', 'Mass', 'Charge']]
+
+        # Write to file
+        with open(path, 'w') as f:
+            f.write(os.path.splitext(os.path.basename(path))[0] + '\n')
+            f.write('1\n')
+            f.write(str(len(mfj.index)) + '\n')
+            f.write('ang\n')
+            f.write('calc\n')
+            f.write('1.000\n')
+
+            for row in mfj.values:
+                f.write('\t'.join([str(x) for x in row]) + '\n')
 
     def save(self, path, fmt=None):
         '''

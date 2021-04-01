@@ -1,4 +1,4 @@
-from isicle.interfaces import QMWrapperInterface
+from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
 import tempfile
@@ -97,7 +97,7 @@ def dft(geom, program='NWChem', template=None, **kwargs):
     return geom, res
 
 
-class NWChemWrapper(QMWrapperInterface):
+class NWChemWrapper(WrapperInterface):
     '''
     Wrapper for NWChem functionality.
 

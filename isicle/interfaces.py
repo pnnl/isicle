@@ -166,9 +166,9 @@ class AdductInterface(GeometryInterface):
         raise NotImplementedError
 
 
-class QMWrapperInterface(metaclass=abc.ABCMeta):
+class WrapperInterface(metaclass=abc.ABCMeta):
     '''
-    Abstract base class for quantum mechanics wrapper interface. All QM
+    Abstract base class for wrapper interface. All QM
     wrappers conform to this definition.
     '''
 
