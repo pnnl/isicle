@@ -179,7 +179,7 @@ class TestNWChemParser:
 
         # Load previous NWChemResult class
         expected = isicle.parse.NWChemResult()
-        expected.load(expected_filename)
+        expected.load(localfile(expected_filename))
 
         # check against previously saved file
         assert compare(result, expected)
