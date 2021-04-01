@@ -408,6 +408,7 @@ class ConformationalEnsemble(TypedList):
         # Execute other method
         return f(value, index=index, **kwargs)
 
+    # TODO: automatically unpack multiple returned objects
     def _apply_method(self, method, **kwargs):
         '''
         Process conformational ensemble members according to supplied method.
@@ -429,7 +430,7 @@ class ConformationalEnsemble(TypedList):
         # Check for attribute
         if not all(hasattr(x, method) for x in self):
             raise AttributeError('"{}" not found for all conformational '
-                                 'ensemble members.'.format(attr))
+                                 'ensemble members.'.format(method))
 
         # Apply method to collection
         result = [getattr(x, method)(**kwargs) for x in self]
@@ -442,6 +443,7 @@ class ConformationalEnsemble(TypedList):
         except:
             return result
 
+    # TODO: automatically unpack multiple returned objects
     def _apply_function(self, func, **kwargs):
         '''
         Process conformational ensemble members according to supplied function.
@@ -471,6 +473,7 @@ class ConformationalEnsemble(TypedList):
         except:
             return result
 
+    # TODO: automatically unpack multiple returned objects
     def apply(self, func=None, method=None, **kwargs):
         '''
         Process conformational ensemble members according to supplied function
