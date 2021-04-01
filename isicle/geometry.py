@@ -784,6 +784,8 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
+    # TODO: enable multiple salts to be passed, defaulting to all possible
+    # salts
     def desalt(self, salts=None, inplace=False):
         '''
         Desalts RDKit mol object using Chem.SaltRemover module.
