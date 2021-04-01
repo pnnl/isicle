@@ -1,39 +1,107 @@
 from isicle.interfaces import AdductInterface
-from isicle.geometry import Geometry
+from isicle import geometry as geom
+import os
+import rdkit.Chem.rdchem as rdc
+from rdkit import Chem
 
 
-class Adduct(Geometry, AdductInterface):
+# TODO institute adduct calls in geometry
 
-    def __init__(self):
-        self.geom = None
-        self.ions = None
-        self.anions = None
-        self.cations = None
-        self.complex = None
 
-    def load_geometry(self, path: str):
+def load_ions(self, path: str):
+    '''
+    Read adduct ions from file.
+
+    Parameters
+    ----------
+    path : str
+        Path to ions text file (.txt, etc.), each ion should be a new line.
+
+    Returns
+    -------
+    list
+        List of ions from given text file.
+    '''
+    #self.path = path
+    contents = geom._load_text(path)
+    self.contents = [line.rstrip() for line in contents]
+    return self.contents
+
+
+def _select_method(method):
+    method_map = {'explicit': ExplicitIonizationMachine, 'crest': CRESTIonizationWrapper}
+
+    if method.lower() in method_map.keys():
+        return method_map[method.lower()]()
+    else:
+        raise ValueError('{} not a supported ionization method.'.format(method))
+
+
+def ionize(self, path: str, ionpath: str, method: str):
+    '''
+    '''
+    # Load geometry
+    geom = geom.load(path)
+
+    # Instiate Adduct instance
+    adds = Adduct()
+
+    # Populate instance information
+    adds.path = geom.path
+
+    # Load ion file
+    adds.contents = load_ions(ionpath)
+
+    # Parse ions
+    adds.parse_ions()
+
+    # Select ionization method
+    adds.method = _select_method(method)
+
+    # Generate adducts and select method
+    adds.call_method()
+
+    # Write returned structures to file
+    # adds.save()
+
+
+class Adduct():
+
+    def __init__(self, mol=None, anions=None, cations=None, complex=None, path=None, contents=None, method=None):
+        self.mol = mol
+        self.anions = anions
+        self.cations = cations
+        self.complex = complex
+        self.path = path
+        self.contents = contents
+        self.method = method
+
+    def parse_ions(self, anions=None, cations=None, complex=None):
         '''
-        Reads geometry3D object from file.
-        '''
-        self.geom = load(path)
-        return self.geom
+        Parse and categorize list of ion by ion type.
 
-    def load_ions(self, path: str):
-        '''
-        Reads adduct ions from file.
-        '''
-        # load text file
-        self.ions = load(path).split(',')
-        return self.ions
+        Parameters
+        ----------
+        anions : list
+            List of anions, default None
+        cations : list
+            List of cations, default None
+        complex : list
+            List of complex ions, default None
 
-    def parse_ions(self):
-        '''
-        Changes order of ionization from specification in ion list file.
-        '''
-        anions = []
-        cations = []
-        complex = []
+        Returns
+        -------
 
+        '''
+        if anions is None:
+            anions = []
+        if cations is None:
+            cations = []
+        if complex is None:
+            complex = []
+
+        ions = self.contents
+        # TODO make parser more robust for input list variation
         for x in ions:
             if ('+' and '-') in x:
                 complex.append(x)
@@ -42,31 +110,65 @@ class Adduct(Geometry, AdductInterface):
             elif ('-') in x:
                 anions.append(x)
             else:
-                raise Exception('Unrecognized ion specified.')
+                raise ValueError('Unrecognized ion specified.')
                 # TODO insert more descriptive error
 
         self.anions = anions
         self.cations = cations
         self.complex = complex
-        return self.anions, self.cations, self.complex
 
-    def generate_adducts(self, alt=False, inplace=False):
+    def call_method(self):
         '''
-        Calls different generation methods according to desired ion reaction.
+        Call specified ionization class.
         '''
-        # TODO check if desired adduct can be formed
-        self.check_valid()
-        # TODO institute iterative approach to complex adduct formation
-        # consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
-        if alt == True:
-            self.crest_generation()
-        else:
-            self.manual_generation()
+        method = self.method
 
-        # TODO institute manual generation capabilities of output molecule
-        # default positive_mode/negative_mode to xtb CREST, alt for manual generation
+        return method()
 
-    def check_valid(self, ion):
+    def save(self):
+        '''
+        Writes output molecules to file.
+        '''
+        # TODO make options to save / write from finish methods in specified ion method
+
+
+class ExplicitIonizationMachine(IonizeInterface):
+    def __init__(self, mol_dict=None):
+        mol_dict = None
+
+    def generator(self):
+        '''
+        Creates specified adducts at every atom site.
+        '''
+        pt = Chem.GetPeriodicTable()
+        anions = self.anions
+        cations = self.cations
+        complex = self.complex
+        init_mol = self.mol
+        anion_dict = {}
+        cation_dict = {}
+        complex_dict = {}
+        # self.check_valid()
+        # TODO substructure check to validate specified ion support
+
+        for ion in anions:
+            ion_atomic_num = pt.GetAtomicNumber(ion)
+            mol_dict = self.negative_mode(init_mol, ion_atomic_num)
+            anion_dict[ion] = mol_dict
+            # anion_dict defined as {ion:{base_atom_index: mol}}
+
+        for ion in cations:
+            ion_atomic_num = pt.GetAtomicNumber(ion)
+            mol_dict = self.positive_mode(init_mol, ion_atomic_num)
+            cation_dict[ion] = mol_dict
+            # cation_dict defined as {ion:{base_atom_index: mol}}
+
+        for ion in complex:
+            # TODO iterative method for adduct generation
+            # Call both positve_mode and negative_mode
+            raise NotImplementedError
+
+    def check_valid(self):
         '''
         Performs substructure search and checks if proposed adduct can be formed.
         '''
@@ -75,65 +177,143 @@ class Adduct(Geometry, AdductInterface):
         # consider add_formala, remove_formula from
         # https://github.com/pnnl/mame/blob/24f9fcb19639d5a1c2ca0f788c55d6a2efe18ca6/mame/formula_module.py
         mol.HasSubstructMatch((ion.strip('+')).strip('-'))
-        # complex structure checking, spectre
+        # complex structure checking, spectre?
         # consider how substructure would break off, not all atoms may be from same region
 
-    def save(self):
-        '''
-        Writes output molecules to file.
-        '''
-        # pull from geometry
+        # TODO (1) check if ions are in supported list of ions
+        # TODO (2) modify self.anions, self.cations, self.complex to conform to supported ions
 
-    def manual_genertion(self):
-        '''
-        Creates specified adducts at every atom site.
-        '''
-        # TODO iterative method for adduct generation
-        # for adduct type specified in parse ions, call positive mode or negative mode
-        ion_lst = self.ions
+    def modify_atom_dict(self, init_mol, mode=None):
+        all_atom_dict = {atom: [atom.GetSymbol(), atom.GetTotalValence() -
+                                atom.GetDegree(), atom.GetTotalNumHs(includeNeighbors=True), atom.GetIdx()] for atom in init_mol.GetAtoms()}
+        if mode == 'positive':
+            atom_dict = {}
+            for key, value in all_atom_dict.items():
+                if value[0] in self.cations:
+                    # TODO add check for more ion types
+                    # eg. if value[0] in CationList
+                    continue
+                elif value[1] == 0 and value[2] == 0:
+                    # removes atoms that cannot accept a bond
+                    continue
+                atom_dict[key] = value
+            return atom_dict
 
-    def manual_positive_mode(self):
-        '''
-        Adds cation to 3D molecular structure.
-        '''
-        self.add_ion()
+        elif mode == 'negative':
+            atom_dict = {}
+            for key, value in all_atom_dict.items():
+                if value[0] in self.anions:
+                    # TODO add check for more ion types
+                    # eg. if value[0] in AnionList
+                    continue
+                atom_dict[key] = value
+            return atom_dict
 
-    def manual_negative_mode(self):
-        '''
-        Pulls anion from 3D molecular structure.
-        '''
-        self.remove_ion()
+        if mode == None:
+            raise NotImplementedError
 
-    def _remove_ion():
+    def positive_mode(self, init_mol, ion_atomic_num):
         '''
+        Adds specified cation to RDKit mol object at every potential base atom.
+        '''
+        atom_dict = self.modify_atom_dict(init_mol, mode='positive')
+        mol_dict = self.add_ion(init_mol, atom_dict, ion_atomic_num)
+        return mol_dict
+
+    def _add_ion(init_mol, base_atom_idx, ion_atomic_num):
+        '''
+        Adds specified ion (by atomic num) to specified base atom (by atom's index).
+        Returns ionized RDKit mol object.
+        '''
+        newmol = rdc.RWMol(init_mol)
+        atm = rdc.Atom(ion_atomic_num)
+        atm_idx = mol.GetNumAtoms()
+        rdc.RWMol.AddAtom(newmol, atm)
+        rdc.RWMol.AddBond(newmol, base_atm_idx, atm_idx, Chem.BondType.SINGLE)
+        return newmol
+
+    def add_ion(init_mol, atom_dict, ion_atomic_num):
+        '''
+        Iterates through base atoms of RDKit mol object.
+        Calls method to ionize and return new RDKit mol object.
+        Returns dictionary of {base atom: ionized RDKit mol object}.
         '''
 
-    def remove_ion():
-        '''
-        '''
-        self._remove_ion()
+        mol_dict = {}
+        for key, value in atom_dict.items():
+            newmol = self._add_ion(init_mol, key, ion_atomic_num)
+            mol_dict[key] = newmol
+        return mol_dict
 
-    def _add_ion():
+    def negative_mode(self, init_mol, ion_atomic_num):
         '''
+        Removes specified anion from RDKit mol object at every potential base atom.
+        '''
+        atom_dict = self.modify_atom_dict(init_mol, mode='negative')
+        mol_dict = self.remove_ion(init_mol, atom_dict, ion_atomic_num)
+        return mol_dict
+
+    def _remove_ion(init_mol, base_atom, base_atom_idx, ion_atomic_num):
+        '''
+        Removes specified ion (by atomic num) from specified base atom (by atom's index).
+        Returns deionized RDKit mol object.
+        '''
+        newmol = rdc.RWMol(init_mol)
+        nbrs_dict = {pt.GetAtomicNumber(nbr): nbr.GetIdx() for nbr base_atom.GetNeighbors()}
+        if ion_atomic_num in nbrs_dict.keys():
+            rdc.RWMol.RemoveAtom(newmol, nbrs_dict[ion_atomic_num])
+            bond_idx = newmol.GetBondIdx(base_atom_idx, nbrs_dict[ion_atomic_num])
+            rdc.RWMol.RemoveBond(newmol, bond_idx)
+        return newmol
+
+    def remove_ion(init_mol, atom_dict, ion_atomic_num):
+        '''
+        Iterates through base atoms of RDKit mol object.
+        Calls method to deionize and return new RDKit mol object.
+        Returns dictionary of {base atom: deionized RDKit mol object}.
         '''
 
-    def add_ion():
-        '''
-        '''
-        self._add_ion()
+        mol_dict = {}
+        for key, value in atom_dict.items():
+            newmol = self._remove_ion(init_mol, key, value[3], ion_atomic_num)
+            mol_dict[value[3]] = newmol
+        return mol_dict
 
-    def crest_generation(self):
+    def finish(self):
+        '''
+        Writes finalized output mol blocks in dictionary to output files
+        '''
+        # TODO formalize this method
+
+
+class CRESTIonizationWrapper(IonizeInterface):
+    def __init__(self, path=path, cmd=None, ions=None, alt=False, custom=False):
+        super().__init__()
+        self.path = path
+        self.cmd = cmd
+        self.anion = anions
+
+    def generation(self):
         '''
         Alternative adduct generation method.
         Utilizes xtb CREST software from Grimme group.
         Documentation:
         '''
-        self.crest_positive_mode()
-        self.crest_negative_mode()
+        self.positive_mode()
+        self.negative_mode()
+        # TODO institute iterative approach to complex adduct formation
 
-    def crest_positive_mode(self, path, ion=None, alt=False):
+    def check_valid(self, ion):
         '''
-        Runs xtb CREST protonate tool
+        Performs substructure search and checks if supported by CREST documentation
+        '''
+        mol.HasSubstructMatch((ion.strip('+')).strip('-'))
+        # TODO institute ion list check against list of supported CREST ions
+        # consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
+
+    def positive_mode(self, path, cation=None, alt=False, custom=False):
+        '''
+        Generate xtb CREST protonate tool command
         https://xtb-docs.readthedocs.io/en/latest/crestxmpl.html#protonation-site-screening
 
         Default:
@@ -145,16 +325,19 @@ class Adduct(Geometry, AdductInterface):
         [Na+]: (ex.) crest 'struc.xyz' -protonate -swel 'Na+'
         '''
         # consider -twel for tautomeric forms of output adduct
-        if alt:
-            # crest()
-            # "crest %s -protonate -swel %s"%(path,ion)
+        path = self.path
+        if self.alt:
+            self.cmd = 'crest {path} -protonate -swel {cation}'.format(path=path, cation=cation)
+        elif self.custom:
+            # TODO parse custom config file
+            raise NotImplementedError
         else:
-            # crest()
-            # "crest %s -protonate"%(path)
+            self.cmd = 'crest {path} -protonate'.format(path=path)
+        return self
 
-    def crest_negative_mode(self, path, ion=None, alt=False):
+    def negative_mode(self, path, anion=None, alt=False, custom=False):
         '''
-        Runs xtb CREST deprotonate tool
+        Generate xtb CREST deprotonate tool command
 
         https://xtb-docs.readthedocs.io/en/latest/crestxmpl.html#deprotonation-site-screening
 
@@ -162,9 +345,25 @@ class Adduct(Geometry, AdductInterface):
         [H-]: (ex.) crest 'struc.xyz' -deprotonate
         '''
         # consider -twel for tautomeric forms of output adduct
-        if alt:
-            # crest()
-            # "crest %s -deprotonate -swel %s"%(path,ion)
+        path = self.path
+        if self.alt:
+            self.cmd = 'crest {path} -deprotonate -swel {anion}'.format(path=path, anion=anion)
+        elif self.custom:
+            # TODO parse custom config file
+            raise NotImplementedError
         else:
-            # crest()
-            # "crest %s -deprotonate"%(path)
+            self.cmd = 'crest {path} -deprotonate'.format(path=path)
+        return self
+
+    def run(self):
+        '''
+        Run xtb CREST protonate/deprotonate tool command
+        '''
+        os.system(self.cmd)
+        # instititute temp dir
+
+    def finish(self):
+        '''
+
+        '''
+        # compile structures
