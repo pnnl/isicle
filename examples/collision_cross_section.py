@@ -18,13 +18,15 @@ adducts = geom.generate_adducts()
 ccs_result = {}
 for label, adduct in adducts.items():
     # Molecular dynamics
-    kwargs = {}
     conformers, md_result = geom.md_optimize(program='xtb',
-                                             **kwargs)
+                                             tasks='crest',
+                                             forcefield='gff',
+                                             ewin=1,
+                                             optlevel='Normal')
 
     # Density functional theory
     dft_result = conformers.apply(func=isicle.qm.dft,
-                                  tasks=['optimize'],
+                                  tasks='optimize',
                                   functional='b3lyp',
                                   basis_set='6-31g*',
                                   ao_basis='cartesian',
@@ -38,7 +40,7 @@ for label, adduct in adducts.items():
     dft_result = [x[1] for x in dft_result]
 
     # Combine shielding result across conformers
-    ccs = conformers_opt.reduce('shielding', func='boltzmann')
+    ccs = conformers_opt.reduce('ccs', func='boltzmann')
 
     # Add to dictionary
     ccs_result[label] = ccs

@@ -13,9 +13,11 @@ geom = geom.neutralize()
 geom = geom.tautomerize()
 
 # Molecular dynamics
-kwargs = {}
 conformers, md_result = geom.md_optimize(program='xtb',
-                                         **kwargs)
+                                         tasks='crest',
+                                         forcefield='gff',
+                                         ewin=1,
+                                         optlevel='Normal')
 
 # Density functional theory
 dft_result = conformers.apply(func=isicle.qm.dft,
