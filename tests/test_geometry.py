@@ -16,8 +16,10 @@ def compare(geom1, geom2, check_path=True, check_contents=True, check_mol=True):
     '''
     Compares two NWChemResult objects and returns if they are equivalent
     '''
-    if not check_path or geom1.path == geom2.path:
-        if not check_contents or geom1.contents == geom2.contents:
+    d1 = geom1.global_properties['load']
+    d2 = geom2.global_properties['load']
+    if not check_path or d1['path'] == d2['path']:
+        if not check_contents or d1['contents'] == d2['contents']:
             if not check_mol or MolToSmiles(geom1.mol) == MolToSmiles(geom2.mol):
                 return True
     return False
@@ -53,7 +55,7 @@ class TestLoad:
         geom = isicle.geometry.load_pickle(localfile(path))
 
         # Test for expected smiles
-        assert geom.contents == expected
+        assert geom.global_properties['load']['contents'] == expected
 
     @pytest.mark.parametrize('path,expected',
                              [('resources/geom_test.smi', IOError),
@@ -79,7 +81,7 @@ class TestLoad:
         geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test for expected smiles
-        assert geom1.contents == expected
+        assert geom1.global_properties['load']['contents'] == expected
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
@@ -104,7 +106,7 @@ class TestLoad:
         geom3 = isicle.geometry.load_pickle(saved_pkl)
 
         # Test for expected inchi
-        assert geom1.contents == expected
+        assert geom1.global_properties['load']['contents'] == expected
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
@@ -125,7 +127,7 @@ class TestLoad:
         geom2 = isicle.geometry.load(path)
 
         # Test for expected inchi
-        assert geom1.contents == expected
+        assert geom1.global_properties['load']['contents'] == expected
 
         # Test both routes ended in same place
         assert compare(geom1, geom2)
@@ -202,15 +204,14 @@ class TestXYZGeometry:
         raise NotImplementedError
 
     def test_get_global_properties(self, xgeom):
-        xgeom.calculate_global_properties()
+        xgeom.get_natoms()
+        xgeom.get_atom_indices()
         assert xgeom.global_properties == xgeom.get_global_properties()
 
     def test_get_natoms(self, xgeom):
-        assert xgeom.get_natoms() == 6
-
-    def test_calculate_global_properties(self, xgeom):
-        d = xgeom.calculate_global_properties()
-        assert d['natoms'] == 6
+        # Also tests that results saved appropriately
+        xgeom.get_natoms()
+        assert xgeom.get_global_properties()['natoms'] == 6
 
     def test_get_atom_indices(self, xgeom):
 
@@ -221,7 +222,7 @@ class TestXYZGeometry:
         assert xgeom.get_atom_indices(atoms=['H']) == list(range(2, 6))
 
     def test_to_xyzblock(self, xgeom):
-        assert xgeom.to_xyzblock().split('\n') == xgeom.contents
+        assert xgeom.to_xyzblock().split('\n') == xgeom.global_properties['load']['contents']
 
     def test__copy__(self, xgeom):
 
@@ -251,7 +252,6 @@ class TestXYZGeometry:
 
         # Remove temp file
         os.remove(temp_path)
-#
 
     def test_save_xyz(self, xgeom, temp_path='temp.xyz'):
 
@@ -279,7 +279,7 @@ class TestGeometry:
     def test_init(self, geom):
         assert isinstance(geom, isicle.geometry.Geometry)
 
-    def test_get_mol(self, geom):
+    def test_to_mol(self, geom):
         assert isinstance(geom.mol, Chem.rdchem.Mol)
 
     @ pytest.mark.parametrize('expected',

@@ -40,7 +40,7 @@ def test_dft(nwc):
     geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
 
     # Run dft
-    dft(geom, program='NWChem', fmt='xyz')
+    isicle.qm.dft(geom, program='NWChem', fmt='xyz')
 
 
 class TestNWChemWrapper:
@@ -73,12 +73,13 @@ class TestNWChemWrapper:
         # Clean up
         nwc.temp_dir.cleanup()
 
-    @pytest.mark.parametrize('fmt',
-                             [('xyz'),
-                              ('pdb')])
-    def test_save_geometry(self, nwc, fmt):
+    @pytest.mark.parametrize('path,fmt',
+                             [('resources/geom_test.mol', 'xyz'),
+                              ('resources/geom_test.mol', 'pdb'),
+                              ('resources/geom_test.xyz', 'xyz')])
+    def test_save_geometry(self, nwc, path, fmt):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile(path))
 
         # Set geometry
         nwc.set_geometry(geom)
@@ -90,6 +91,22 @@ class TestNWChemWrapper:
         assert os.path.exists(os.path.join(nwc.temp_dir.name,
                                            '{}.{}'.format(nwc.geom.basename,
                                                           fmt.lower())))
+
+        # Clean up
+        nwc.temp_dir.cleanup()
+
+    @pytest.mark.parametrize('path,fmt',
+                             [('resources/geom_test.xyz', 'pdb')])
+    def test_save_geometry_fail(self, nwc, path, fmt):
+        # Load geometry externally
+        geom = isicle.geometry.load(localfile(path))
+
+        # Set geometry
+        nwc.set_geometry(geom)
+
+        # Save geometry
+        with pytest.raises(TypeError):
+            nwc.save_geometry(fmt=fmt)
 
         # Clean up
         nwc.temp_dir.cleanup()

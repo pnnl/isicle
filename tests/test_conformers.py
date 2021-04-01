@@ -2,7 +2,7 @@ import pytest
 import isicle
 import numpy as np
 import os
-from isicle.geometry import Geometry, MDOptimizedGeometry, DFTOptimizedGeometry
+from isicle.geometry import Geometry, XYZGeometry
 
 
 def localfile(path):
@@ -31,39 +31,39 @@ def conformers():
     return isicle.conformers.ConformationalEnsemble(x)
 
 
-@pytest.mark.parametrize('method,expected',
+@pytest.mark.parametrize('func,expected',
                          [('boltzmann', isicle.conformers.boltzmann),
                           ('simple', isicle.conformers.simple_average),
                           ('lowest', isicle.conformers.lowest_energy),
                           ('threshold', isicle.conformers.threshold)])
-def test__method_selector(method, expected):
+def test__function_selector(func, expected):
     # Check correct class is yielded
-    assert isicle.conformers._method_selector(method) == expected
+    assert isicle.conformers._function_selector(func) == expected
 
 
-@pytest.mark.parametrize('method',
+@pytest.mark.parametrize('func',
                          [('boltzman'),
                           ('smple'),
                           ('lowest-energy'),
                           ('thresh')])
-def test__method_selector_fail(method):
+def test__function_selector_fail(func):
     # Check unsupported selections
     with pytest.raises(ValueError):
-        isicle.conformers._method_selector(method)
+        isicle.conformers._function_selector(func)
 
 
-@pytest.mark.parametrize('f,expected',
+@pytest.mark.parametrize('func,expected',
                          [(isicle.conformers.boltzmann, True),
                           (isicle.conformers.simple_average, False),
                           (isicle.conformers.lowest_energy, True),
                           (isicle.conformers.threshold, True)])
-def test__energy_based(f, expected):
-    assert isicle.conformers._energy_based(f) is expected
+def test__energy_based(func, expected):
+    assert isicle.conformers._energy_based(func) is expected
 
 
 def test_reduce(random_values, random_energies):
     result = isicle.conformers.reduce(random_values,
-                                      method='boltzmann',
+                                      func='boltzmann',
                                       energy=random_energies,
                                       index=None)
 
@@ -121,28 +121,14 @@ def test_threshold(random_values, random_energies, index):
 
 @pytest.mark.parametrize('objects',
                          [([Geometry(), Geometry(), Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), Geometry()])])
-def test__are_Geometry_instances(objects):
-    assert isicle.conformers._are_Geometry_instances(objects) is True
-
-
-@pytest.mark.parametrize('objects',
-                         [([Geometry(), 'abc', Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), list()])])
-def test__are_Geometry_instances_fail(objects):
-    assert isicle.conformers._are_Geometry_instances(objects) is False
-
-
-@pytest.mark.parametrize('objects',
-                         [([Geometry(), Geometry(), Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), Geometry()])])
+                          ([XYZGeometry(), XYZGeometry(), Geometry()])])
 def test_build_conformational_ensemble(objects):
     isicle.conformers.build_conformational_ensemble(objects)
 
 
 @pytest.mark.parametrize('objects',
                          [([Geometry(), 'abc', Geometry()]),
-                          ([MDOptimizedGeometry(), DFTOptimizedGeometry(), list()])])
+                          ([XYZGeometry(), Geometry(), list()])])
 def test_build_conformational_ensemble_fail(objects):
     with pytest.raises(TypeError):
         isicle.conformers.build_conformational_ensemble(objects)
@@ -155,11 +141,10 @@ class TestConformationalEnsemble:
     def test_reduce(self, conformers, random_values, random_energies, index):
         # Set values
         for c, v, e in zip(conformers, random_values, random_energies):
-            c.dummy = v
-            c.energy = e
+            c.global_properties = {'dummy': v, 'energy': {'energy': [e]}}
 
         # Reduce attribute
-        result = conformers.reduce('dummy', method='boltzmann', index=index)
+        result = conformers.reduce('dummy', func='boltzmann')
 
         # Verify result
         assert abs(result['mean'] - 670.505) < 1E-3
@@ -167,7 +152,7 @@ class TestConformationalEnsemble:
         assert result['n'] == 30
 
     def test__apply_method(self, conformers):
-        result = conformers._apply_method('natoms')
+        result = conformers._apply_method('get_natoms')
         assert all(x == 2 for x in result)
 
     def test__apply_function(self, conformers):
@@ -176,5 +161,5 @@ class TestConformationalEnsemble:
                                             fmt='xyz')
 
     def test_apply(self, conformers):
-        result = conformers.apply(method='natoms')
+        result = conformers.apply(method='get_natoms')
         assert all(x == 2 for x in result)

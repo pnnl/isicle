@@ -33,36 +33,107 @@ class FileParserInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class GeometryInterface(metaclass=abc.ABCMeta):
+class XYZGeometryInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'optimize')
-                and callable(subclass.optimize)
+        return (hasattr(subclass, 'dft_optimize')
+                and callable(subclass.dft_optimize)
+                and hasattr(subclass, 'md_optimize')
+                and callable(subclass.md_optimize)
+                and hasattr(subclass, 'get_natoms')
+                and callable(subclass.get_natoms)
+                and hasattr(subclass, 'get_atom_indices')
+                and callable(subclass.get_atom_indices)
+                and hasattr(subclass, 'get_global_properties')
+                and callable(subclass.get_global_properties)
+                and hasattr(subclass, '__copy__')
+                and callable(subclass.__copy__)
+                and hasattr(subclass, 'to_xyzblock')
+                and callable(subclass.to_xyzblock)
+                and hasattr(subclass, 'save_xyz')
+                and callable(subclass.save_xyz)
+                and hasattr(subclass, 'save_pickle')
+                and callable(subclass.save_pickle)
                 and hasattr(subclass, 'save')
                 and callable(subclass.save)
-                and hasattr(subclass, 'save')
-                and callable(subclass.save)
+                or NotImplemented)
+
+    @abc.abstractmethod
+    def dft_optimize(self):
+        '''Optimize geometry using density function theory (DFT) methods.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def md_optimize(self):
+        '''Optimize geometry using molecule dynamics methods (MD).'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_natoms(self):
+        '''Count number of atoms'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_atom_indices(self):
+        '''Extract indices of each atom from the internal geometry.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_global_properties(self):
+        '''Return a copy of this object's global_properties dictionary'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __copy__(self):
+        '''Return hard copy of this class instance.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def to_xyzblock(self):
+        '''Get XYZ text for this structure.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save_xyz(self):
+        '''Save molecule as XYZ file'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save_pickle(self):
+        '''Pickle this class instance.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def save(self, path: str):
+        '''Write 3D molecule to file'''
+        raise NotImplementedError
+
+
+class GeometryInterface(XYZGeometryInterface):
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'get_mol')
+                and callable(subclass.get_mol)
+                and hasattr(subclass, 'get_total_partial_charge')
+                and callable(subclass.get_total_partial_charge)
                 and hasattr(subclass, 'to_smiles')
                 and callable(subclass.to_smiles)
                 and hasattr(subclass, 'to_inchi')
                 and callable(subclass.to_inchi)
                 and hasattr(subclass, 'to_smarts')
                 and callable(subclass.to_smarts)
-                and hasattr(subclass, 'natoms')
-                and callable(subclass.natoms)
-                and hasattr(subclass, 'total_partial_charge')
-                and callable(subclass.total_partial_charge)
                 or NotImplemented)
 
     @abc.abstractmethod
-    def dft_optimize(self):
-        '''Optimize geometry'''
+    def to_mol(self, path: str):
+        '''Returns RDKit Mol object for this Geometry.'''
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save(self, path: str):
-        '''Write 3D molecule to file'''
+    def get_total_partial_charge(self):
+        '''Determine total partial charge of molecule'''
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -80,16 +151,6 @@ class GeometryInterface(metaclass=abc.ABCMeta):
         '''Return SMARTS representation'''
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def get_natoms(self):
-        '''Count number of atoms'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_total_partial_charge(self):
-        '''Determine total partial charge of molecule'''
-        raise NotImplementedError
-
 
 class AdductInterface(GeometryInterface):
 
@@ -105,9 +166,9 @@ class AdductInterface(GeometryInterface):
         raise NotImplementedError
 
 
-class QMWrapperInterface(metaclass=abc.ABCMeta):
+class WrapperInterface(metaclass=abc.ABCMeta):
     '''
-    Abstract base class for quantum mechanics wrapper interface. All QM
+    Abstract base class for wrapper interface. All QM
     wrappers conform to this definition.
     '''
 
@@ -151,6 +212,7 @@ class QMWrapperInterface(metaclass=abc.ABCMeta):
     def finish(self, path: str):
         '''Finalize, parse, return result object.'''
         raise NotImplementedError
+
 
 class MDWrapperInterface(metaclass=abc.ABCMeta):
     '''
