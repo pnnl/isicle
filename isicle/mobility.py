@@ -29,6 +29,10 @@ def calculate_ccs(geom, **kwargs):
     # Finish/clean up
     res = mw.finish()
 
+    # TODO: update geometry object with CCS result
+
+    return res
+
 
 class MobcalWrapper(WrapperInterface):
 
