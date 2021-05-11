@@ -22,5 +22,5 @@ setup(
     url='https://github.com/pnnl/isicle',
     license=license,
     packages=pkgs,
-    install_requires=required,
+	install_requires=install_requires,
 )
