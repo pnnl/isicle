@@ -14,7 +14,7 @@ pkgs = find_packages(exclude=('examples', 'docs', 'resources'))
 
 setup(
     name='isicle',
-    version=__version__,
+    version='0.1.0',  # TODO: switch to versioneer.get_version() or alternate method
     description='ISiCLE: in silico chemical library engine',
     long_description=readme,
     author='Sean M. Colby',
