@@ -7,9 +7,8 @@ with open('README.md') as f:
 with open('LICENSE') as f:
     license = f.read()
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
-    required = None
+with open('requirements.txt', 'r') as f:
+    install_requires = f.read().splitlines()
 
 pkgs = find_packages(exclude=('examples', 'docs', 'resources'))
 
