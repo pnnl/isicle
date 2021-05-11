@@ -1,0 +1,23 @@
+[build-system]
+# Minimum requirements for the build system to execute.
+requires = [
+	"wheel>=0.36.2",
+	"setuptools>=49.6.0",
+	"numpy>=1.19.4",
+	"pandas>=1.1.4",
+	"statsmodels>=0.12.1",
+]
+build-backend = "setuptools.build_meta"  # Avoid setuptools error when defaulting to __legacy__
+
+[tool.black]
+target-version = ['py37', 'py38']
+exclude = '''
+(
+    examples
+  | docs
+  | resources
+  | \.git
+  | \.pytest_cache
+  | \.desktop.ini
+)
+'''
