@@ -17,9 +17,9 @@ setup(
     version='0.1.0',  # TODO: switch to versioneer.get_version() or alternate method
     description='ISiCLE: in silico chemical library engine',
     long_description=readme,
+	long_description_content_type='text/markdown',
     author='Sean M. Colby',
     author_email='sean.colby@pnnl.gov',
-    url='https://github.com/pnnl/isicle',
     license=license,
     packages=pkgs,
 	install_requires=install_requires,
