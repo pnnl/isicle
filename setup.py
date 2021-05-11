@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-from isicle import __version__
 
 
 with open('README.md') as f:
