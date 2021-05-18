@@ -511,7 +511,7 @@ class XYZGeometry(XYZGeometryInterface):
         return geom, res
 
     def md_optimize(self, program='xtb', template=None, **kwargs):
-        res = isicle.qm.md(self.__copy__(), program=program, template=template, **kwargs)
+        res = isicle.md.md(self.__copy__(), program=program, template=template, **kwargs)
 
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
@@ -524,16 +524,30 @@ class XYZGeometry(XYZGeometryInterface):
 
         raise NotImplementedError
 
-    def generate_adducts(self, alt=False, inplace=False, **kwargs):
-        # TODO: implement addut ionization available in adduct
-        # Add documention, mention Adduct object passed back
+    def generate_adducts(self, ion_path=None, ion_method='explicit', **kwargs):
+        '''
+        Ionize geometry, using specified list of ions and method of ionization.
 
-        res = isicle.adducts.generate_adducts(self.__copy__(), alt=alt,
-                                              inplace=inplace)
+        Parameters
+        ----------
+        ion_path : str
+            Filepath to text file containing ions with charge (eg. H+) to be considered
+        ion_method : str
+            Method of ionization to be used, 'explicit' or 'crest' is accepted
+        write_files : boolean (optional)
+            Indicate whether to write all mol objects to file
+        path : str (optional)
+            Directory to write output files. Only used if `write_files` is True
+        fmt : str (optional)
+            Format in which to save the RDKit mol object. Only used if `write_files` is True
+
+        '''
+        res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path,
+                                    ion_method=ion_method, **kwargs)
 
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
-        geom._update_history('generate_adducts')
+        geom._update_history('ionize')
         geom = geom.add_global_properties(res)
 
         raise NotImplementedError
@@ -806,8 +820,6 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         '''
 
-        # TODO: should this raise an error instead?
-        # If no salts given, skip desalting
         if salts is None:
             return self._update_structure(inplace, mol=self.to_mol())
 
