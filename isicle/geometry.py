@@ -145,7 +145,7 @@ def load_mol(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol')
-    geom.mol = Chem.MolFromMolFile(path)
+    geom.mol = Chem.MolFromMolFile(path, removeHs=False)
     return geom
 
 
@@ -165,7 +165,7 @@ def load_mol2(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol2')
-    geom.mol = Chem.MolFromMol2File(path)
+    geom.mol = Chem.MolFromMol2File(path, removeHs=False)
     return geom
 
 
@@ -185,7 +185,7 @@ def load_pdb(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_pdb')
-    geom.mol = Chem.MolFromPDBFile(path)
+    geom.mol = Chem.MolFromPDBFile(path, removeHs=False)
     return geom
 
 
