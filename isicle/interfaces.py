@@ -114,8 +114,8 @@ class GeometryInterface(XYZGeometryInterface):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'get_mol')
-                and callable(subclass.get_mol)
+        return (hasattr(subclass, 'to_mol')
+                and callable(subclass.to_mol)
                 and hasattr(subclass, 'get_total_partial_charge')
                 and callable(subclass.get_total_partial_charge)
                 and hasattr(subclass, 'to_smiles')
@@ -152,17 +152,45 @@ class GeometryInterface(XYZGeometryInterface):
         raise NotImplementedError
 
 
-class AdductInterface(GeometryInterface):
+class IonizeInterface(GeometryInterface):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'negative_mode')
-                and callable(subclass.negative_mode)
+        return (hasattr(subclass, 'set_geometry')
+                and callable(subclass.set_geometry)
+                and hasattr(subclass, 'set_ions')
+                and callable(subclass.set_ions)
+                and hasattr(subclass, 'check_valid')
+                and callable(subclass.check_valid)
+                and hasattr(subclass, 'generator')
+                and callable(subclass.generator)
+                and hasattr(subclass, 'finish')
+                and callable(subclass.finish)
                 or NotImplemented)
 
     @abc.abstractmethod
-    def negative_mode(self):
-        '''Optimize geometry'''
+    def set_geometry(self):
+        '''Load the input geometry.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_ions(self):
+        '''Load the input ions.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def check_valid(self):
+        '''Check the validity of specified ions.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def generator(self):
+        '''Generate adducts.'''
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def finish(self, path: str):
+        '''Finalize, parse, return result object.'''
         raise NotImplementedError
 
 
@@ -174,9 +202,7 @@ class WrapperInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'load_geometry')
-                and callable(subclass.load_geometry)
-                and hasattr(subclass, 'set_geometry')
+        return (hasattr(subclass, 'set_geometry')
                 and callable(subclass.set_geometry)
                 and hasattr(subclass, 'configure')
                 and callable(subclass.configure)
@@ -222,9 +248,7 @@ class MDWrapperInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'load_geometry')
-                and callable(subclass.load_geometry)
-                and hasattr(subclass, 'set_geometry')
+        return (hasattr(subclass, 'set_geometry')
                 and callable(subclass.set_geometry)
                 and hasattr(subclass, 'job_type')
                 and callable(subclass.job_type)
