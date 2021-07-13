@@ -342,17 +342,17 @@ class ExplicitIonizationWrapper(IonizeInterface):
 
         Parameters
         ----------
-        write_files : bool
-            Indicate whether to write all mol objects to file.
+        write_files : boolean
+            Indicate whether to write all mol objects to file
         path : str
             Directory to write output files. Only used if `write_files` is
-            True.
+            True
         fmt : str
-            Format in which to save the RDKit mol object.
+            Format in which to save the RDKit mol object
         Returns
         -------
         :obj:`~isicle.parse.NWChemResult`
-            Parsed result data.
+            Parsed result data
         '''
         ion_dict = {**self.cations, **self.anions, **self.complex}
         # ion dict format {ion<charge>:{base_atom_index: mol}}
@@ -425,7 +425,7 @@ class CRESTIonizationWrapper(IonizeInterface):
             # TODO institute iterative approach to complex adduct formation
             # complex_dict[x] = None
             raise NotImplementedError
-        self.complex = complex_dict{}
+        self.complex = complex_dict
 
     def finish(self):
         '''
