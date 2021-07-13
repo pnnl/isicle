@@ -18,8 +18,8 @@ def compare(nwcr1, nwcr2):
             nwcr1.get_geometry().split('/')[-1] == nwcr2.get_geometry().split('/')[-1] and \
             nwcr1.get_energy() == nwcr2.get_energy() and \
             nwcr1.get_shielding() == nwcr2.get_shielding() and \
-            np.all(nwcr1.get_spin() == nwcr2.get_spin()) and \
-            np.all(nwcr1.get_frequency() == nwcr2.get_frequency()) and \
+            nwcr1.get_spin() == nwcr2.get_spin() and \
+            np.all(nwcr1.get_frequency()) == np.all(nwcr2.get_frequency()) and \
             nwcr1.get_molden() == nwcr2.get_molden():
         return True
     return False
@@ -187,7 +187,7 @@ class TestNWChemParser:
     # currently only tests success case
     @pytest.mark.parametrize('path',
                              [('resources/nwchem_output/methane.out')])
-    def test_save(self, nparser, path, temp_path='dummy.pkl'):
+    def test_save(self, nparser, path, temp_path='resources/nwchem_output/dummy.pkl'):
 
         # initialize
         nparser.load(localfile(path))
@@ -199,7 +199,7 @@ class TestNWChemParser:
         assert os.path.exists(temp_path)
 
         # read back in
-        # Load previoud NWChemResult class
+        # Load previous NWChemResult class
         saved_result = isicle.parse.NWChemResult()
         saved_result.load(temp_path)
 
