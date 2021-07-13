@@ -152,7 +152,7 @@ class GeometryInterface(XYZGeometryInterface):
         raise NotImplementedError
 
 
-class IonizeInterface(GeometryInterface):
+class IonizeWrapperInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
