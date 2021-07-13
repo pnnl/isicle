@@ -1,10 +1,15 @@
+from tempfile import tempdir
+from typing import Type
+from _pytest.fixtures import scope2index
+from numpy.lib.npyio import save
 from isicle.interfaces import FileParserInterface
 import pandas as pd
 from os.path import splitext
-import glob
+import glob, os
 import pickle
 import numpy as np
-
+import pybel
+from isicle import geometry
 
 class NWChemResult():
     '''Organize parsed results from NWChem outputs'''
@@ -16,7 +21,9 @@ class NWChemResult():
         self.spin = None  # Not set
         self.frequency = None  # Dictionary, see function for keys
         self.molden = None  # String, filename (for now)
-        self.meta = None  # Dictionary, see function for keys
+        self.timing = None  # Dictionary, see function for keys
+        self.charge = None # Dictionary 
+        self.protocol = None # Dictionary
 
     def set_energy(self, energy):
         result = {'energy': [energy[0]]}
@@ -36,11 +43,16 @@ class NWChemResult():
 
     def set_spin(self, spin):
         # TODO
-        self.spin = spin
+        result = {'pair indices': spin[0], 'spin couplings':[1], 
+                  'index': spin[2], 'g-tensors': spin[3]}
+        self.spin = result
         return self.spin
 
     def set_frequency(self, frequency):
-        self.frequency = frequency
+        result = {'frequencies': frequency[0], 'correction to enthalpy': frequency[1],
+                  'total entropy': frequency[2], 'constant volume heat capacity': frequency[3],
+                  'zero-point correction': frequency[4]}
+        self.frequency = result
         return self.frequency
 
     def set_timing(self, timing):
@@ -54,28 +66,16 @@ class NWChemResult():
         self.charge = result
         return self.charge
 
-    def set_meta(self, meta):
-        '''
-        Create dictionary from results and save as attribute.
-
-        Keys: 'natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
-               'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe'
-        '''
-
-        # Make dictionary with results
-        meta_d = {}
-        names = ['natoms', 'lowdinIdx', 'energies', 'enthalpies', 'entropies',
-                 'capacities', 'preoptTime', 'geomoptTime', 'cpuTime', 'zpe']
-        for i, name in enumerate(names):
-            meta_d[name] = meta[i]
-
-        self.meta = meta_d
-        return self.meta
-
     def set_molden(self, molden_filename):
         # TODO: any processing on file contents?
         self.molden = molden_filename
         return self.molden
+
+    def set_protocol(self, protocol):
+        result = {'functional': protocol[0], 'basis set': protocol[1],
+                  'solvation': protocol[2], 'tasks': protocol[3]}
+        self.protocol = result
+        return self.protocol
 
     def get_energy(self):
         return self.energy
@@ -101,6 +101,9 @@ class NWChemResult():
     def get_molden(self):
         return self.molden
 
+    def get_protocol(self):
+        return self.protocol
+
     def save(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
@@ -124,6 +127,7 @@ class NWChemResult():
         self.molden = saved_result.get_molden()
         self.timing = saved_result.get_timing()
         self.charge = saved_result.get_charge()
+        self.protocol = saved_result.get_protocol()
         return
 
     def to_dict(self):
@@ -137,6 +141,7 @@ class NWChemResult():
         d['molden'] = self.molden
         d['timing'] = self.timing
         d['charge'] = self.charge
+        d['protocol'] = self.protocol
 
         return d
 
@@ -228,62 +233,49 @@ class NWChemParser(FileParserInterface):
     def _parse_spin(self):
         # TO DO: Add g-factors
 
-        coor_substr = 'Output coordinates in angstroms'
-        cst_substr = 'Total Shielding Tensor'
-
-        # Extracting Number of Isotopes/Atoms
-        # Must sit alone due to pulling number of atoms for later parsing
-        natoms = 0
-        # Minus one since always looking one ahead
-        for i in range(len(self.contents) - 1):
-            currentline = self.contents[i]
-            nextline = self.contents[i + 1]
-            if 'property' in currentline and 'SHIELDING' in nextline:
-                natoms = int(nextline.split(' ')[-1])
-
-        # Check that natoms was found, exit otherwise
-        if natoms == 0:
-            print('Number of atoms not found or equal to zero')
-            return None
-
         # Declaring couplings
-        coup_freqs = np.zeros((natoms, natoms))
         coup_pairs = []
         coup = []
+        index = []
+        g_factor = []
         ready = False
 
         for line in self.contents:
             if "Atom  " in line:
                 line = line.split()
-                idx1 = int((line[1].split(":"))[0]) - 1
-                idx2 = int((line[5].split(":"))[0]) - 1
-                ready=True
+                idx1 = int((line[1].split(":"))[0])
+                idx2 = int((line[5].split(":"))[0])
+                ready = True
             elif "Isotropic Spin-Spin Coupling =" in line and ready is True:
-                coup = float(line.split()[4])
-                coup_freqs[idx1][idx2] += coup
-                coup_freqs[idx2][idx1] += coup
+                coupling = float(line.split()[4])
+                coup_pairs.append([idx1, idx2])
+                coup.append(coup)
+                ready = False
+            elif "Respective Nuclear g-factors:" in line:
+                line = line.split()
+                if idx1 not in index:
+                    index.append(idx1)
+                    g = float(line[3])
+                    g_factor.append(g)
+                if idx2 not in index:
+                    index.append(idx2)
+                    g = float(line[5])
+                    g_factor.append(g)
 
-        # Ensuring diaganolized zeros
-        for ii in range(natoms):
-            if coup_freqs[ii, ii] != 0:
-                print('Extracted Coupling Frequency incorrect: overwriting to zero.')
-                coup_freqs[ii, ii] = 0
-
-        return coup_freqs
+        return coup_pairs, coup, index, g_factor
 
     def _parse_frequency(self):
-        # TO DO: Add Thermo information (zpe, enthalpy, entropy, capacity, rotational constants) 
-        #        into the energy global property
         # TO DO: Add freq intensities
         # TO DO: Add rotational/translational/vibrational Cv and entropy
-        energies = []
-        zpe = []
-        enthalpies = []
-        entropies = []
-        capacities = []
-        temp = []
-        scaling = []
+        freq = None
+        zpe = None
+        enthalpies = None
+        entropies = None
+        capacities = None
+        temp = None
+        scaling = None
         natoms = None
+        has_frequency = None
 
         for i, line in enumerate(self.contents):
             if ('Geometry' in line) and (natoms is None):
@@ -292,28 +284,26 @@ class NWChemParser(FileParserInterface):
                 atom_stop = i - 2
                 natoms = atom_stop - atom_start + 1
             if 'Normal Eigenvalue' in line:
+                has_frequency = True
                 freq_start = i + 3
                 freq_stop = i + 2 + 3 * natoms
 
             # Get values
-            if 'Total DFT energy' in line:
-                energies.append(float(line.rstrip().split('=')[-1]))
-
             if 'Zero-Point correction to Energy' in line:
-                zpe.append(line.rstrip().split('=')[-1])
+                zpe = line.rstrip().split('=')[-1]
 
             if 'Thermal correction to Enthalpy' in line:
-                enthalpies.append(line.rstrip().split('=')[-1])
+                enthalpies = line.rstrip().split('=')[-1]
 
             if 'Total Entropy' in line:
-                entropies.append(line.rstrip().split('=')[-1])
+                entropies = line.rstrip().split('=')[-1]
 
             if 'constant volume heat capacity' in line:
-                capacities.append(line.rstrip().split('=')[-1])
+                capacities = line.rstrip().split('=    ')[-1]
 
-        return np.array([float(x.split()[1])
-                         for x in self.contents[freq_start:freq_stop + 1]]), \
-               energies, enthalpies, entropies, capacities, zpe
+        if has_frequency is True:
+            freq = np.array([float(x.split()[1]) for x in self.contents[freq_start:freq_stop + 1]])
+            return freq, enthalpies, entropies, capacities, zpe
 
     def _parse_charge(self):
         # TO DO: Parse molecular charge and atomic charges
@@ -420,7 +410,41 @@ class NWChemParser(FileParserInterface):
         return m[0]
 
     def _parse_protocol(self):
-        raise NotImplementedError
+        '''Parse out dft protocol'''
+        functional = []
+        basis_set = []
+        solvation = []
+        tasks = []
+        basis = None
+        func = None
+        solvent = None
+        ready = False
+
+        for line in self.contents:
+
+            if '* library' in line:
+                basis = line.split()[-1]
+            if ' xc ' in line:
+                func = line.split('xc')[-1]
+            if 'solvent ' in line:
+                solvent = line.split()[-1]
+            if 'SHIELDING' in line:
+                tasks.append('shielding')
+                basis_set.append(basis)
+                functional.append(func)
+                solvation.append(solvent)
+            if 'SPINSPIN' in line:
+                tasks.append('spin')
+                basis_set.append(basis)
+                functional.append(func)
+                solvation.append(solvent)
+            if 'freq ' in line:
+                tasks.append('frequency')
+                basis_set.append(basis)
+                functional.append(func)
+                solvation.append(solvent)
+
+        return functional, basis_set, solvation, tasks
 
     # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy'],
@@ -435,6 +459,13 @@ class NWChemParser(FileParserInterface):
 
         # Initialize result object to store info
         result = NWChemResult()
+
+        try:
+            protocol = self._parse_protocol()
+            result.set_protocol(protocol)  # Stored as dictionary
+        except IndexError:
+            pass
+
 
         if 'geometry' in to_parse:
 
@@ -616,3 +647,380 @@ class SanderParser(FileParserInterface):
     def save(self, path: str):
         '''Write parsed object to file'''
         raise NotImplementedError
+
+
+class XTBResult():
+
+    def __init__(self):
+        self.energy = None  # Dictionary, keys: energy, charges
+        self.geometry = None  # String, filename (for now)
+        self.timing = None  # Dictionary, see function for keys
+        self.protocol = None # Dictionary
+
+    def set_energy(self, energy):
+        result = energy
+        self.energy = result
+        return self.energy
+
+    def set_geometry(self, geometry):
+        self.geometry = geometry
+        return self.geometry
+
+    def set_timing(self, timing):
+        result = timing
+        self.timing = result
+        return self.timing
+
+    def set_protocol(self, protocol):
+        result = protocol
+        self.protocol = result
+        return self.protocol
+
+    def get_energy(self):
+        return self.energy
+
+    def get_geometry(self):
+        return self.geometry
+
+    def get_timing(self):
+        return self.timing
+
+    def get_protocol(self):
+        return self.protocol
+
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        return
+
+    def load(self, path):
+        '''
+        Load saved class data to this (overwrites all variables)
+        '''
+
+        # Load existing file
+        with open(path, 'rb') as f:
+            saved_result = pickle.load(f)
+
+        # Overwrite the variables in this object
+        self.geometry = saved_result.get_geometry()
+        self.energy = saved_result.get_energy()
+        self.timing = saved_result.get_timing()
+        self.protocol = saved_result.get_protocol()
+        return
+
+    def to_dict(self):
+        d = {}
+
+        d['geometry'] = self.geometry
+        d['energy'] = self.energy
+        d['timing'] = self.timing
+        d['protocol'] = self.protocol
+
+        return d
+
+class XTBParser(FileParserInterface):
+    def __init__(self):
+        self.contents = None
+        self.result = None
+        self.path = None
+
+    def load(self, path: str):
+        '''Load in the data file'''
+        with open(path, 'r') as f:
+            self.contents = f.readlines()
+        self.path = path
+        return self.contents
+
+    def _crest_energy(self):
+
+        relative_energy = []
+        total_energy = []
+        population = []
+
+        ready = False
+        h = 0
+        while h <= len(self.contents)-1:
+            if 'Erel/kcal     Etot      weight/tot conformer' in self.contents[h]:
+                g = h + 1
+                while g <= len(self.contents)-1:
+                    line = self.contents[g].split()
+                    if len(line) == 8:
+                        relative_energy.append(float(line[1]))
+                        total_energy.append(float(line[2]))
+                        population.append(float(line[4]))
+                        ready = True
+
+                    if '/K' in line[1]:
+                        break
+
+                    g += 1
+            if ready == True:
+                break
+
+            h+=1
+
+        return {'relative energies': relative_energy, 
+                'total energies':total_energy, 
+                'population': population}
+
+    def _crest_timing(self):
+ 
+        ready = False
+        for line in self.contents:
+            if "test MD wall time" in line:
+                test_MD = line
+                ready = True
+
+            if "MTD wall time" in line:
+                MTD = line
+
+            if "multilevel OPT wall time" in line:
+                multilevel_OPT = line
+
+            if "MD wall time" in line and ready == True:
+                MD = line
+                ready = False
+
+            if "GC wall time" in line:
+                GC = line
+
+            if "Overall wall time" in  line:
+                overall = line
+
+        return {'test MD wall time': test_MD,
+                'metadynamics wall time': MTD_time,
+                'multilevel opt wall time': multilevel_OPT,
+                'molecular dynamics wall time': MD,
+                'genetic z-matrix crossing wall time': GC,
+                'overall wall time': overall}
+
+    def _isomer_energy(self):
+        complete = False
+        relative_energies = []
+        total_energies = []
+        g = len(self.contents)-1
+        while g >= 0:
+            if 'structure    ΔE(kcal/mol)   Etot(Eh)' in self.contents[g]:
+                h = g + 1
+                while h <= len(self.contents)-1:
+                    if self.contents[h] != ' \n':
+                        line = self.contents[h].split()
+                        relative_energies.append(float(line[1]))
+                        total_energies.append(float(line[2]))
+                    else:
+                        complete = True
+                        break
+
+            if complete == True:
+                break
+
+            g-=1
+
+        return {'relative energy': relative_energies, 
+                'total energy': total_energies}
+
+    def _isomer_timing(self):
+
+        def time(LINE):
+            line = LINE.split(':')
+            hr = line[1].split()
+            mn = line[2].split()
+            sc = line[3].split()
+            hr = (LINE.split(':'))[1].split()
+            mn = (LINE.split(':'))[2].split()
+            sc = (LINE.split(':'))[3].split() 
+            return hr + mn + sc      
+
+        for line in self.contents:
+            if "LMO calc. wall time" in line: 
+                LMO_time = time(line)
+
+            if "multilevel OPT wall time" in line:
+                OPT_time = time(line)
+
+            if "Overall wall time" in line:
+                OVERALL_time = time(line)
+
+        return {'local molecular orbital wall time': LMO_time,
+                'multilevel opt wall time': OPT_time,
+                'overall wall time': OVERALL_time}
+    
+    def _opt_energy(self):
+        for line in self.contents:
+            if 'TOTAL ENERGY' in line:
+                energy = line.split()[3] + ' Hartrees'
+
+        return None, energy
+
+    def _opt_timing(self):
+
+        def time(LINE):
+            line = LINE.split(',')
+            hr = line[1].split()
+            mn = line[2].split()
+            sc = line[3].split()
+            return hr + mn + sc      
+
+        tot = False
+        scf = False
+        anc = False
+
+        for line in self.contents:
+            if "wall-time" in line and tot is False: 
+                total_time = time(line)
+                tot = True
+
+            elif "wall-time" in line and scf is False:
+                scf_time = time(line)
+                scf = True
+
+            if "wall-time" in line and anc is False:
+                anc_time = time(line)
+                anc = True
+
+        return {'Total wall time': total_time,
+                'SCF wall time': scf_time,
+                'ANC optimizer wall time': anc_time}
+
+    def _parse_energy(self):
+    
+        if self.parse_crest == True:
+            return self._crest_energy()
+        if self.parse_opt == True:
+            return self._opt_energy()
+        if self.parse_isomer == True:
+            return self._isomer_energy()
+
+    def _parse_timing(self):
+        if self.parse_crest == True:
+            return self._crest_timing()
+        if self.parse_opt == True:
+            return self._opt_timing()
+        if self.parse_isomer == True:
+            return self._isomer_timing()
+
+    def _parse_protocol(self):
+
+        for line in self.contents:
+            if ">" in line:
+                protocol = line
+
+        return protocol
+
+    def _separate_xyz(self, FILE):
+        '''
+        Split .xyz into separate XYZGeometry instances
+        '''
+
+        with open(FILE) as f:
+            XYZ = f.readlines()
+
+        if len(list(pybel.readfile('xyz', XYZ))) > 1:
+            geom_list = []
+            count = 1
+
+            for geom in pybel.readfile('xyz', XYZ):
+                XYZ.split(".")
+                geom.write("xyz", os.path.join(self.temp_dir.name, "%s_%d.xyz" % (XYZ, count)))
+                geom_list.append(os.path.join(self.temp_dir.name, "%s_%d.xyz" % (XYZ, count)))
+                count += 1
+
+            x = [isicle.geometry.load(i) for i in geom_list]
+
+        else: 
+            x = [isicle.geometry.load(FILE)]
+
+        return isicle.conformers.ConformationalEnsemble(x) 
+    
+    def _parse_xyz(self):
+        FILE = self.xyz_path
+        return self._separate_xyz(FILE)
+
+    def parse(self, to_parse=['energy']):
+        '''Extract relevant information from data'''
+
+        # Check that the file is valid first
+        if len(self.contents) == 0:
+            raise RuntimeError('No contents to parse: {}'.format(self.path))
+        if self.path.endswith('out') or self.path.endswith('log'):
+            if 'terminated normally' not in self.contents[-1]:
+                raise RuntimeError('Incomplete XTB run: {}'.format(self.path))
+
+        self.parse_crest = False
+        self.parse_opt = False
+        self.parse_isomer = False
+
+        # Initialize result object to store info
+        result = XTBResult()
+
+        if self.path.endswith('xyz'):
+
+            if 'geometry' in to_parse:
+                try:
+                    self.xyz_path = self.path
+                    geometry = self._parse_xyz()
+                    result.set_geometry(geometry)
+                except IndexError:
+                    pass            
+
+        if self.path.endswith('out') or self.path.endswith('log'):
+            protocol = self._parse_protocol()
+            result.set_protocol(protocol)  # Stored as string
+
+            if 'geometry' in to_parse:
+                XYZ = None
+                if 'xtb' in protocol:
+                    self.parse_opt = True
+                    XYZ = 'xtbopt.xyz'
+                if 'deprotonate' in protocol:
+                    self.parse_isomer = True
+                    XYZ = 'deprotonate.xyz'
+                elif 'protonate' in protocol:
+                    self.parse_isomer = True
+                    XYZ = 'protonated.xyz'
+                elif 'tautomer' in protocol:
+                    self.parse_isomer = True
+                    XYZ = 'tautomers.xyz'
+                elif 'crest' in protocol:
+                    self.parse_crest = True
+                    XYZ = 'crest_confomers.xyz'
+
+                if XYZ is None:
+                    raise RuntimeError('XYZ file associated with XTB job not available, \
+                                        please parse separately.')
+
+                else:
+
+                    self.xyz_path = self.path.join(self.temp_dir.name, XYZ) 
+                    try:
+                        geometry = self._parse_xyz()
+                        result.set_geometry(geometry)
+                    except IndexError:
+                        pass
+
+            if 'timing' in to_parse:
+
+                try:
+                    timing = self._parse_timing()
+                    result.set_timing(timing)  # Stored as dictionary
+                except IndexError:
+                    pass
+
+            if 'energy' in to_parse:
+
+                try:
+                    energy = self._parse_energy()
+                    result.set_energy(energy)  # Stored as dictionary
+                except IndexError:
+                    pass
+
+
+
+        self.result = result
+        return result
+
+    def save(self, path: str):
+        '''Write parsed object to file'''
+        self.result.save(path)
+        return
