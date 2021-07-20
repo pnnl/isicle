@@ -1,11 +1,14 @@
-from isicle.interfaces import IonizeInterface
+from isicle.interfaces import IonizeWrapperInterface
 from isicle import geometry
 from isicle.md import md
+from isicle.utils import safelist
+from isicle.calculate import free_energy
 import os
 from rdkit import Chem
+import re
 
 
-def load_ions(path: str):
+def load_ions(path):
     '''
     Read adduct ions (eg. Na+, H+) from file.
 
@@ -19,6 +22,8 @@ def load_ions(path: str):
     parsed_contents
         List of ions from given text file.
     '''
+    if path is None:
+        raise TypeError('Path to file containing ions must be specified')
     contents = geometry._load_text(path)
     parsed_contents = [line.rstrip() for line in contents]
     return parsed_contents
@@ -28,7 +33,15 @@ def parse_ions(ion_list):
     '''
     Parse and categorize list of ions by ion type.
 
-    Parameters
+    Input
+    -----
+    ion_list: list
+        List of all ions to be considered, eg. ['K+','H-','H-Na+']
+        Strings in list must have notation 'IonCharge' eg. 'H+', not '+H'
+        Complex ions should be arranged in order of desired operation.
+        (i.e. 'H-K+' specifies deprotonatin first, potassium added second)
+
+    Returns
     ----------
     anions : list
         List of anions, default None
@@ -36,16 +49,11 @@ def parse_ions(ion_list):
         List of cations, default None
     complex : list
         List of complex ions, default None
-
-    Returns
-    -------
-
     '''
     anions = []
     cations = []
     complex = []
 
-    # TODO make parser more robust for input list variation
     for x in ion_list:
         if ('+' and '-') in x:
             complex.append(x)
@@ -78,7 +86,12 @@ def _ionize_method_selector(ion_method):
     if ion_method.lower() in ion_method_map.keys():
         return ion_method_map[ion_method.lower()]()
     else:
-        raise ValueError(('{} not a supported ionization method.').format(ion_method))
+        raise ValueError('{} not a supported ionization method.'.format(ion_method))
+
+
+def filter_adducts():
+    # TODO call GFE calculation
+    return
 
 
 def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
@@ -109,7 +122,7 @@ def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
 
     # TODO make sure removeHs=False
     # Load in geometry of geom object
-    iw.set_geomtery(geom)
+    iw.set_geometry(geom)
 
     # Load specified ions by type
     iw.set_ions(cations, anions, complex)
@@ -120,13 +133,16 @@ def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
     # Generate adducts
     iw.generator()
 
+    # Screen adducts
+    filter_adducts()
+
     # Combine/ optionally write files
     res = iw.finish(**kwargs)
 
     return res
 
 
-class ExplicitIonizationWrapper(IonizeInterface):
+class ExplicitIonizationWrapper(IonizeWrapperInterface):
     def __init__(self, geom=None, anions=None, cations=None, complex=None):
         '''
         Initialize :obj:`~isicle.adducts.ExplicitIonizationWrapper` instance.
@@ -149,7 +165,7 @@ class ExplicitIonizationWrapper(IonizeInterface):
         # Assign geometry
         self.geom = geom
 
-    def set_ions(self, cations: lst, anions: lst, complex: lst):
+    def set_ions(self, cations, anions, complex):
         # Cast to list safely
         self.cations = safelist(cations)
         self.anions = safelist(anions)
@@ -220,7 +236,7 @@ class ExplicitIonizationWrapper(IonizeInterface):
         elif mode == None:
             raise NotImplementedError
 
-    def _add_ion(init_mol, base_atom_idx, ion_atomic_num):
+    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
         Returns ionized RDKit mol object.
@@ -229,19 +245,18 @@ class ExplicitIonizationWrapper(IonizeInterface):
         from rdkit.Chem import AllChem
         # TODO only works for single atom ion
 
-        # AddHs called here since not specified in load functions
         newmol = rdc.RWMol(init_mol)
         rdc.RWMol.AddAtom(newmol, rdc.Atom(ion_atomic_num))
         # atom idx starts at 0; GetNumAtoms returns last idx val+1
-        atm_idx = init_mol.GetNumAtoms()
-        rdc.RWMol.AddBond(newmol, base_atm_idx, atm_idx, Chem.BondType.SINGLE)
+        atom_idx = init_mol.GetNumAtoms()
+        rdc.RWMol.AddBond(newmol, base_atom_idx, atom_idx, Chem.BondType.SINGLE)
         Chem.SanitizeMol(newmol)
         # TODO insert try embed, need to catch any exceptions?
         AllChem.EmbedMolecule(newmol)
         AllChem.UFFOptimizeMolecule(newmol)
         return newmol
 
-    def add_ion(init_mol, atom_dict, ion_atomic_num):
+    def add_ion(self, init_mol, atom_dict, ion_atomic_num):
         '''
         Iterates through base atoms of RDKit mol object.
         Calls method to ionize and return new RDKit mol object.
@@ -304,33 +319,27 @@ class ExplicitIonizationWrapper(IonizeInterface):
         Creates specified adducts at every atom site.
         '''
         pt = Chem.GetPeriodicTable()
-        anions = self.anions
-        cations = self.cations
-        complex = self.complex
-        init_mol = self.geom
         ion_dict = {}
         cation_dict = {}
         complex_dict = {}
 
-        # TODO make sure removeHs=False in load functions, for now:
-        init_mol = Chem.AddHs(init_mol)
-
-        for ion in cations:
+        for ion in self.cations:
             sion = ion.strip('+')
             ion_atomic_num = pt.GetAtomicNumber(sion)
-            mol_dict = self.positive_mode(init_mol, ion_atomic_num)
+            mol_dict = self.positive_mode(self.geom.mol, ion_atomic_num)
             cation_dict[ion] = mol_dict
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self.cations = cation_dict
-        for ion in anions:
+        for ion in self.anions:
             sion = ion.strip('-')
             ion_atomic_num = pt.GetAtomicNumber(sion)
-            mol_dict = self.negative_mode(init_mol, ion_atomic_num)
+            mol_dict = self.negative_mode(self.geom.mol, ion_atomic_num)
             anion_dict[ion] = mol_dict
-            # anion_dict defined as {ion-:{base_atom_index: mol}}
+            # anion_dict defined as {ion-:{base_atom_index: self.geom}}
+            # TODO make change from mol object returned to self.geom
         self.anions = anion_dict
 
-        for ion in complex:
+        for ion in self.complex:
             # TODO iterative method for adduct generation
             # Call both positve_mode and negative_mode
             raise NotImplementedError
@@ -369,7 +378,7 @@ class ExplicitIonizationWrapper(IonizeInterface):
         return ion_dict
 
 
-class CRESTIonizationWrapper(IonizeInterface):
+class CRESTIonizationWrapper(IonizeWrapperInterface):
     def __init__(self, geom=None, path=None, cations=None, anions=None, complex=None):
         self.geom = geom
         self.path = path
@@ -388,7 +397,7 @@ class CRESTIonizationWrapper(IonizeInterface):
         # Assign geometry
         self.geom = geom
 
-    def set_ions(self, cations: lst, anions: lst, complex: lst):
+    def set_ions(self, cations, anions, complex):
         # Cast to list safely
         self.cations = safelist(cations)
         self.anions = safelist(anions)
@@ -399,32 +408,77 @@ class CRESTIonizationWrapper(IonizeInterface):
         Performs substructure search and checks if supported by CREST documentation
         '''
         # mol.HasSubstructMatch((ion.strip('+')).strip('-'))
+
         # TODO institute ion list check against list of supported CREST ions
+        # downfilter by supported ions
         # consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
 
-    def generator(self, template=None, program='xtb', forcefield='gff', ewin=1, ion='H+', optlevel='Normal', dryrun=False):
+    def positive_mode(self, forcefield, ewin, cation, mol_chrg, optlevel, dryrun):
         '''
-        Call isicle.md.md for specified geom and every ion
+        Call isicle.md.md for specified geom and cation
+        '''
+        # have following option added to isicle.md.md
+        # --chrg <int>
+        # chrg=mol_chrg
+        # charge =
+        # md ^
+        return md(self, program='xtb', task='protonate', forcefield=forcefield,
+                  ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun)
+
+    def negative_mode(self, forcefield, ewin, anion, mol_chrg, optlevel, dryrun):
+        '''
+        Call isicle.md.md for specified geom and anion
+        '''
+        # have following option added to isicle.md.md
+        # --chrg <int>
+        # chrg=mol_chrg
+        return md(self, program='xtb', task='deprotonate', forcefield=forcefield,
+                  ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun)
+
+    def generator(self, molecular_charge=0, forcefield='gff', ewin=100, optlevel='Normal', dryrun=False):
+        '''
+        Call positive_mode and negative_mode to ionize according to parsed ion lists
+        isicle.md.md returned by both modes to self.anion, self.cation, self.complex \
+        in form of {ion : xyz object [returned by xtb]}
+
+        Input
+        -----
+        see isicle.md.md for forcefield, ewin, optlevel, dryrun
+        molecular_charge is net charge of structure pre-ionization, default neutral, 0
         '''
         anions = self.anions
         cations = self.cations
         complex = self.complex
-        ion_dict = {}
+        anion_dict = {}
         cation_dict = {}
         complex_dict = {}
-        # TODO check if md is returning mol object
+
         for x in cations:
-            cation_dict[x] = md(self, program='xtb', template=template, tasks='protonate', forcefield=forcefield,
-                                ewin=ewin, ion=x, optlevel=optlevel, dryrun=dryrun)
+            cation_dict[x] = self.positive_mode(x)
         self.cations = cation_dict
         for x in anions:
-            anion_dict[x] = md(self, program='xtb', template=template, tasks='deprotonate', forcefield=forcefield,
-                               ewin=ewin, ion=x, optlevel=optlevel, dryrun=dryrun)
+            anion_dict[x] = self.negative_mode(x)
         self.anions = anion_dict
+
         for x in complex:
-            # TODO institute iterative approach to complex adduct formation
-            # complex_dict[x] = None
-            raise NotImplementedError
+            mol_chrg = molecular_charge
+            parsed = re.findall('.*?[+-]', x)
+            # TODO strip whitespace
+            for ion in parsed:
+                chrg = re.findall('[0-9]', ion)
+                if not chrg:
+                    chrg = 1
+                else:
+                    chrg = int(chrg[0])
+                if ('+') in ion:
+                    complex_dict[x] = self.positive_mode(
+                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun)
+                    mol_chrg += chrg
+                elif ('-') in ion:
+                    complex_dict[x] = self.negative_mode(
+                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun)
+                    mol_chrg -= chrg
+
         self.complex = complex_dict
 
     def finish(self):
@@ -436,6 +490,7 @@ class CRESTIonizationWrapper(IonizeInterface):
         :obj:`~isicle.parse.NWChemResult`
             Parsed result data.
         '''
+        # TODO parse to identify protonated atom location
         ion_dict = {**self.cations, **self.anions, **self.complex}
         # ion dict format {ion<charge>:mol}
         return ion_dict
