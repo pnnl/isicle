@@ -102,6 +102,7 @@ def _load_generic_geom(path: str, calling_function: str):
     geom = Geometry()
     geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
+    geom.path = os.path.dirname(path)
     geom._update_history(calling_function)
     return geom
 
@@ -115,7 +116,7 @@ def load_xyz(path: str):
     path : str
         Path to XYZ file
 
-    Returns
+    Return
     -------
     Geometry
         Provided file and molecule information
@@ -125,6 +126,7 @@ def load_xyz(path: str):
     geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
     geom.xyz = _load_text(path)
+    geom.path = os.path.dirname(path)
     geom._update_history('load_xyz')
     return geom
 
@@ -145,7 +147,7 @@ def load_mol(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol')
-    geom.mol = Chem.MolFromMolFile(path, removeHs=False)
+    geom.mol = Chem.MolFromMolFile(path)
     return geom
 
 
@@ -165,7 +167,7 @@ def load_mol2(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol2')
-    geom.mol = Chem.MolFromMol2File(path, removeHs=False)
+    geom.mol = Chem.MolFromMol2File(path)
     return geom
 
 
@@ -185,7 +187,7 @@ def load_pdb(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_pdb')
-    geom.mol = Chem.MolFromPDBFile(path, removeHs=False)
+    geom.mol = Chem.MolFromPDBFile(path)
     return geom
 
 
@@ -380,6 +382,7 @@ class XYZGeometry(XYZGeometryInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
+        print(kwargs)
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
@@ -414,7 +417,7 @@ class XYZGeometry(XYZGeometryInterface):
         d['mol'] = mol
         d.pop('xyz')
 
-        return Geometry(d)
+        return Geometry(kwarg=d)
 
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
@@ -510,8 +513,8 @@ class XYZGeometry(XYZGeometryInterface):
 
         return geom, res
 
-    def md_optimize(self, program='xtb', template=None, **kwargs):
-        res = isicle.md.md(self.__copy__(), program=program, template=template, **kwargs)
+    def md_optimize(self, program='xtb', **kwargs):
+        res = isicle.md.md(self.__copy__(), program=program, **kwargs)
 
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
@@ -524,30 +527,16 @@ class XYZGeometry(XYZGeometryInterface):
 
         raise NotImplementedError
 
-    def generate_adducts(self, ion_path=None, ion_method='explicit', **kwargs):
-        '''
-        Ionize geometry, using specified list of ions and method of ionization.
+    def generate_adducts(self, alt=False, inplace=False, **kwargs):
+        # TODO: implement addut ionization available in adduct
+        # Add documention, mention Adduct object passed back
 
-        Parameters
-        ----------
-        ion_path : str
-            Filepath to text file containing ions with charge (eg. H+) to be considered
-        ion_method : str
-            Method of ionization to be used, 'explicit' or 'crest' is accepted
-        write_files : boolean (optional)
-            Indicate whether to write all mol objects to file
-        path : str (optional)
-            Directory to write output files. Only used if `write_files` is True
-        fmt : str (optional)
-            Format in which to save the RDKit mol object. Only used if `write_files` is True
-
-        '''
-        res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path,
-                                    ion_method=ion_method, **kwargs)
+        res = isicle.adducts.generate_adducts(self.__copy__(), alt=alt,
+                                              inplace=inplace)
 
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
-        geom._update_history('ionize')
+        geom._update_history('generate_adducts')
         geom = geom.add_global_properties(res)
 
         raise NotImplementedError
@@ -738,7 +727,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         d['xyz'] = xyz
         d.pop('mol')
 
-        return XYZGeometry(d)
+        return XYZGeometry(kwarg=d)
 
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
@@ -820,6 +809,8 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         '''
 
+        # TODO: should this raise an error instead?
+        # If no salts given, skip desalting
         if salts is None:
             return self._update_structure(inplace, mol=self.to_mol())
 
