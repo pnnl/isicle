@@ -189,7 +189,16 @@ def load_pdb(path: str):
     return geom
 
 
-def check_mol(mol, string_struct):
+def _force_load_2D(string_struct, convert_fxn):
+    '''
+    TODO write idea behind force loading
+    '''
+    mol = convert_fxn(string_struct, sanitize=False)
+    mol.UpdatePropertyCache(strict=False)
+    return mol
+
+
+def _check_mol(mol, string_struct):
     '''
     Check if mol failed to generate. If so, throw error.
 
@@ -200,59 +209,11 @@ def check_mol(mol, string_struct):
     string_struct : str
         Input used to initialize Mol object
     '''
-
     if mol is None:
         raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
-    return
 
 
-def _load_2D(path, convert_fxn, calling_function):
-    '''
-    Load string file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to SMILES file
-    convert_fxn: RDKit function
-        Function to use to convert from string to mol (e.g. MolFromSmiles)
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, calling_function)
-    string_struct = _load_text(path)[0].strip()
-    mol = convert_fxn(string_struct)
-    check_mol(mol, string_struct)
-
-    # Hs not explicit, must be added.
-    # Not done for MolFromSmarts since it crashes at the AddHs step.
-    if convert_fxn is not Chem.MolFromSmarts:
-
-        # Check initial mol passed
-        check_mol(mol, string_struct)
-
-        # Add explicit hydrogens
-        mol = Chem.AddHs(mol)
-        check_mol(mol, string_struct)
-
-        # Gen 3d coord
-        Chem.AllChem.EmbedMolecule(mol)
-        check_mol(mol, string_struct)
-        Chem.AllChem.MMFFOptimizeMolecule(mol)
-        check_mol(mol, string_struct)
-
-    check_mol(mol, string_struct)
-
-    geom.mol = mol
-
-    return geom
-
-
-def load_smiles(path: str):
+def load_smiles(path: str, force=False):
     '''
     Load SMILES file and return as a Geometry instance.
 
@@ -267,10 +228,30 @@ def load_smiles(path: str):
         Provided file and molecule information
 
     '''
-    return _load_2D(path, Chem.MolFromSmiles, 'load_smiles')
+    geom = _load_generic_geom(path, 'load_smiles')
+    string_struct = _load_text(path)[0].strip()
+    mol = Chem.MolFromSmiles(string_struct)
+
+    if force:
+        mol = _force_load_2D(string_struct, Chem.MolFromSmiles)
+    _check_mol(mol, string_struct)
+
+    # Add explicit hydrogens
+    mol = Chem.AddHs(mol)
+    _check_mol(mol, string_struct)
+
+    # Gen 3d coord
+    Chem.AllChem.EmbedMolecule(mol)
+    _check_mol(mol, string_struct)
+    Chem.AllChem.MMFFOptimizeMolecule(mol)
+    _check_mol(mol, string_struct)
+
+    geom.mol = mol
+
+    return geom
 
 
-def load_inchi(path: str):
+def load_inchi(path: str, force=False):
     '''
     Load InChI file and return as a Geometry instance.
 
@@ -285,7 +266,26 @@ def load_inchi(path: str):
         Provided file and molecule information
 
     '''
-    return _load_2D(path, Chem.MolFromInchi, 'load_inchi')
+    geom = _load_generic_geom(path, 'load_inchi')
+    string_struct = _load_text(path)[0].strip()
+    mol = Chem.MolFromInchi(string_struct)
+    if force:
+        mol = _force_load_2D(string_struct, Chem.MolFromInchi)
+    _check_mol(mol, string_struct)
+
+    # Add explicit hydrogens
+    mol = Chem.AddHs(mol)
+    _check_mol(mol, string_struct)
+
+    # Gen 3d coord
+    Chem.AllChem.EmbedMolecule(mol)
+    _check_mol(mol, string_struct)
+    Chem.AllChem.MMFFOptimizeMolecule(mol)
+    _check_mol(mol, string_struct)
+
+    geom.mol = mol
+
+    return geom
 
 
 def load_smarts(path: str):
@@ -303,10 +303,16 @@ def load_smarts(path: str):
         Provided file and molecule information
 
     '''
-    return _load_2D(path, Chem.MolFromSmarts, 'load_smarts')
+    geom = _load_generic_geom(path, 'load_smarts')
+    string_struct = _load_text(path)[0].strip()
+    mol = Chem.MolFromSmarts(string_struct)
+    _check_mol(mol, string_struct)
+    geom.mol = mol
+
+    return geom
 
 
-def load(path: str):
+def load(path: str, force=False):
     '''
     Reads in molecule information of the following supported file types:
     .smi, .inchi, .xyz, .mol, .mol2, .pkl, .pdb. Direct loaders can also
@@ -316,6 +322,8 @@ def load(path: str):
     ----------
     path : str
         Path to file with molecule information.
+    force
+        TODO describe if it's for 2D only, or 3D objects too
 
     Returns
     -------
@@ -345,10 +353,10 @@ def load(path: str):
         return load_pdb(path)
 
     if 'smi' in extension:
-        return load_smiles(path)
+        return load_smiles(path, force=force)
 
     if extension == '.inchi':
-        return load_inchi(path)
+        return load_inchi(path, force=force)
 
     if extension == '.smarts':
         return load_smarts(path)
@@ -524,7 +532,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         raise NotImplementedError
 
-    def generate_adducts(self, ion_path=None, ion_method='explicit', **kwargs):
+    def generate_adducts(self, ion_path=None, ion_method='crest', **kwargs):
         '''
         Ionize geometry, using specified list of ions and method of ionization.
 
@@ -542,12 +550,15 @@ class XYZGeometry(XYZGeometryInterface):
             Format in which to save the RDKit mol object. Only used if `write_files` is True
 
         '''
+
         res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path,
                                     ion_method=ion_method, **kwargs)
-
+        AE = isicle.adducts.build_adduct_ensemble(res)
+        # res format {ion<charge>:{base_atom_index: mol}} if explicit
+        # res format {ion<charge>:mol} if crest
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
-        geom._update_history('ionize')
+        geom._update_history('adducts')
         geom = geom.add_global_properties(res)
 
         raise NotImplementedError
@@ -1131,7 +1142,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
 class MDOptimizedGeometry(Geometry):
     '''
-    Builds off of the 3D representation, with additional methods specifc to a
+    Builds off of the 3D representation, with additional methods specific to a
     representation with MD optimized 3D coordinates. Any methods that would
     result in a more defined representation (e.g. DFT optimized) should yield
     the appropriate subclass.
