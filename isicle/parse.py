@@ -9,7 +9,8 @@ import glob, os
 import pickle
 import numpy as np
 import pybel
-from isicle import geometry
+import isicle
+from isicle.geometry import Geometry
 
 class NWChemResult():
     '''Organize parsed results from NWChem outputs'''
@@ -548,7 +549,7 @@ class ImpactParser(FileParserInterface):
 
     def load(self, path: str):
         '''Load in the data file'''
-        with open(path, 'r') as f:
+        with open(path, 'rb') as f:
             self.contents = f.readlines()
 
         return self.contents
@@ -605,7 +606,7 @@ class MobcalParser(FileParserInterface):
 
     def load(self, path: str):
         '''Load in the data file'''
-        with open(path, 'r') as f:
+        with open(path, 'rb') as f:
             self.contents = f.readlines()
 
         return self.contents
@@ -902,8 +903,12 @@ class XTBParser(FileParserInterface):
 
     def _parse_protocol(self):
 
+        protocol = None
+
         for line in self.contents:
             if ">" in line:
+                protocol = line
+            elif "program call" in line:
                 protocol = line
 
         return protocol
@@ -913,14 +918,15 @@ class XTBParser(FileParserInterface):
         Split .xyz into separate XYZGeometry instances
         '''
 
-        with open(FILE) as f:
-            XYZ = f.readlines()
+        #with open(FILE) as f:
+        
+        #    XYZ = f.readlines()
 
-        if len(list(pybel.readfile('xyz', XYZ))) > 1:
+        if len(list(pybel.readfile('xyz', FILE))) > 1:
             geom_list = []
             count = 1
 
-            for geom in pybel.readfile('xyz', XYZ):
+            for geom in pybel.readfile('xyz', FILE):
                 XYZ.split(".")
                 geom.write("xyz", os.path.join(self.temp_dir.name, "%s_%d.xyz" % (XYZ, count)))
                 geom_list.append(os.path.join(self.temp_dir.name, "%s_%d.xyz" % (XYZ, count)))
@@ -943,9 +949,15 @@ class XTBParser(FileParserInterface):
         # Check that the file is valid first
         if len(self.contents) == 0:
             raise RuntimeError('No contents to parse: {}'.format(self.path))
-        if self.path.endswith('out') or self.path.endswith('log'):
-            if 'terminated normally' not in self.contents[-1]:
-                raise RuntimeError('Incomplete XTB run: {}'.format(self.path))
+        #if self.path.endswith('out') or self.path.endswith('log'):
+        #    ready = False
+        #    for line in self.contents:
+        #        if 'normal termination' in line:
+        #            ready = True
+        #        elif 'terminated normally' in line:
+        #            ready = True
+        #        if ready is False:
+        #            raise RuntimeError('Incomplete XTB run: {}'.format(self.path))
 
         self.parse_crest = False
         self.parse_opt = False
@@ -991,8 +1003,8 @@ class XTBParser(FileParserInterface):
                                         please parse separately.')
 
                 else:
-
-                    self.xyz_path = self.path.join(self.temp_dir.name, XYZ) 
+                    temp_dir = os.path.dirname(self.path)
+                    self.xyz_path = os.path.join(temp_dir, XYZ) 
                     try:
                         geometry = self._parse_xyz()
                         result.set_geometry(geometry)

@@ -102,6 +102,7 @@ def _load_generic_geom(path: str, calling_function: str):
     geom = Geometry()
     geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
+    geom.path = os.path.dirname(path)
     geom._update_history(calling_function)
     return geom
 
@@ -115,7 +116,7 @@ def load_xyz(path: str):
     path : str
         Path to XYZ file
 
-    Returns
+    Return
     -------
     Geometry
         Provided file and molecule information
@@ -125,6 +126,7 @@ def load_xyz(path: str):
     geom.basename = os.path.splitext(os.path.basename(path))[0]
     geom.global_properties['load'] = _gen_load_properties(path)
     geom.xyz = _load_text(path)
+    geom.path = os.path.dirname(path)
     geom._update_history('load_xyz')
     return geom
 
@@ -145,7 +147,7 @@ def load_mol(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol')
-    geom.mol = Chem.MolFromMolFile(path, removeHs=False)
+    geom.mol = Chem.MolFromMolFile(path)
     return geom
 
 
@@ -165,7 +167,7 @@ def load_mol2(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol2')
-    geom.mol = Chem.MolFromMol2File(path, removeHs=False)
+    geom.mol = Chem.MolFromMol2File(path)
     return geom
 
 
@@ -185,7 +187,7 @@ def load_pdb(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_pdb')
-    geom.mol = Chem.MolFromPDBFile(path, removeHs=False)
+    geom.mol = Chem.MolFromPDBFile(path)
     return geom
 
 
@@ -388,6 +390,7 @@ class XYZGeometry(XYZGeometryInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
+        print(kwargs)
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
@@ -422,7 +425,7 @@ class XYZGeometry(XYZGeometryInterface):
         d['mol'] = mol
         d.pop('xyz')
 
-        return Geometry(d)
+        return Geometry(kwarg=d)
 
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
@@ -518,8 +521,8 @@ class XYZGeometry(XYZGeometryInterface):
 
         return geom, res
 
-    def md_optimize(self, program='xtb', template=None, **kwargs):
-        res = isicle.md.md(self.__copy__(), program=program, template=template, **kwargs)
+    def md_optimize(self, program='xtb', **kwargs):
+        res = isicle.md.md(self.__copy__(), program=program, **kwargs)
 
         # Erase old properties and add new event and DFT properties
         geom.global_properties = {}
@@ -749,7 +752,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         d['xyz'] = xyz
         d.pop('mol')
 
-        return XYZGeometry(d)
+        return XYZGeometry(kwarg=d)
 
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
@@ -831,6 +834,8 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         '''
 
+        # TODO: should this raise an error instead?
+        # If no salts given, skip desalting
         if salts is None:
             return self._update_structure(inplace, mol=self.to_mol())
 

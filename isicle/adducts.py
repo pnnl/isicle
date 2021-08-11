@@ -2,7 +2,7 @@ from isicle.interfaces import IonizeWrapperInterface
 from isicle import geometry
 from isicle.md import md
 from isicle.utils import safelist
-from isicle.calculate import free_energy
+from isicle.conformers import lowest_energy, boltzmann
 import os
 from rdkit import Chem
 import re
@@ -89,14 +89,77 @@ def _ionize_method_selector(ion_method):
         raise ValueError('{} not a supported ionization method.'.format(ion_method))
 
 
+def gibb_energy():
+    return
+
+
+def proton_affinity(MH, M, temp=298.15):
+    '''
+    Calculate proton affinity relative to passed M+H, M values
+    𝑃𝐴(𝐵)=[𝐸𝑒𝑙𝑒(𝐵)−𝐸𝑒𝑙𝑒(𝐵𝐻+)]+[𝑍𝑃𝐸(𝐵)−𝑍𝑃𝐸(𝐵𝐻+)]+(5/2)𝑅𝑇
+
+    Parameters
+    ----------
+    MH : dict
+        Dict with keys: energy (kcal/mol), zpe (kcal/mol)
+    M : dict
+        Dict with keys(): energy (kcal/mol), zpe (kcal/mol)
+    temp : opt, default 298.15 K
+    '''
+    R = 0.00198720425864083
+    PA = M['energy'] - MH['energy'] + M['zpe'] - MH['zpe'] + (5/2)*R*temp
+    return PA
+
+
+def gas_basicity(MH, M, temp=298.15, SH=108.8):
+    '''
+    Calculate gas basicity relative to passed M+H, M
+    𝐺𝐵(𝐵)=[𝐸𝑒𝑙𝑒(𝐵)−𝐸𝑒𝑙𝑒(𝐵𝐻+)]+[𝑍𝑃𝐸(𝐵)−𝑍𝑃𝐸(𝐵𝐻+)]+(5/2)𝑅𝑇−𝑇[𝑆(𝐵)+𝑆(𝐻+)−𝑆(𝐵𝐻+)]
+
+    Parameters
+    ----------
+    MH : dict
+        Dict with keys: zpe, enthalpy, entropy
+    M : dict
+        Dict with keys(): zpe, enthalpy, entropy
+    temp : opt , default 298.15 K
+    SH : opt, default 108.8 J.mol/K
+    '''
+    # need Energy, ZPE, Temperature, entropy
+    # S(H+) = 108.8 J mol/K, 298 K)
+    R = 0.00198720425864083
+    GB = M['energy'] - MH['energy'] + M['zpe'] - MH['zpe'] + \
+        (5/2)*R*temp - temp*(M['entropy'] + SH - MH['entropy'])
+    return GB
+
+
 def filter_adducts():
     # TODO call GFE calculation
     return
 
 
+def build_adduct_ensemble(geometries):
+    '''
+    Create an adduct ensemble from a collection of geometries.
+
+    Parameters
+    ----------
+    geometries : dict of :obj:`~isicle.geometry.Geometry` or related subclass
+        Collection of geometry instances.
+
+    Returns
+    -------
+    :obj:`~isicle.adducts.AdductEnsemble`
+        Adduct ensemble.
+
+    '''
+
+    return AdductEnsemble(geometries)
+
+
 def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
     '''
-    Ionize geometry via with supplied geometry and file containin list of ions.
+    Ionize geometry via with supplied geometry and file containing list of ions.
     Parameters
     ----------
     geom : :obj:`~isicle.geometry.Geometry`
@@ -133,13 +196,26 @@ def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
     # Generate adducts
     iw.generator()
 
-    # Screen adducts
-    filter_adducts()
-
     # Combine/ optionally write files
     res = iw.finish(**kwargs)
 
     return res
+
+
+class AdductEnsemble(TypedList):
+
+    def __init__(self, *args):
+        '''
+        Initialize :obj:`~isicle.adducts.AdductEnsemble` instance.
+
+        Parameters
+        ----------
+        *args
+            Objects to comprise the adduct ensemble.
+
+        '''
+
+        super().__init__((Geometry, XYZGeometry), *args)
 
 
 class ExplicitIonizationWrapper(IonizeWrapperInterface):

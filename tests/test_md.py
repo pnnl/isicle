@@ -15,7 +15,7 @@ def localfile(path):
 def xtb():
     return XTBWrapper()
 
-
+#test capitalization ignore
 @pytest.mark.parametrize('program,expected',
                          [('xtb', XTBWrapper),
                           ('XTB', XTBWrapper),
@@ -36,12 +36,12 @@ def test__program_selector_fail(program):
 
 def test_md(xtb):
     # Load geometry externally
-    geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+    geom = isicle.geometry.load(localfile('resources/geom_test_3D.mol'))
 
     # Run molecular dynamics
-    md(geom, program='xtb', fmt='mol')
+    md(geom, program='xtb', fmt='xyz', task = 'optimize', forcefield='gff',optlevel='Normal')
 
-
+    
 class TestXTBWrapper:
 
     def test_init(self, xtb):
@@ -55,7 +55,7 @@ class TestXTBWrapper:
         xtb.temp_dir.cleanup()
 
     @pytest.mark.parametrize('path,expected',
-                             [('resources/geom_test.mol', 'geom_test')])
+                             [('resources/geom_test_3D.mol', 'geom_test_3D')])
     def test_set_geometry(self, xtb, path, expected):
         # Load geometry externally
         geom = isicle.geometry.load(localfile(path))
@@ -67,7 +67,7 @@ class TestXTBWrapper:
         assert isinstance(xtb.geom, Geometry)
 
         # Check basename attribute
-        assert xtb.geom.basename == expected
+        assert geom.basename == expected
 
         # Clean up
         xtb.temp_dir.cleanup()
@@ -78,7 +78,7 @@ class TestXTBWrapper:
                               ('mol')])
     def test_save_geometry(self, xtb, fmt):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test_3D.mol'))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -94,18 +94,21 @@ class TestXTBWrapper:
         # Clean up
         xtb.temp_dir.cleanup()
 
-    # TODO: Get all combinations of tasks
-    # TODO: meaningful assertions (currently just runs without error)
+
+    @pytest.mark.parametrize('tasks, forcefield, optlevel',
+                             [('optimize', ['gff', 'gfn2'], ['Normal', 'Tight']),
+                              (['crest', 'protonate'], 'gfn2', 'Normal')])
+    def test_configure_failure(self,xtb,tasks,forcefield,optlevel):
+        with pytest.raises(TypeError):
+            xtb.configure(task=tasks, forcefield=forcefield, optlevel=optlevel)
+
     @pytest.mark.parametrize('tasks,forcefield,optlevel',
                              [('optimize', 'gff', 'Normal'),
                               ('crest', 'gff', 'Normal'),
-                              ('protonate', 'gff', 'Normal'),
-                              (['optimize', 'crest'], ['gff', 'gfn2'], ['Normal', 'Tight']),
-                              (['crest', 'protonate'], 'gfn2', 'Normal'),
-                              (['optimize', 'protonate', 'deprotonate'], 'gff', 'Tight')])
-    def test_job_type(self, xtb, tasks, forcefield, optlevel):
+                              ('protonate', 'gff', 'Normal')])
+    def test_configure(self, xtb, tasks, forcefield, optlevel):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test_3D.mol'))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -114,23 +117,23 @@ class TestXTBWrapper:
         xtb.save_geometry(fmt='xyz')
 
         # Set up commandline
-        xtb.job_type(tasks=tasks, forcefield=forcefield, optlevel=optlevel)
+        xtb.configure(task=tasks, forcefield=forcefield, optlevel=optlevel)
 
         # Clean up
         xtb.temp_dir.cleanup()
 
     def test_run(self, xtb):   
         # Load geometry externally
-        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test_3D.mol'))
 
         # Set geometry
         xtb.set_geometry(geom)
 
         # Save geometry
-        xtb.save_geometry(fmt='mol')
+        xtb.save_geometry(fmt='xyz')
 
         # Set up commandline
-        xtb.job_type()
+        xtb.configure()
 
         # Run
         xtb.run()
@@ -140,14 +143,22 @@ class TestXTBWrapper:
 
     def test_finish(self, xtb):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile('resources/geom_test.mol'))
+        geom = isicle.geometry.load(localfile('resources/geom_test_3D.mol'))
 
         # Set geometry
         xtb.set_geometry(geom)
 
-        # Copy example output to temp folder (i.e. assume nwchem was "run")
-        shutil.copy2(localfile('resources/xtbopt.xyz'),
-                     xtb.temp_dir.name)
+        # Save geometry
+        xtb.save_geometry(fmt='xyz')
+
+        # Set up commandline
+        xtb.configure()
+
+        # Run
+        xtb.run()
 
         # Finish
-        xtb.finish(keep_files=False)
+        xtb.finish()
+
+        # Clean up
+        xtb.temp_dir.cleanup()

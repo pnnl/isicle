@@ -1,22 +1,14 @@
-from isicle.interfaces import MDWrapperInterface
-from isicle import geometry
-import subprocess
+from numpy.core.records import array
+from isicle.interfaces import WrapperInterface
+from isicle.geometry import Geometry, XYZGeometry
+from isicle.parse import XTBParser
 import tempfile
 import os
-from isicle.utils import safelist
-from itertools import combinations, cycle
 
 '''
 Files resulting from an xtb job always run in the same directory that the command is 
 issued in, no matter where the input is. Can direct the .log file, but no other files.
 '''
-
-# TO DO : Add implicit solvation, frequency
-# TO DO : if optimize is requested along with a crest calculation, need to have the opt 
-#         ignore the energy window in cycle
-# TO DO : Add in dry run option for adduct to make sure that the adduct of interest is 
-#        included in crest
-
 
 def _program_selector(program):
     '''
@@ -76,15 +68,20 @@ def md(geom, program='xtb', **kwargs):
     # Save geometry
     mdw.save_geometry(fmt=kwargs.pop('fmt'))
 
-    # Job type
-    mdw.job_type()
+    # Build command line 
+    mdw.configure()
+
+    #Save configuration
+    mdw.save_config()
 
     # Run MD simulation
     mdw.run()
 
     # Create new Geometry with updated structure
-    # res['geometry'] will be None or a path to an xyz file.
-    geom = geom._update_structure(False, xyz_filename=res['geometry'])
+    # res['geometry'] will be None or a path to an xyz file(s).
+    res = mdw.finish()
+
+    geom = geom._update_structure(False, xyz=res.geometry)
 
     # Erase old properties and add new event and DFT properties
     geom.global_properties = {}
@@ -92,12 +89,12 @@ def md(geom, program='xtb', **kwargs):
     geom = geom.add_global_properties(res.to_dict())
 
     # Finish/clean up
-    return mdw.finish()
+    return geom, res
 
 # check lenths block if you have parameters that are global configure at one time
 
 
-class XTBWrapper(MDWrapperInterface):
+class XTBWrapper(WrapperInterface):
     '''
     Wrapper for xtb functionality.
 
@@ -109,7 +106,7 @@ class XTBWrapper(MDWrapperInterface):
     temp_dir : str
         Path to temporary directory used for simulation.
     task_map : dict
-        Alias mapper for supported molecular dynamic presets. These include
+        Alias mapper for supported molecular dynamic presets. Includes
         "optimize", "crest", "nmr", "protonate", "deprtonate", and "tautomer".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
@@ -129,12 +126,8 @@ class XTBWrapper(MDWrapperInterface):
 
         '''
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.task_map = {'optimize': self._job_type_optimize,
-                         'crest': self._job_type_crest,
-                         'nmr': self._job_type_nmr,
-                         'protonate': self._job_type_protonate,
-                         'deprotonate': self._job_type_deprotonate,
-                         'tautomer': self._job_type_tautomer}
+        self.task_map = {'xtb': self._configure_xtb,
+                         'crest': self._configure_crest}
 
     def set_geometry(self, geom):
         '''
@@ -161,7 +154,7 @@ class XTBWrapper(MDWrapperInterface):
             ".pdb", ".pkl".
 
         '''
-        # Path operations
+        # Path operationspyth
         self.fmt = fmt.lower()
         outfile = os.path.join(self.temp_dir.name,
                                '{}.{}'.format(self.geom.basename,
@@ -169,36 +162,9 @@ class XTBWrapper(MDWrapperInterface):
 
         # All other formats
         self.geom.save(outfile)
+        self.geom.path = outfile
 
-        # Path operations
-        self.fmt = fmt.lower()
-        outfile = os.path.join(self.temp_dir.name,
-                               '{}.{}'.format(self.geom.basename,
-                                              self.fmt.lower()))
-
-
-    def load_geometry(self, path):
-        # Workaround for xyz input
-        # See `isicle.geometry.load_xyz`
-        fn, ext = os.path.splitext(path)
-        if ext.lower() == '.xyz':
-            self.geom = _load_generic_geom(path)
-        else:
-            self.geom = load(path)
-
-        # Extract filename
-        self.geom.basename = os.path.splitext(
-            os.path.basename(self.geom.path))[0]
-
-    def set_geometry(self, geom):
-        # Assign geometry
-        self.geom = geom
-
-        # Extract filename
-        self.geom.basename = os.path.splitext(
-            os.path.basename(self.geom.path))[0]
-
-    def _job_type_optimize(self, forcefield='gff', optlevel='normal', ewin=False, ion=False, dryrun=False):
+    def _configure_xtb(self, forcefield='gff', optlevel='normal',charge=None):
         '''
         Save molecule
         Parameters
@@ -215,84 +181,100 @@ class XTBWrapper(MDWrapperInterface):
             Default : normal
             Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
 
-        Returns
-        -------
-        xyz file
         '''
 
-        d = {'forcefield': forcefield,
-             'optlevel': optlevel,
-             'basename': self.geom.basename,
-             'fmt': self.fmt}
+        # Add base command
+        s = 'xtb '
 
-        return ('xtb {basename}.{fmt} --opt {optlevel} --{forcefield} --scratch').format(**d)
+        # Add geometry
+        #s += os.path.join(self.temp_dir.name,
+        #                       '{}.{}'.format(self.geom.basename,
+        #                                      self.fmt)
 
-    def _job_type_crest(self, forcefield='gff', optlevel='vtight', ewin=6, ion=False, dryrun=False):
+        s += '{}.{}'.format(self.geom.basename,self.fmt.lower())
+        # Add optimize tag
+        s += ' --opt ' + optlevel + ' '
 
-        d = {'forcefield': forcefield,
-             'optlevel': optlevel,
-             'ewin': ewin,
-             'basename': self.geom.basename,
-             'fmt': self.fmt}
+        # Add forcefield
+        s += '--'+ forcefield + ' ' 
 
-        return ('crest {basename}.{fmt} --ewin {ewin} --optlevel {optlevel} -{forcefield} --scratch').format(**d)
+        # Add optional charge
+        if charge is not None:
+            s += '--chrg '+ charge + ' '
 
-    def _job_type_nmr(self):
-        # self.directory = 'xtb_nmr/'
-        # TO DO: get protocol for enso/anmr
-        raise NotImplementedError
+        # Add output
+        s += '&>' + ' ' 
 
-    def _job_type_protonate(self, forcefield='gff', optlevel='normal', ion='H+', ewin=6, dryrun=False):
+        #s += os.path.join(self.temp_dir.name,
+        #                       '{}.{}'.format(self.geom.basename,
+        #                                      "log"))
 
-        if dryrun == True:
-            d = {'forcefield': forcefield,
-                 'optlevel': optlevel,
-                 'ewin': ewin,
-                 'ion': ion,
-                 'basename': self.geom.basename,
-                 'fmt': self.fmt}
+        s += '{}.{}'.format(self.geom.basename, "out")
+        return s
 
-            return ('crest {basename}.{fmt} -protonate --swel {ion} --optlevel {optlevel} --ewin {ewin} -{forcefield} --scratch --dryrun').format(**d)
 
-        if dryrun == False:
-            d = {'forcefield': forcefield,
-                 'optlevel': optlevel,
-                 'ewin': ewin,
-                 'ion': ion,
-                 'basename': self.geom.basename,
-                 'fmt': self.fmt}
+    def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
+                       protonate=False, deprotonate=False, tautomerize=False,
+                       ion=None, charge=None, dryrun=False):
 
-            return ('crest {basename}.{fmt} -protonate --swel {ion} --optlevel {optlevel} --ewin {ewin} -{forcefield} --scratch').format(**d)
+        # Start base command
+        s = 'crest '
 
-    def _job_type_deprotonate(self, forcefield='gff', optlevel='normal', ewin=6, ion=False, dryrun=False):
+        # Add geometry
+        s += str(os.path.join(self.temp_dir.name,
+                               '{}.{}'.format(self.geom.basename,
+                                              self.fmt.lower())))
 
-        d = {'forcefield': forcefield,
-             'optlevel': optlevel,
-             'ewin': ewin,
-             'basename': self.geom.basename,
-             'fmt': self.fmt}
+        s += ' '       
+        # Add optional tag
+        if protonate:
+            s += '-protonate '
+        elif deprotonate:
+            s += '-deprotonate '
+        elif tautomerize:
+            s += '-tautomerize '
 
-        return ('crest {basename}.{fmt} -deprotonate --optlevel {optlevel} --ewin {ewin} -{forcefield} --scratch').format(**d)
+        if ion is not None:
+            s += '-swel ' + ion + ' '
 
-    def _job_type_tautomer(self, forcefield='gff', optlevel='normal', ewin=6, ion=False, dryrun=False):
+        if charge is not None:
+            s += '-chrg ' + charge + ' '
 
-        d = {'forcefield': forcefield,
-             'optlevel': optlevel,
-             'ewin': ewin,
-             'basename': self.geom.basename,
-             'fmt': self.fmt}
+        # Add dryrun option
+        if dryrun:
+            s += '--dryrun '
 
-        return ('crest {basename}.{fmt} --scratch -{forcefield} --optlevel {optlevel} --ewin {ewin}').format(**d)
+        # Add energy window
+        s += '--ewin ' + str(ewin) + ' '
 
-    def job_type(self, tasks='optimize', forcefield='gff', ewin=1, ion='H+', optlevel='Normal', dryrun=False):
+        # Add optlevel
+        s += '--optlevel ' + optlevel + ' '
+
+        # Add forcefield
+        s += '-'+ forcefield + ' '
+
+        # Add scratch folder
+        s += '--scratch '
+
+        # Add output
+        s += '&>' + ' '
+
+        s += os.path.join(self.temp_dir.name,
+                               '{}.{}'.format(self.geom.basename,
+                                              "out"))
+
+        return s
+
+    def configure(self, task='optimize', forcefield='gff', charge=None,
+                  ewin=6, ion=None, optlevel='Normal', dryrun=False):
         '''
         Set up list of xtb jobs
 
         Parameters
         ----------
-        tasks : str or list of str
-            Tasks text.
-        forcefield : str ot lisst of str
+        tasks : str
+            One task at a time.
+        forcefield : str ot list of str
             Forcefield selection. Supply globally or per task.
         ewin : int or list of int
             Energy window for crest calculation. 
@@ -303,108 +285,113 @@ class XTBWrapper(MDWrapperInterface):
 
         '''
 
-        # Cast to list safely
-        tasks = safelist(tasks)
-        optlevel = safelist(optlevel)
-        forcefield = safelist(forcefield)
- #       energywindow = safelist(ewin)
+        if type(task) is list:
+            raise TypeError('Initiate one xtb or crest job at a time.')
+        if type(forcefield) is list:
+            raise TypeError('Initiate one forcefield at a time.')
+        if type(optlevel) is list:
+            raise TypeError('Initiate one opt level at a time.')
 
-        job_list = []
 
-        # Check lengths
-        if not ((len(tasks) == len(forcefield)) or (len(forcefield) == 1)):
-            raise ValueError('Forcefield must be assigned globally or per'
-                             'task.')
-        if not ((len(tasks) == len(optlevel)) or (len(optlevel) == 1)):
-            raise ValueError('Optimization level must be assigned globally or per'
-                             'task.')
-#        if not ((len(tasks) == count(ewin)) or (count(ewin) == 1)):
-#            raise ValueError('Energy window must be assigned globally or per'
-#                             'task.')
+        if task is 'optimize':
+            config = self._configure_xtb(optlevel=optlevel,
+                                         forcefield=forcefield)
 
-# TO DO: cycle so ewin and ion only goes to ''
-        for task, f, o in zip(tasks, cycle(forcefield), cycle(optlevel)):
-            job_list.append(self.task_map[task](forcefield=f,
-                                                optlevel=o,
-                                                ewin=ewin,
-                                                ion=ion,
-                                                dryrun=dryrun))
+        else:
+            if task is 'crest':
+                p, d, t, i = False, False, False, None
 
-        self.job_list = job_list
+            elif task is 'protonate':
+                p, d, t, i = True, False, False, ion
 
-        return self.job_list
+            elif task is 'deprotonate':
+                p, d, t, i = False, True, False, ion
 
-    def save_job_type(self):
-        '''
-        Write 
+            elif task is 'tautomerize':
+                p, d, t, i = False, False, True, ion 
 
-        '''
+            config = self._configure_crest(ewin=ewin, 
+                                           optlevel=optlevel, 
+                                           forcefield=forcefield,
+                                           protonate=p, 
+                                           deprotonate=d, 
+                                           tautomerize=t,
+                                           ion=i,
+                                           charge=charge,
+                                           dryrun=dryrun)
 
-        # Write to file
-        with open(os.path.join(self.temp_dir.name,
-                               self.geom.basename + '.nw'), 'w') as f:
-            f.write(self.config)
+        self.task = task
+
+        self.config = config
+
+    def save_config(self):
+        '''Filler function to match WrapperInterface'''
+        return self
 
     def run(self):
         '''
         subprocess.run change to working directory then runs job from command line
-
-        iterate jobs from job_type. have new temp_dir for each job?
-
         '''
-
+        owd = os.getcwd()
         os.chdir(self.temp_dir.name)
+        job = self.config
+        os.system(job)
+        #with open('job.log', "w") as outfile:
+        #    subprocess.run(job, stdout=outfile)
 
-        for i in self.job_list:
-            print(i)
-            subprocess.call(i, shell=True)
+        os.chdir(owd)
 
     def finish(self, keep_files=False, path=None):
         '''
-        Save XTB output files and clean temporary direc
+        Save XTB output files and clean temporary directory
 
         Parameters 
-        -------
-        opt: xtbopt.xyz
-        conformer: crest_conformers.xyz and crest.energies, or crest_best.xyz
-        enso/anmr: anmr.dat or newanmr.dat
-        protonate: protomers.xyz
-        deprotonate: deprotonated.xyz
-        tautomers: tautomers.xyz
+        ----------
+        opt : xtbopt.xyz
+        conformer : crest_conformers.xyz and crest.energies, or crest_best.xyz
+        protonate : protomers.xyz
+        deprotonate : deprotonated.xyz
+        tautomers : tautomers.xyz
 
         '''
 
+        parser = XTBParser()
+        parser.load(os.path.join(self.temp_dir.name,
+                                 self.geom.basename + '.out'))
+
+        result = parser.parse(to_parse=['energy', 'geometry'])
+
         if keep_files is True:
             import shutil
-            import glob
 
             if path is None:
                 raise ValueError('Must supply `path`.')
             else:
                 # TODO: anything else to keep?
-                if 'xtbopt.xyz' in glob.glob(self.temp_dir):
+                shutil.copy2(os.path.join(self.temp_dir.name,
+                                          self.geom.basename + '.out'), path)
+                shutil.copy2(os.path.join(self.temp_dir.name,
+                                          self.geom.basename + '.log'), path)
+                if 'optimize' in self.task:
                     shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'xtbopt.xyz'), path)
-                if 'crest*' in glob.glob(self.temp_dir):
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'crest.energies'), path)
+                                              'xtbopt.{}'.format(self.fmt.lower())), path)
+                if 'crest' in self.task:
                     shutil.copy2(os.path.join(self.temp_dir.name,
                                               'crest_conformers.xyz'), path)
+                if 'protonate' in self.task:
                     shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'crest_best.xyz'), path)
-                if 'prot*' in glob.glob(self.temp_dir):
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'protomers.xyz'), path)
-                if 'deprot*' in glob.glob(self.temp_dir):
+                                              'protonated.xyz'), path)
+                if 'deprotonate' in self.task:
                     shutil.copy2(os.path.join(self.temp_dir.name,
                                               'deprotonated.xyz'), path)
-                if 'taut*' in glob.glob(self.temp_dir):
+                if 'tautomer' in self.task:
                     shutil.copy2(os.path.join(self.temp_dir.name,
                                               'tautomers.xyz'), path)
 
         # Remove temporary files
         self.temp_dir.cleanup()
 
+        return result
 
 def amber():
     # Don't work on this one yet
