@@ -157,7 +157,7 @@ def build_adduct_ensemble(geometries):
     return AdductEnsemble(geometries)
 
 
-def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
+def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
     '''
     Ionize geometry via with supplied geometry and file containing list of ions.
     Parameters
@@ -167,18 +167,21 @@ def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
     ion_method : str
         Alias for ionaztion method selection (explicit).
     **kwargs
-        Keyword arguments to configure how mol objects can be saved.
-        See :meth:`~isicle.adducts.ExplicitIonizationWrapper.finish`.
+        Keyword arguments to configure how xtb is run.
+        See :meth:`~isicle.adducts.CRESTIonizationWrapper.generator`.
     Returns
     -------
     :obj:`~isicle.adducts.ExplicitIonizationWrapper`
         Dictionary of
     '''
-    # Load ion file
-    ion_list = load_ions(ion_path)
-
-    # Parse ion file
-    cations, anions, complex = parse_ions(ion_list)
+    if ion_path is not None:
+        # Load ion file
+        ion_list = load_ions(ion_path)
+    if ion_list is not None:
+        # Parse ion file
+        cations, anions, complex = parse_ions(ion_list)
+    else:
+        raise RuntimeError('No ions to parse.')
 
     # Select ionization method
     iw = _ionize_method_selector(ion_method)
@@ -194,10 +197,10 @@ def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
     # iw.check_valid()
 
     # Generate adducts
-    iw.generator()
+    iw.generator(**kwargs)
 
     # Combine/ optionally write files
-    res = iw.finish(**kwargs)
+    res = iw.finish()
 
     return res
 
