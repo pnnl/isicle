@@ -10,7 +10,7 @@ import re
 
 def load_ions(path):
     '''
-    Read adduct ions (eg. Na+, H+) from file.
+    Read adduct ions (eg. 'Na+', 'H+', 'Mg2+') from file.
 
     Parameters
     ----------
@@ -53,7 +53,7 @@ def parse_ions(ion_list):
     anions = []
     cations = []
     complex = []
-
+    ion_list = safelist(ion_list)
     for x in ion_list:
         if ('+' and '-') in x:
             complex.append(x)
@@ -166,6 +166,9 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
         Molecule representation.
     ion_method : str
         Alias for ionaztion method selection (explicit).
+    ion_list : list
+        List of ion str.
+        See :meth`~isicle.adducts.parse_ions`.
     **kwargs
         Keyword arguments to configure how xtb is run.
         See :meth:`~isicle.adducts.CRESTIonizationWrapper.generator`.
