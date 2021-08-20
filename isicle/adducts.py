@@ -202,7 +202,8 @@ def ionize(geom, ion_path=None, ion_method='explicit', **kwargs):
     return res
 
 
-class AdductEnsemble(TypedList):
+class AdductEnsemble():
+    # TypedList
 
     def __init__(self, *args):
         '''
@@ -216,6 +217,9 @@ class AdductEnsemble(TypedList):
         '''
 
         super().__init__((Geometry, XYZGeometry), *args)
+
+    # Screen adducts
+    filter_adducts()
 
 
 class ExplicitIonizationWrapper(IonizeWrapperInterface):
@@ -530,10 +534,12 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         complex_dict = {}
 
         for x in cations:
-            cation_dict[x] = self.positive_mode(x)
+            cation_dict[x] = self.positive_mode(
+                forcefield, ewin, x, molecular_charge, optlevel, dryrun)
         self.cations = cation_dict
         for x in anions:
-            anion_dict[x] = self.negative_mode(x)
+            anion_dict[x] = self.negative_mode(
+                forcefield, ewin, x, molecular_charge, optlevel, dryrun)
         self.anions = anion_dict
 
         for x in complex:
