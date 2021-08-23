@@ -66,7 +66,10 @@ def md(geom, program='xtb', **kwargs):
     mdw.set_geometry(geom)
 
     # Save geometry
-    mdw.save_geometry(fmt=kwargs.pop('fmt'))
+    if 'fmt' in kwargs:
+        mdw.save_geometry(fmt=kwargs.pop('fmt'))
+    else:
+        mdw.save_geometry()
 
     # Build command line 
     mdw.configure()
@@ -356,9 +359,8 @@ class XTBWrapper(WrapperInterface):
         '''
 
         parser = XTBParser()
-        parser.load(os.path.join(self.temp_dir.name,
-                                 self.geom.basename + '.out'))
 
+        parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.log'))
         result = parser.parse(to_parse=['energy', 'geometry'])
 
         if keep_files is True:
