@@ -68,7 +68,10 @@ def dft(geom, program='NWChem', template=None, **kwargs):
     qmw.set_geometry(geom)
 
     # Save geometry
-    qmw.save_geometry(fmt=kwargs.pop('fmt'))
+    if 'fmt' in kwargs:
+        qmw.save_geometry(fmt=kwargs.pop('fmt'))
+    else:
+        qmw.save_geometry()
 
     # Configure
     if template is not None:
@@ -313,7 +316,7 @@ class NWChemWrapper(WrapperInterface):
              'max_iter': max_iter}
 
         return ('\ndriver\n'
-                ' max_iter {max_iter}\n'
+                ' maxiter {max_iter}\n'
                 ' {fmt} {basename}_geom\n'
                 'end\n').format(**d)
 
