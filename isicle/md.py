@@ -296,21 +296,21 @@ class XTBWrapper(WrapperInterface):
             raise TypeError('Initiate one opt level at a time.')
 
 
-        if task is 'optimize':
+        if task == 'optimize':
             config = self._configure_xtb(optlevel=optlevel,
                                          forcefield=forcefield)
 
         else:
-            if task is 'crest':
+            if task == 'crest':
                 p, d, t, i = False, False, False, None
 
-            elif task is 'protonate':
+            elif task == 'protonate':
                 p, d, t, i = True, False, False, ion
 
-            elif task is 'deprotonate':
+            elif task == 'deprotonate':
                 p, d, t, i = False, True, False, ion
 
-            elif task is 'tautomerize':
+            elif task == 'tautomerize':
                 p, d, t, i = False, False, True, ion 
 
             config = self._configure_crest(ewin=ewin, 
