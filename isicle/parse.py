@@ -5,12 +5,14 @@ from numpy.lib.npyio import save
 from isicle.interfaces import FileParserInterface
 import pandas as pd
 from os.path import splitext
-import glob, os
+import glob
+import os
 import pickle
 import numpy as np
 import pybel
 import isicle
 from isicle.geometry import Geometry
+
 
 class NWChemResult():
     '''Organize parsed results from NWChem outputs'''
@@ -23,8 +25,8 @@ class NWChemResult():
         self.frequency = None  # Dictionary, see function for keys
         self.molden = None  # String, filename (for now)
         self.timing = None  # Dictionary, see function for keys
-        self.charge = None # Dictionary 
-        self.protocol = None # Dictionary
+        self.charge = None  # Dictionary
+        self.protocol = None  # Dictionary
 
     def set_energy(self, energy):
         result = {'energy': [energy[0]]}
@@ -44,7 +46,7 @@ class NWChemResult():
 
     def set_spin(self, spin):
         # TODO
-        result = {'pair indices': spin[0], 'spin couplings':[1], 
+        result = {'pair indices': spin[0], 'spin couplings': [1],
                   'index': spin[2], 'g-tensors': spin[3]}
         self.spin = result
         return self.spin
@@ -62,7 +64,7 @@ class NWChemResult():
         self.timing = result
         return self.timing
 
-    def set_charge(self,charge):
+    def set_charge(self, charge):
         result = {'charge': charge}
         self.charge = result
         return self.charge
@@ -178,25 +180,25 @@ class NWChemParser(FileParserInterface):
         while g <= len(self.contents)-1:
             if self.contents[g] != ' \n':
                 line = self.contents[g].split()
-                xyz_line = line[1] + '\t' + line[3] + '\t' + line[4] + '\t' +line[5] +'\n'
+                xyz_line = line[1] + '\t' + line[3] + '\t' + line[4] + '\t' + line[5] + '\n'
                 coord += xyz_line
                 natoms += 1
 
             else:
                 break
-            g+=1
+            g += 1
 
-        coord = str(natoms) + '\n\n' + coord 
+        coord = str(natoms) + '\n\n' + coord
         name = search + '.xyz'
         xyz_file = open(name, 'w')
         f = xyz_file.write(coord)
         xyz_file.close()
-        
+
         return name
 
     def _parse_energy(self):
 
-        #TO DO: Add Initial energy and final energy if different
+        # TO DO: Add Initial energy and final energy if different
 
         # Init
         energy = None
@@ -467,7 +469,6 @@ class NWChemParser(FileParserInterface):
         except IndexError:
             pass
 
-
         if 'geometry' in to_parse:
 
             try:
@@ -656,7 +657,7 @@ class XTBResult():
         self.energy = None  # Dictionary, keys: energy, charges
         self.geometry = None  # String, filename (for now)
         self.timing = None  # Dictionary, see function for keys
-        self.protocol = None # Dictionary
+        self.protocol = None  # Dictionary
 
     def set_energy(self, energy):
         result = energy
@@ -720,6 +721,7 @@ class XTBResult():
 
         return d
 
+
 class XTBParser(FileParserInterface):
     def __init__(self):
         self.contents = None
@@ -759,14 +761,14 @@ class XTBParser(FileParserInterface):
             if ready == True:
                 break
 
-            h+=1
+            h += 1
 
-        return {'relative energies': relative_energy, 
-                'total energies':total_energy, 
+        return {'relative energies': relative_energy,
+                'total energies': total_energy,
                 'population': population}
 
     def _crest_timing(self):
- 
+
         ready = False
         for line in self.contents:
             if "test MD wall time" in line:
@@ -786,7 +788,7 @@ class XTBParser(FileParserInterface):
             if "GC wall time" in line:
                 GC = line
 
-            if "Overall wall time" in  line:
+            if "Overall wall time" in line:
                 overall = line
 
         return {'test MD wall time': test_MD,
@@ -816,9 +818,9 @@ class XTBParser(FileParserInterface):
             if complete == True:
                 break
 
-            g-=1
+            g -= 1
 
-        return {'relative energy': relative_energies, 
+        return {'relative energy': relative_energies,
                 'total energy': total_energies}
 
     def _isomer_timing(self):
@@ -830,11 +832,11 @@ class XTBParser(FileParserInterface):
             sc = line[3].split()
             hr = (LINE.split(':'))[1].split()
             mn = (LINE.split(':'))[2].split()
-            sc = (LINE.split(':'))[3].split() 
-            return hr + mn + sc      
+            sc = (LINE.split(':'))[3].split()
+            return hr + mn + sc
 
         for line in self.contents:
-            if "LMO calc. wall time" in line: 
+            if "LMO calc. wall time" in line:
                 LMO_time = time(line)
 
             if "multilevel OPT wall time" in line:
@@ -846,7 +848,7 @@ class XTBParser(FileParserInterface):
         return {'local molecular orbital wall time': LMO_time,
                 'multilevel opt wall time': OPT_time,
                 'overall wall time': OVERALL_time}
-    
+
     def _opt_energy(self):
         for line in self.contents:
             if 'TOTAL ENERGY' in line:
@@ -861,14 +863,14 @@ class XTBParser(FileParserInterface):
             hr = line[1].split()
             mn = line[2].split()
             sc = line[3].split()
-            return hr + mn + sc      
+            return hr + mn + sc
 
         tot = False
         scf = False
         anc = False
 
         for line in self.contents:
-            if "wall-time" in line and tot is False: 
+            if "wall-time" in line and tot is False:
                 total_time = time(line)
                 tot = True
 
@@ -885,7 +887,7 @@ class XTBParser(FileParserInterface):
                 'ANC optimizer wall time': anc_time}
 
     def _parse_energy(self):
-    
+
         if self.parse_crest == True:
             return self._crest_energy()
         if self.parse_opt == True:
@@ -918,8 +920,8 @@ class XTBParser(FileParserInterface):
         Split .xyz into separate XYZGeometry instances
         '''
 
-        #with open(FILE) as f:
-        
+        # with open(FILE) as f:
+
         #    XYZ = f.readlines()
 
         if len(list(pybel.readfile('xyz', FILE))) > 1:
@@ -934,11 +936,11 @@ class XTBParser(FileParserInterface):
 
             x = [isicle.geometry.load(i) for i in geom_list]
 
-        else: 
+        else:
             x = [isicle.geometry.load(FILE)]
 
-        return isicle.conformers.ConformationalEnsemble(x) 
-    
+        return isicle.conformers.ConformationalEnsemble(x)
+
     def _parse_xyz(self):
         FILE = self.xyz_path
         return self._separate_xyz(FILE)
@@ -949,7 +951,7 @@ class XTBParser(FileParserInterface):
         # Check that the file is valid first
         if len(self.contents) == 0:
             raise RuntimeError('No contents to parse: {}'.format(self.path))
-        #if self.path.endswith('out') or self.path.endswith('log'):
+        # if self.path.endswith('out') or self.path.endswith('log'):
         #    ready = False
         #    for line in self.contents:
         #        if 'normal termination' in line:
@@ -974,7 +976,7 @@ class XTBParser(FileParserInterface):
                     geometry = self._parse_xyz()
                     result.set_geometry(geometry)
                 except IndexError:
-                    pass            
+                    pass
 
         if self.path.endswith('out') or self.path.endswith('log'):
             protocol = self._parse_protocol()
@@ -1004,7 +1006,7 @@ class XTBParser(FileParserInterface):
 
                 else:
                     temp_dir = os.path.dirname(self.path)
-                    self.xyz_path = os.path.join(temp_dir, XYZ) 
+                    self.xyz_path = os.path.join(temp_dir, XYZ)
                     try:
                         geometry = self._parse_xyz()
                         result.set_geometry(geometry)
@@ -1026,8 +1028,6 @@ class XTBParser(FileParserInterface):
                     result.set_energy(energy)  # Stored as dictionary
                 except IndexError:
                     pass
-
-
 
         self.result = result
         return result
