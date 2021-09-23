@@ -2,7 +2,7 @@ from isicle.interfaces import IonizeWrapperInterface
 from isicle import geometry
 from isicle.md import md
 from isicle.utils import safelist
-from isicle.conformers import lowest_energy, boltzmann
+from isicle.conformers import ConformationalEnsemble
 import os
 from rdkit import Chem
 import re
@@ -89,10 +89,6 @@ def _ionize_method_selector(ion_method):
         raise ValueError('{} not a supported ionization method.'.format(ion_method))
 
 
-def gibb_energy():
-    return
-
-
 def proton_affinity(MH, M, temp=298.15):
     '''
     Calculate proton affinity relative to passed M+H, M values
@@ -133,11 +129,6 @@ def gas_basicity(MH, M, temp=298.15, SH=108.8):
     return GB
 
 
-def filter_adducts():
-    # TODO call GFE calculation
-    return
-
-
 def build_adduct_ensemble(geometries):
     '''
     Create an adduct ensemble from a collection of geometries.
@@ -154,7 +145,7 @@ def build_adduct_ensemble(geometries):
 
     '''
 
-    return AdductEnsemble(geometries)
+    return ConformationalEnsemble(geometries)
 
 
 def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
@@ -170,8 +161,9 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
         List of ion str.
         See :meth`~isicle.adducts.parse_ions`.
     **kwargs
-        Keyword arguments to configure how xtb is run.
-        See :meth:`~isicle.adducts.CRESTIonizationWrapper.generator`.
+        Keyword arguments to configure how ionization is run.
+        See :meth:`~isicle.adducts.CRESTIonizationWrapper.generator`
+         or :meth:`~isicle.adducts.ExplicitIonizationWrapper.generator`.
     Returns
     -------
     :obj:`~isicle.adducts.ExplicitIonizationWrapper`
@@ -204,28 +196,15 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
 
     # Combine/ optionally write files
     res = iw.finish()
+    """
+    geom = geom._update_structure(False, mol=res.)
 
-    return res
-
-
-class AdductEnsemble():
-    # TypedList
-
-    def __init__(self, *args):
-        '''
-        Initialize :obj:`~isicle.adducts.AdductEnsemble` instance.
-
-        Parameters
-        ----------
-        *args
-            Objects to comprise the adduct ensemble.
-
-        '''
-
-        super().__init__((Geometry, XYZGeometry), *args)
-
-    # Screen adducts
-    filter_adducts()
+    # Erase old properties and add new event and DFT properties
+    geom.global_properties = {}
+    geom._update_history('md')
+    geom = geom.add_global_properties(res.to_dict())
+    """
+    return res  # geom, res
 
 
 class ExplicitIonizationWrapper(IonizeWrapperInterface):
@@ -272,6 +251,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         # TODO (1) check if ions are in supported list of ions
         # TODO (2) modify self.anions, self.cations, self.complex to conform to supported ions
+        return
 
     def modify_atom_dict(self, init_mol, ion_atomic_num, mode=None):
         '''
@@ -322,7 +302,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         elif mode == None:
             raise NotImplementedError
 
-    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num):
+    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
         Returns ionized RDKit mol object.
@@ -331,18 +311,23 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         from rdkit.Chem import AllChem
         # TODO only works for single atom ion
 
-        newmol = rdc.RWMol(init_mol)
-        rdc.RWMol.AddAtom(newmol, rdc.Atom(ion_atomic_num))
+        mw = rdc.RWMol(init_mol)
+        atom_idx = rdc.RWMol.AddAtom(mw, rdc.Atom(ion_atomic_num))
         # atom idx starts at 0; GetNumAtoms returns last idx val+1
-        atom_idx = init_mol.GetNumAtoms()
-        rdc.RWMol.AddBond(newmol, base_atom_idx, atom_idx, Chem.BondType.SINGLE)
-        Chem.SanitizeMol(newmol)
-        # TODO insert try embed, need to catch any exceptions?
-        AllChem.EmbedMolecule(newmol)
-        AllChem.UFFOptimizeMolecule(newmol)
-        return newmol
+        #atom_idx = init_mol.GetNumAtoms()
+        ba = mw.GetAtomWithIdx(base_atom_idx)
+        fc = ba.GetFormalCharge()
+        mw.AddBond(base_atom_idx, atom_idx, Chem.BondType.SINGLE)
+        ba.SetFormalCharge(fc+1)
+        mw.UpdatePropertyCache(strict=False)
+        if sanitize is True:
+            Chem.SanitizeMol(mw)
+        if optimize is True:
+            AllChem.EmbedMolecule(mw)
+            AllChem.UFFOptimizeMolecule(mw)
+        return mw
 
-    def add_ion(self, init_mol, atom_dict, ion_atomic_num):
+    def add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
         '''
         Iterates through base atoms of RDKit mol object.
         Calls method to ionize and return new RDKit mol object.
@@ -351,35 +336,48 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         mol_dict = {}
         for key in atom_dict.keys():
-            newmol = self._add_ion(init_mol, key, ion_atomic_num)
+            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize=sanitize, optimize=optimize)
             # Format {atom_base_idx:<newmol>}
-            mol_dict[key] = newmol
+            mol_dict[key] = mw
         return mol_dict
 
-    def positive_mode(self, init_mol, ion_atomic_num):
+    def positive_mode(self, init_mol, ion_atomic_num, batch=True, single_atom_idx=None, sanitize=False, optimize=False):
         '''
-        Adds specified cation to RDKit mol object at every potential base atom.
+        Adds specified cation to RDKit mol object.
+        batch=True: adduct generated at every potential base atom
+        batch=False, single_atom_idx!=None: adduct generated at specified atom index
         '''
         atom_dict = self.modify_atom_dict(init_mol, ion_atomic_num, mode='positive')
-        mol_dict = self.add_ion(init_mol, atom_dict, ion_atomic_num)
+        if ((batch == False) and (single_atom_idx is not None)):
+            mol_dict = self.add_ion(
+                init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
+        elif batch == True:
+            mol_dict = self.add_ion(init_mol, atom_dict, ion_atomic_num, sanitize, optimize)
+        else:
+            raise ValueError('Must provide an index value with batch==False.')
         return mol_dict
 
-    def _remove_ion(init_mol, base_atom, base_atom_idx, ion_atomic_num):
+    def _remove_ion(init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
         '''
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
         Returns deionized RDKit mol object.
         '''
         import rdkit.Chem.rdchem as rdc
-        newmol = rdc.RWMol(init_mol)
+        mw = rdc.RWMol(init_mol)
+        ba = mw.GetAtomWithIdx(base_atom_idx)
+        fc = ba.GetFormalCharge()
         nbrs_dict = {nbr.GetAtomicNum(): nbr.GetIdx() for nbr in base_atom.GetNeighbors()}
-        rdc.RWMol.RemoveAtom(newmol, nbrs_dict[ion_atomic_num])
-        Chem.SanitizeMol(newmol)
-        # TODO insert try embed, need to catch any exceptions?
-        AllChem.EmbedMolecule(newmol)
-        AllChem.UFFOptimizeMolecule(newmol)
-        return newmol
+        mw.RemoveAtom(nbrs_dict[ion_atomic_num])
+        ba.SetFormalCharge(fc-1)
+        mw.UpdatePropertyCache(strict=False)
+        if sanitize is True:
+            Chem.SanitizeMol(mw)
+        if optimize is True:
+            AllChem.EmbedMolecule(mw)
+            AllChem.UFFOptimizeMolecule(mw)
+        return mw
 
-    def remove_ion(init_mol, atom_dict, ion_atomic_num):
+    def remove_ion(init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
         '''
         Iterates through base atoms of RDKit mol object.
         Calls method to deionize and return new RDKit mol object.
@@ -388,38 +386,46 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         mol_dict = {}
         for key, value in atom_dict.items():
-            newmol = self._remove_ion(init_mol, key, value[3], ion_atomic_num)
-            mol_dict[value[3]] = newmol
+            mw = self._remove_ion(init_mol, key, value[3], ion_atomic_num, sanitize, optimize)
+            mol_dict[value[3]] = mw
         return mol_dict
 
-    def negative_mode(self, init_mol, ion_atomic_num):
+    def negative_mode(self, init_mol, ion_atomic_num, batch=True, single_atom_idx=None, sanitize=False, optimize=False):
         '''
         Removes specified anion from RDKit mol object at every potential base atom.
         '''
         atom_dict = self.modify_atom_dict(init_mol, mode='negative')
-        mol_dict = self.remove_ion(init_mol, atom_dict, ion_atomic_num)
+        if ((batch == False) and (single_atom_idx is not None)):
+            mol_dict = self.remove_ion(
+                init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
+        elif batch == True:
+            mol_dict = self.remove_ion(init_mol, atom_dict, ion_atomic_num, sanitize, optimize)
+        else:
+            raise ValueError('Must provide an index value with batch==False.')
         return mol_dict
 
-    def generator(self):
+    def generator(self, sanitize=False, optimize=False):
         '''
         Creates specified adducts at every atom site.
         '''
         pt = Chem.GetPeriodicTable()
-        ion_dict = {}
+        anion_dict = {}
         cation_dict = {}
         complex_dict = {}
 
         for ion in self.cations:
             sion = ion.strip('+')
             ion_atomic_num = pt.GetAtomicNumber(sion)
-            mol_dict = self.positive_mode(self.geom.mol, ion_atomic_num)
+            mol_dict = self.positive_mode(self.geom.mol, ion_atomic_num,
+                                          sanitize=sanitize, optimize=optimize)
             cation_dict[ion] = mol_dict
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self.cations = cation_dict
         for ion in self.anions:
             sion = ion.strip('-')
             ion_atomic_num = pt.GetAtomicNumber(sion)
-            mol_dict = self.negative_mode(self.geom.mol, ion_atomic_num)
+            mol_dict = self.negative_mode(self.geom.mol, ion_atomic_num,
+                                          sanitize=sanitize, optimize=optimize)
             anion_dict[ion] = mol_dict
             # anion_dict defined as {ion-:{base_atom_index: self.geom}}
             # TODO make change from mol object returned to self.geom
@@ -499,27 +505,19 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         # downfilter by supported ions
         # consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
 
-    def positive_mode(self, forcefield, ewin, cation, mol_chrg, optlevel, dryrun):
+    def positive_mode(self, forcefield, ewin, cation, molecular_charge, optlevel, dryrun):
         '''
         Call isicle.md.md for specified geom and cation
         '''
-        # have following option added to isicle.md.md
-        # --chrg <int>
-        # chrg=mol_chrg
-        # charge =
-        # md ^
-        return md(self, program='xtb', task='protonate', forcefield=forcefield,
-                  ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun)
+        return md(self.geom, program='xtb', task='protonate', forcefield=forcefield,
+                  ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=molecular_charge)
 
-    def negative_mode(self, forcefield, ewin, anion, mol_chrg, optlevel, dryrun):
+    def negative_mode(self, forcefield, ewin, anion, molecular_charge, optlevel, dryrun):
         '''
         Call isicle.md.md for specified geom and anion
         '''
-        # have following option added to isicle.md.md
-        # --chrg <int>
-        # chrg=mol_chrg
-        return md(self, program='xtb', task='deprotonate', forcefield=forcefield,
-                  ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun)
+        return md(self.geom, program='xtb', task='deprotonate', forcefield=forcefield,
+                  ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=molecular_charge)
 
     def generator(self, molecular_charge=0, forcefield='gff', ewin=100, optlevel='Normal', dryrun=False):
         '''
@@ -540,6 +538,7 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         complex_dict = {}
 
         for x in cations:
+            # TODO update how MD is parsed, ensure is geometry object in memory
             cation_dict[x] = self.positive_mode(
                 forcefield, ewin, x, molecular_charge, optlevel, dryrun)
         self.cations = cation_dict
