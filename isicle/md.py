@@ -1,6 +1,4 @@
-from numpy.core.records import array
 from isicle.interfaces import WrapperInterface
-from isicle.geometry import Geometry, XYZGeometry
 from isicle.parse import XTBParser
 import tempfile
 import os
@@ -86,23 +84,19 @@ def md(geom, program='xtb', **kwargs):
 
     geom = geom._update_structure(False, xyz=res.geometry)
 
-    # Erase old properties and add new event and DFT properties
+    # Erase old properties and add new event and MD properties
     geom.global_properties = {}
     geom._update_history('md')
-    geom = geom.add_global_properties(res.to_dict())
+    geom.add_global_properties(res.to_dict())
 
     # Finish/clean up
     return geom, res
-
-# check lenths block if you have parameters that are global configure at one time
-
 
 class XTBWrapper(WrapperInterface):
     '''
     Wrapper for xtb functionality.
 
-    Implements :class:`~isicle.interfaces.MDWrapperInterface` to ensure
-    required methods are exposed.
+    Implements :class:`~isicle.interfaces.MDWrapperInterface` to ensure required methods are exposed.
 
     Attributes
     ----------
@@ -110,7 +104,7 @@ class XTBWrapper(WrapperInterface):
         Path to temporary directory used for simulation.
     task_map : dict
         Alias mapper for supported molecular dynamic presets. Includes
-        "optimize", "crest", "nmr", "protonate", "deprtonate", and "tautomer".
+        "optimize", "crest", "nmr", "protonate", "deprotonate", and "tautomer".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
     fmt : str
@@ -169,13 +163,11 @@ class XTBWrapper(WrapperInterface):
 
     def _configure_xtb(self, forcefield='gff', optlevel='normal',charge=None):
         '''
-        Save molecule
+        Set command line for xtb simulations.
+
         Parameters
         ----------
-        path : str
-            Path to input file
-            Prefered format is mol or pdb
-        method : str 
+        forcefield : str 
             GFN forcefield for the optimization
             Default: gff
             Supported forcefields: gfn2, gfn1, gff
@@ -183,6 +175,9 @@ class XTBWrapper(WrapperInterface):
             Optimization convergence level
             Default : normal
             Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
+        charge : int
+            Charge of molecular system.
+            Default : 0 (Neutral charge)
 
         '''
 
@@ -190,11 +185,8 @@ class XTBWrapper(WrapperInterface):
         s = 'xtb '
 
         # Add geometry
-        #s += os.path.join(self.temp_dir.name,
-        #                       '{}.{}'.format(self.geom.basename,
-        #                                      self.fmt)
-
         s += '{}.{}'.format(self.geom.basename,self.fmt.lower())
+ 
         # Add optimize tag
         s += ' --opt ' + optlevel + ' '
 
@@ -208,10 +200,6 @@ class XTBWrapper(WrapperInterface):
         # Add output
         s += '&>' + ' ' 
 
-        #s += os.path.join(self.temp_dir.name,
-        #                       '{}.{}'.format(self.geom.basename,
-        #                                      "log"))
-
         s += '{}.{}'.format(self.geom.basename, "out")
         return s
 
@@ -219,6 +207,39 @@ class XTBWrapper(WrapperInterface):
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
                        protonate=False, deprotonate=False, tautomerize=False,
                        ion=None, charge=None, dryrun=False):
+
+        '''
+        Set command line for crest simulations.
+
+        Parameters
+        ----------
+        ewin : int
+            Energy window (kcal/mol) for conformer, (de)protomer, or tautomer search.
+            Default : 6
+        optlevel : str
+            Optimization convergence level
+            Default : normal
+            Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
+        forcefield : str
+            GFN forcefield for the optimization
+            Default: gff
+            Supported forcefields: gfn2, gfn1, gff
+        protonate : bool
+            Signal to initiate protomer search. Suggested ewin = 30. 
+            Default : False
+        deprotonate : bool
+            Signal to initiate deprotonated conformers. Suggesting ewin = 30.
+            Default : False
+        tautomer : bool
+            Signal to initiate tautomer search.
+            Default : False
+        ion : str
+            Keyword to couple with protonate to ionize molecule with an ion other than a proton.
+            See :obj:`~isicle.adduct.parse_ion` for list of ion options.
+        charge : int
+            Charge of molecular system.
+            Default : 0 (Neutral charge)
+        '''
 
         # Start base command
         s = 'crest '
@@ -271,28 +292,37 @@ class XTBWrapper(WrapperInterface):
     def configure(self, task='optimize', forcefield='gff', charge=None,
                   ewin=6, ion=None, optlevel='Normal', dryrun=False):
         '''
-        Set up list of xtb jobs
+        Generate command line 
 
         Parameters
         ----------
         tasks : str
-            One task at a time.
-        forcefield : str ot list of str
-            Forcefield selection. Supply globally or per task.
-        ewin : int or list of int
-            Energy window for crest calculation. 
+            Set task to "optimize", "conformer", "protonate", "deprotonate", or "tautomerize".
+            Default : "optimize"
+        forcefield : str
+            GFN forcefield for the optimization
+            Default: gff
+            Supported forcefields: gfn2, gfn1, gff
+        ewin : int
+            Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search.
+            Default : 6
         ion : str 
             Ion for protomer calculation.
         optlevel : str or list of str
             Set optimization level. Supply globally or per task. 
-
+        ion : str
+            Keyword to couple with protonate to ionize molecule with an ion other than a proton.
+            See :obj:`~isicle.adduct.parse_ion` for list of ion options.
+        charge : int
+            Charge of molecular system.
+            Default : 0 (Neutral charge)
         '''
 
-        if type(task) is list:
+        if type(task) == list:
             raise TypeError('Initiate one xtb or crest job at a time.')
-        if type(forcefield) is list:
+        if type(forcefield) == list:
             raise TypeError('Initiate one forcefield at a time.')
-        if type(optlevel) is list:
+        if type(optlevel) == list:
             raise TypeError('Initiate one opt level at a time.')
 
 
@@ -301,7 +331,7 @@ class XTBWrapper(WrapperInterface):
                                          forcefield=forcefield)
 
         else:
-            if task == 'crest':
+            if task == 'conformer':
                 p, d, t, i = False, False, False, None
 
             elif task == 'protonate':
@@ -329,38 +359,29 @@ class XTBWrapper(WrapperInterface):
 
     def save_config(self):
         '''Filler function to match WrapperInterface'''
-        return self
+        self = self
+        return 
 
     def run(self):
         '''
-        subprocess.run change to working directory then runs job from command line
+        Run xtb or crest simulation according to configured inputs.
         '''
         owd = os.getcwd()
         os.chdir(self.temp_dir.name)
         job = self.config
         os.system(job)
-        #with open('job.log', "w") as outfile:
-        #    subprocess.run(job, stdout=outfile)
 
         os.chdir(owd)
 
     def finish(self, keep_files=False, path=None):
         '''
-        Save XTB output files and clean temporary directory
-
-        Parameters 
-        ----------
-        opt : xtbopt.xyz
-        conformer : crest_conformers.xyz and crest.energies, or crest_best.xyz
-        protonate : protomers.xyz
-        deprotonate : deprotonated.xyz
-        tautomers : tautomers.xyz
+        Parse results, save xtb output files, and clean temporary directory
 
         '''
 
         parser = XTBParser()
 
-        parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.log'))
+        parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
         result = parser.parse(to_parse=['energy', 'geometry'])
 
         if keep_files is True:
@@ -369,11 +390,8 @@ class XTBWrapper(WrapperInterface):
             if path is None:
                 raise ValueError('Must supply `path`.')
             else:
-                # TODO: anything else to keep?
                 shutil.copy2(os.path.join(self.temp_dir.name,
                                           self.geom.basename + '.out'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name,
-                                          self.geom.basename + '.log'), path)
                 if 'optimize' in self.task:
                     shutil.copy2(os.path.join(self.temp_dir.name,
                                               'xtbopt.{}'.format(self.fmt.lower())), path)
