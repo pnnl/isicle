@@ -1,7 +1,3 @@
-from tempfile import tempdir
-from typing import Type
-from _pytest.fixtures import scope2index
-from numpy.lib.npyio import save
 from isicle.interfaces import FileParserInterface
 import pandas as pd
 from os.path import splitext
@@ -11,7 +7,6 @@ import pickle
 import numpy as np
 import pybel
 import isicle
-from isicle.geometry import Geometry
 
 
 class NWChemResult():
@@ -33,9 +28,8 @@ class NWChemResult():
         self.energy = result
         return self.energy
 
-    def set_geometry(self, geometry_filename):
-        # TODO: save xyz block as well
-        self.geometry = geometry_filename
+    def set_geometry(self, geometry):
+        self.geometry = geometry
         return self.geometry
 
     def set_shielding(self, shielding):
@@ -45,7 +39,6 @@ class NWChemResult():
         return self.shielding
 
     def set_spin(self, spin):
-        # TODO
         result = {'pair indices': spin[0], 'spin couplings': [1],
                   'index': spin[2], 'g-tensors': spin[3]}
         self.spin = result
@@ -70,7 +63,6 @@ class NWChemResult():
         return self.charge
 
     def set_molden(self, molden_filename):
-        # TODO: any processing on file contents?
         self.molden = molden_filename
         return self.molden
 
@@ -413,6 +405,7 @@ class NWChemParser(FileParserInterface):
         return m[0]
 
     def _parse_protocol(self):
+
         '''Parse out dft protocol'''
         functional = []
         basis_set = []
@@ -421,7 +414,6 @@ class NWChemParser(FileParserInterface):
         basis = None
         func = None
         solvent = None
-        ready = False
 
         for line in self.contents:
 
@@ -449,10 +441,16 @@ class NWChemParser(FileParserInterface):
 
         return functional, basis_set, solvation, tasks
 
-    # TODO: what should default to_parse be?
     def parse(self, to_parse=['geometry', 'energy'],
               geom_path=None, molden_path=None):
-        '''Extract relevant information from data'''
+        '''
+        Extract relevant information from NWChem output
+
+        Parameters
+        ----------
+        to_parse : list of str
+            geometry, energy, shielding, spin, frequency, molden, charge, timing 
+        '''
 
         # Check that the file is valid first
         if len(self.contents) == 0:
@@ -655,7 +653,7 @@ class XTBResult():
 
     def __init__(self):
         self.energy = None  # Dictionary, keys: energy, charges
-        self.geometry = None  # String, filename (for now)
+        self.geometry = None  # Geometry object or array of geometry obejects
         self.timing = None  # Dictionary, see function for keys
         self.protocol = None  # Dictionary
 
@@ -920,18 +918,14 @@ class XTBParser(FileParserInterface):
         Split .xyz into separate XYZGeometry instances
         '''
 
-        # with open(FILE) as f:
-
-        #    XYZ = f.readlines()
-
         if len(list(pybel.readfile('xyz', FILE))) > 1:
             geom_list = []
             count = 1
+            XYZ = FILE.split(".")[0]
 
             for geom in pybel.readfile('xyz', FILE):
-                XYZ.split(".")
-                geom.write("xyz", os.path.join(self.temp_dir.name, "%s_%d.xyz" % (XYZ, count)))
-                geom_list.append(os.path.join(self.temp_dir.name, "%s_%d.xyz" % (XYZ, count)))
+                geom.write("xyz", "%s_%d.xyz" % (XYZ, count))
+                geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
             x = [isicle.geometry.load(i) for i in geom_list]
@@ -942,8 +936,11 @@ class XTBParser(FileParserInterface):
         return isicle.conformers.ConformationalEnsemble(x)
 
     def _parse_xyz(self):
+
         FILE = self.xyz_path
-        return self._separate_xyz(FILE)
+        geometry = self._separate_xyz(FILE)
+
+        return geometry
 
     def parse(self, to_parse=['energy']):
         '''Extract relevant information from data'''
@@ -951,15 +948,6 @@ class XTBParser(FileParserInterface):
         # Check that the file is valid first
         if len(self.contents) == 0:
             raise RuntimeError('No contents to parse: {}'.format(self.path))
-        # if self.path.endswith('out') or self.path.endswith('log'):
-        #    ready = False
-        #    for line in self.contents:
-        #        if 'normal termination' in line:
-        #            ready = True
-        #        elif 'terminated normally' in line:
-        #            ready = True
-        #        if ready is False:
-        #            raise RuntimeError('Incomplete XTB run: {}'.format(self.path))
 
         self.parse_crest = False
         self.parse_opt = False
@@ -998,7 +986,7 @@ class XTBParser(FileParserInterface):
                     XYZ = 'tautomers.xyz'
                 elif 'crest' in protocol:
                     self.parse_crest = True
-                    XYZ = 'crest_confomers.xyz'
+                    XYZ = 'crest_conformers.xyz'
 
                 if XYZ is None:
                     raise RuntimeError('XYZ file associated with XTB job not available, \

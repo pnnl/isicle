@@ -522,18 +522,13 @@ class XYZGeometry(XYZGeometryInterface):
         return geom, res
 
     def md_optimize(self, program='xtb', **kwargs):
-        res = isicle.md.md(self.__copy__(), program=program, **kwargs)
+        '''
+        Optimize geometry or generate conformers or adducts from XYZ using stated forcefield.
+        Additional inputs can be energy window, optimization criteria level, charge, or ion.
+        '''
+        geom, res = isicle.md.md(self.__copy__(), program=program, **kwargs)
 
-        # Erase old properties and add new event and DFT properties
-        geom.global_properties = {}
-        geom._update_history('md')
-        geom = geom.add_global_properties(res)
-
-        # TODO: complete result handling
-        # Cases: 1+ XYZ returned
-        # Create a new XYZGeometry for each
-
-        raise NotImplementedError
+        return geom, res
 
     def generate_adducts(self, ion_path=None, ion_method='crest', **kwargs):
         '''
