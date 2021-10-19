@@ -425,7 +425,7 @@ class XYZGeometry(XYZGeometryInterface):
         d['mol'] = mol
         d.pop('xyz')
 
-        return Geometry(kwarg=d)
+        return Geometry(**d)
 
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
@@ -751,7 +751,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         d['xyz'] = xyz
         d.pop('mol')
 
-        return XYZGeometry(kwarg=d)
+        return XYZGeometry(**d)
 
     def _update_structure(self, inplace, mol=None, xyz=None, xyz_filename=None,
                           event=None):
