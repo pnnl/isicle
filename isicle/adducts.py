@@ -254,7 +254,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         self.anions = self._filter_by_substructure_match(self.geom.mol, self.anions)
         self.complex = self._filter_by_substructure_match(self.geom.mol, self.complex)
 
-    def modify_atom_dict(self, init_mol, ion_atomic_num, mode=None):
+    def modify_atom_dict(self, init_mol, ion_atomic_num, mode=None, include_Alkali_ne=False):
         '''
         Downselect atom sites that can accept ions
 
@@ -277,11 +277,10 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             for key, value in all_atom_dict.items():
                 # Check if atom atomic number is the same as the specified ion
                 atom_atomic_num = pt.GetAtomicNumber(value[0])
-                # if atom_atomic_num == ion_atomic_num:
-                if atom_atomic_num in [1, 2, 11, 12]:
-                    # TODO modify logic here
-                    # TODO add check for more ion types
-                    continue
+                if include_Alkali_ne == False:
+                    # Remove ion sites that are alkali or alkaline metals
+                    if atom_atomic_num in [1, 2, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]:
+                        continue
                 # Remove atoms that cannot accept a bond & do not have H to bump
                 elif value[1] == 0 and value[2] == 0:
                     continue
@@ -337,13 +336,14 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             mol_dict[key] = mw
         return mol_dict
 
-    def positive_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize):
+    def positive_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize, include_Alkali_ne):
         '''
         Adds specified cation to RDKit mol object.
         batch=True: adduct generated at every potential base atom
         batch=False, single_atom_idx!=None: adduct generated at specified atom index
         '''
-        atom_dict = self.modify_atom_dict(init_mol, ion_atomic_num, mode='positive')
+        atom_dict = self.modify_atom_dict(
+            init_mol, ion_atomic_num, mode='positive', include_Alkali_ne=include_Alkali_ne)
 
         if ((batch == False) and (single_atom_idx is not None)):
             mol_dict = self.add_ion(
@@ -388,11 +388,12 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             mol_dict[key] = mw
         return mol_dict
 
-    def negative_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize):
+    def negative_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize, include_Alkali_ne):
         '''
         Removes specified anion from RDKit mol object at every potential base atom.
         '''
-        atom_dict = self.modify_atom_dict(init_mol, ion_atomic_num, mode='negative')
+        atom_dict = self.modify_atom_dict(
+            init_mol, ion_atomic_num, mode='negative', include_Alkali_ne=include_Alkali_ne)
         if ((batch == False) and (single_atom_idx is not None)):
             mol_dict = self.remove_ion(
                 init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
@@ -402,7 +403,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             raise ValueError('Must provide an index value with batch==False.')
         return mol_dict
 
-    def generator(self, batch=True, single_atom_idx=None, sanitize=True, optimize=True):
+    def generator(self, batch=True, single_atom_idx=None, sanitize=True, optimize=True, include_Alkali_ne=False):
         '''
         Creates specified adducts at every atom site.
         '''
@@ -414,23 +415,39 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         for ion in self.cations:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', ion)[0])
             mol_dict = self.positive_mode(self.geom.mol, ion_atomic_num,
-                                          batch, single_atom_idx, sanitize, optimize)
-            cation_dict[ion] = mol_dict
+                                          batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+            cation_dict[ion] = list(mol_dict.values())
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self.cations = cation_dict
         for ion in self.anions:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', ion)[0])
             mol_dict = self.negative_mode(self.geom.mol, ion_atomic_num,
-                                          batch, single_atom_idx, sanitize, optimize)
-            anion_dict[ion] = mol_dict
-            # anion_dict defined as {ion-:{base_atom_index: self.geom}}
+                                          batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+            anion_dict[ion] = list(mol_dict.values())
+            # anion_dict defined as {ion-:{base_atom_index: mol}}
             # TODO make change from mol object returned to self.geom
         self.anions = anion_dict
 
         for ion in self.complex:
-            # TODO iterative method for adduct generation
-            # Call both positve_mode and negative_mode
-            raise NotImplementedError
+            split_ion = re.findall('.+?[0-9]?[+-]', ion)
+            temp_mols = [self.geom.mol]
+            out_mols = []
+            for sion in split_ion:
+                ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+-]', sion)[0])
+                for temp_mol in temp_mols:
+                    if '+' in sion:
+                        mol_dict = self.positive_mode(temp_mol, ion_atomic_num,
+                                                      batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+                    elif '-' in sion:
+                        mol_dict = self.negative_mode(temp_mol, ion_atomic_num,
+                                                      batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+                    else:
+                        raise ValueError
+                    if len(temp_mols) > 1:
+                        out_mols.extend(mol_dict.values())
+                    elif len(temp_mols) == 1:
+                        temp_mols = mol_dict.values()
+            complex_dict[ion] = out_mols
         self.complex = complex_dict
 
     def finish(self, write_files=False, path=None, fmt=None):
