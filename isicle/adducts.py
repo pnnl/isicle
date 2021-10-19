@@ -128,23 +128,27 @@ def gas_basicity(MH, M, temp=298.15, SH=108.8):
     return GB
 
 
-def build_adduct_ensemble(geometries):
+def build_adduct_ensembl(geometries):
     '''
     Create an adduct ensemble from a collection of geometries.
 
     Parameters
     ----------
-    geometries : dict of :obj:`~isicle.geometry.Geometry` or related subclass
-        Collection of geometry instances.
+    geometries : dictionary object from generator output
+                 {'IonCharge' : [single_geom...]}
 
     Returns
     -------
-    :obj:`~isicle.adducts.AdductEnsemble`
-        Adduct ensemble.
+    list : geom
 
     '''
+    ensembl = []
+    for k, v in geometries.items():
+        for geom in v:
+            print(geom)
+            ensembl.append(geom.mol)
 
-    return ConformationalEnsemble(geometries)
+    return ensembl
 
 
 def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
@@ -196,7 +200,7 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
     # Combine/ optionally write files
     res = iw.finish()
 
-    geom = geom._update_structure(False, mol=res)
+    #geom = geom._update_structure(False, mol=res)
     geom.global_properties = {}
     geom._update_history('ionize')
     geom.add_global_properties(res)
@@ -318,7 +322,9 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         if optimize is True:
             Chem.AllChem.EmbedMolecule(mw)
             Chem.AllChem.UFFOptimizeMolecule(mw)
-        return mw
+        geom = geometry.Geometry(mol=mw, history=self.geom.get_history())
+        geom._update_history('ionize')
+        return geom
 
     def add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
         '''
@@ -370,7 +376,9 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         if optimize is True:
             Chem.AllChem.EmbedMolecule(mw)
             Chem.AllChem.UFFOptimizeMolecule(mw)
-        return mw
+        geom = geometry.Geometry(mol=mw, history=self.geom.get_history())
+        geom._update_history('ionize')
+        return geom
 
     def remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
         '''
@@ -423,21 +431,20 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
                                           batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
             anion_dict[ion] = list(mol_dict.values())
             # anion_dict defined as {ion-:{base_atom_index: mol}}
-            # TODO make change from mol object returned to self.geom
         self.anions = anion_dict
 
         for ion in self.complex:
             split_ion = re.findall('.+?[0-9]?[+-]', ion)
-            temp_mols = [self.geom.mol]
+            temp_mols = [self.geom]
             out_mols = []
             for sion in split_ion:
                 ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+-]', sion)[0])
                 for temp_mol in temp_mols:
                     if '+' in sion:
-                        mol_dict = self.positive_mode(temp_mol, ion_atomic_num,
+                        mol_dict = self.positive_mode(temp_mol.mol, ion_atomic_num,
                                                       batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
                     elif '-' in sion:
-                        mol_dict = self.negative_mode(temp_mol, ion_atomic_num,
+                        mol_dict = self.negative_mode(temp_mol.mol, ion_atomic_num,
                                                       batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
                     else:
                         raise ValueError
@@ -478,6 +485,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
                 for key2, value2 in value.items():
                     geometry.Geometry.save(value2, os.path.join(
                         path, '{}{}.{}'.format(key, key2, fmt)), fmt)
+
         return ion_dict
 
 
