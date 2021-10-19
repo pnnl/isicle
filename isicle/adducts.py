@@ -88,6 +88,14 @@ def _ionize_method_selector(ion_method):
         raise ValueError('{} not a supported ionization method.'.format(ion_method))
 
 
+def _check_atom_group(ion_atomic_num):
+    """
+    Checks periodic group atom belongs to.
+
+    """
+    return ion_atomic_num in [1, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]
+
+
 def proton_affinity(MH, M, temp=298.15):
     '''
     Calculate proton affinity relative to passed M+H, M values
@@ -282,7 +290,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
                 atom_atomic_num = pt.GetAtomicNumber(value[0])
                 if include_Alkali_ne == False:
                     # Remove ion sites that are alkali or alkaline metals
-                    if atom_atomic_num in [1, 2, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]:
+                    if _check_atom_group(atom_atomic_num):
                         continue
                 # Remove atoms that cannot accept a bond & do not have H to bump
                 elif value[1] == 0 and value[2] == 0:
@@ -514,17 +522,11 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         self.anions = safelist(anions)
         self.complex = safelist(complex)
 
-    def _check_atom_group(self, ion_atomic_num):
-        """
-        Checks periodic group atom belongs to.
-        xtb supports alkali and alkaline earth metals.
-        """
-        return ion_atomic_num in [1, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]
-
     def _filter_supported_by_xtb(self, unknown_valid_list):
         """
         Filters ions by what is supported by xtb software.
         consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
+        xtb supports alkali and alkaline earth metals.
         """
         pt = Chem.GetPeriodicTable()
         valid_list = []
@@ -534,7 +536,7 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
                 raise ValueError(f"Couldn't check supplied ion {ion} in _check_supported_by_xtb")
             else:
                 parsed_num = [pt.GetAtomicNumber(i) for i in parsed_ion]
-                group_check = [self._check_atom_group(i) for i in parsed_num]
+                group_check = [_check_atom_group(i) for i in parsed_num]
                 if False in group_check:
                     continue
                 else:
