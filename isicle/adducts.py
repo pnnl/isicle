@@ -198,12 +198,9 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
     res = iw.finish()
 
     geom = geom._update_structure(False, mol=res)
-
-    # Erase old properties and add new event and DFT properties
     geom.global_properties = {}
     geom._update_history('ionize')
-    geom = geom.add_global_properties(res)
-
+    geom.add_global_properties(res)
     return geom, res
 
 
