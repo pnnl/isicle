@@ -535,7 +535,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         raise NotImplementedError
 
-    def generate_adducts(self, ion_path=None, ion_method='crest', **kwargs):
+    def generate_adducts(self, ion_path=None, ion_list=None, ion_method='explicit', inplace=False, **kwargs):
         '''
         Ionize geometry, using specified list of ions and method of ionization.
 
@@ -543,6 +543,11 @@ class XYZGeometry(XYZGeometryInterface):
         ----------
         ion_path : str
             Filepath to text file containing ions with charge (eg. H+) to be considered
+            Either ion_path or ion_list must be specified
+        ion_list : list
+            List of strings of adducts to be considered.
+            Must be specifed in syntax 'Atom+' or 'Atom-', eg. 'H+', 'Na+', 'H-Na+'
+            Either ion_path or ion_list must be specified
         ion_method : str
             Method of ionization to be used, 'explicit' or 'crest' is accepted
         write_files : boolean (optional)
@@ -551,20 +556,14 @@ class XYZGeometry(XYZGeometryInterface):
             Directory to write output files. Only used if `write_files` is True
         fmt : str (optional)
             Format in which to save the RDKit mol object. Only used if `write_files` is True
-
         '''
 
-        res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path,
-                                    ion_method=ion_method, **kwargs)
-        AE = isicle.adducts.build_adduct_ensemble(res)
+        geom, res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path, ion_list=ion_list,
+                                          ion_method=ion_method, **kwargs)
+        #AE = isicle.adducts.build_adduct_ensemble(res)
         # res format {ion<charge>:{base_atom_index: mol}} if explicit
         # res format {ion<charge>:mol} if crest
-        # Erase old properties and add new event and DFT properties
-        geom.global_properties = {}
-        geom._update_history('adducts')
-        geom = geom.add_global_properties(res)
-
-        raise NotImplementedError
+        return geom, res
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
