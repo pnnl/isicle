@@ -509,7 +509,6 @@ class XYZGeometry(XYZGeometryInterface):
 
         # Add to global_properties
         self.global_properties.update(d)
-
         return
 
     def dft_optimize(self, program='NWChem', template=None, **kwargs):
@@ -556,6 +555,10 @@ class XYZGeometry(XYZGeometryInterface):
             Directory to write output files. Only used if `write_files` is True
         fmt : str (optional)
             Format in which to save the RDKit mol object. Only used if `write_files` is True
+        sanitize : boolean (optional)
+            If receiving a kekulize RDKit error, set flag to False
+        optimize : boolean (optional)
+            If receiving a kekulize RDKit error, set flag to False
         '''
 
         geom, res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path, ion_list=ion_list,
@@ -563,6 +566,7 @@ class XYZGeometry(XYZGeometryInterface):
         #AE = isicle.adducts.build_adduct_ensemble(res)
         # res format {ion<charge>:{base_atom_index: mol}} if explicit
         # res format {ion<charge>:mol} if crest
+
         return geom, res
 
     def get_natoms(self):
