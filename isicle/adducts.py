@@ -180,7 +180,6 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
     # Select ionization method
     iw = _ionize_method_selector(ion_method)
 
-    # TODO make sure removeHs=False
     # Load in geometry of geom object
     iw.set_geometry(geom)
 
@@ -299,7 +298,6 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
             return atom_dict
 
-        # TODO where is this referenced
         elif mode == None:
             raise NotImplementedError
 
@@ -631,7 +629,6 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         :obj:`~isicle.parse.NWChemResult`
             Parsed result data.
         '''
-        # TODO parse to identify protonated atom location
         ion_dict = {**self.cations, **self.anions, **self.complex}
         # ion dict format {ion<charge>:mol}
         return ion_dict
