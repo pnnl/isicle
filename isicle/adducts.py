@@ -55,15 +55,14 @@ def parse_ions(ion_list):
     complex = []
     ion_list = safelist(ion_list)
     for x in ion_list:
-        if ('+' and '-') in x:
+        if ('+' in x) and ('-' in x):
             complex.append(x)
-        elif ('+') in x:
+        elif '+' in x:
             cations.append(x)
-        elif ('-') in x:
+        elif '-' in x:
             anions.append(x)
         else:
             raise ValueError('Unrecognized ion specified: {}'.format(x))
-            # TODO insert more descriptive error
     return (cations, anions, complex)
 
 
@@ -188,23 +187,24 @@ def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
     # Load specified ions by type
     iw.set_ions(cations, anions, complex)
 
-    # TODO substructure check to validate specified ion support
-    # iw.check_valid()
+    # Validity check if negative ionization can be done
+    # Validity check if CREST supports the ions specified
+    iw.check_valid()
 
     # Generate adducts
     iw.generator(**kwargs)
 
     # Combine/ optionally write files
     res = iw.finish()
-    """
-    geom = geom._update_structure(False, mol=res.)
+
+    geom = geom._update_structure(False, mol=res)
 
     # Erase old properties and add new event and DFT properties
     geom.global_properties = {}
-    geom._update_history('md')
-    geom = geom.add_global_properties(res.to_dict())
-    """
-    return res  # geom, res
+    geom._update_history('ionize')
+    geom = geom.add_global_properties(res)
+
+    return geom, res
 
 
 class ExplicitIonizationWrapper(IonizeWrapperInterface):
@@ -236,22 +236,26 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         self.anions = safelist(anions)
         self.complex = safelist(complex)
 
+    def _filter_by_substructure_match(self, init_mol, unknown_valid_list):
+        valid_list = []
+        for ion in unknown_valid_list:
+            parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
+            subset = [f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
+            subset_mol = [Chem.MolFromSmiles(i, sanitize=False) for i in subset]
+            substruc_check = [i for i in subset_mol if init_mol.HasSubstructMatch(i)]
+            if False in substruc_check:
+                continue
+            else:
+                valid_list.append(ion)
+        return valid_list
+
     def check_valid(self):
         '''
         Perform substructure search
         Check ion list against CREST nomenclature for ions, supported ion type
         '''
-        # consider calc_new_mz from
-        # https://github.com/pnnl/mame/blob/24f9fcb19639d5a1c2ca0f788c55d6a2efe18ca6/mame/mame_utils.py
-        # consider add_formala, remove_formula from
-        # https://github.com/pnnl/mame/blob/24f9fcb19639d5a1c2ca0f788c55d6a2efe18ca6/mame/formula_module.py
-        # mol.HasSubstructMatch((ion.strip('+')).strip('-'))
-        # complex structure checking, spectre?
-        # consider how substructure would break off, not all atoms may be from same region
-
-        # TODO (1) check if ions are in supported list of ions
-        # TODO (2) modify self.anions, self.cations, self.complex to conform to supported ions
-        return
+        self.anions = self._filter_by_substructure_match(self.geom.mol, self.anions)
+        self.complex = self._filter_by_substructure_match(self.geom.mol, self.complex)
 
     def modify_atom_dict(self, init_mol, ion_atomic_num, mode=None):
         '''
@@ -276,7 +280,8 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             for key, value in all_atom_dict.items():
                 # Check if atom atomic number is the same as the specified ion
                 atom_atomic_num = pt.GetAtomicNumber(value[0])
-                if atom_atomic_num == ion_atomic_num:
+                # if atom_atomic_num == ion_atomic_num:
+                if atom_atomic_num in [1, 2, 11, 12]:
                     # TODO modify logic here
                     # TODO add check for more ion types
                     continue
@@ -307,14 +312,8 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
         Returns ionized RDKit mol object.
         '''
-        import rdkit.Chem.rdchem as rdc
-        from rdkit.Chem import AllChem
-        # TODO only works for single atom ion
-
-        mw = rdc.RWMol(init_mol)
-        atom_idx = rdc.RWMol.AddAtom(mw, rdc.Atom(ion_atomic_num))
-        # atom idx starts at 0; GetNumAtoms returns last idx val+1
-        #atom_idx = init_mol.GetNumAtoms()
+        mw = Chem.RWMol(init_mol)
+        atom_idx = mw.AddAtom(Chem.Atom(ion_atomic_num))
         ba = mw.GetAtomWithIdx(base_atom_idx)
         fc = ba.GetFormalCharge()
         mw.AddBond(base_atom_idx, atom_idx, Chem.BondType.SINGLE)
@@ -323,8 +322,8 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         if sanitize is True:
             Chem.SanitizeMol(mw)
         if optimize is True:
-            AllChem.EmbedMolecule(mw)
-            AllChem.UFFOptimizeMolecule(mw)
+            Chem.AllChem.EmbedMolecule(mw)
+            Chem.AllChem.UFFOptimizeMolecule(mw)
         return mw
 
     def add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
@@ -336,18 +335,19 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         mol_dict = {}
         for key in atom_dict.keys():
-            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize=sanitize, optimize=optimize)
+            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, optimize)
             # Format {atom_base_idx:<newmol>}
             mol_dict[key] = mw
         return mol_dict
 
-    def positive_mode(self, init_mol, ion_atomic_num, batch=True, single_atom_idx=None, sanitize=False, optimize=False):
+    def positive_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize):
         '''
         Adds specified cation to RDKit mol object.
         batch=True: adduct generated at every potential base atom
         batch=False, single_atom_idx!=None: adduct generated at specified atom index
         '''
         atom_dict = self.modify_atom_dict(init_mol, ion_atomic_num, mode='positive')
+
         if ((batch == False) and (single_atom_idx is not None)):
             mol_dict = self.add_ion(
                 init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
@@ -357,27 +357,27 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             raise ValueError('Must provide an index value with batch==False.')
         return mol_dict
 
-    def _remove_ion(init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
+    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
         '''
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
         Returns deionized RDKit mol object.
         '''
         import rdkit.Chem.rdchem as rdc
-        mw = rdc.RWMol(init_mol)
+        mw = Chem.RWMol(init_mol)
         ba = mw.GetAtomWithIdx(base_atom_idx)
         fc = ba.GetFormalCharge()
-        nbrs_dict = {nbr.GetAtomicNum(): nbr.GetIdx() for nbr in base_atom.GetNeighbors()}
+        nbrs_dict = {nbr.GetAtomicNum(): nbr.GetIdx() for nbr in ba.GetNeighbors()}
         mw.RemoveAtom(nbrs_dict[ion_atomic_num])
         ba.SetFormalCharge(fc-1)
         mw.UpdatePropertyCache(strict=False)
         if sanitize is True:
             Chem.SanitizeMol(mw)
         if optimize is True:
-            AllChem.EmbedMolecule(mw)
-            AllChem.UFFOptimizeMolecule(mw)
+            Chem.AllChem.EmbedMolecule(mw)
+            Chem.AllChem.UFFOptimizeMolecule(mw)
         return mw
 
-    def remove_ion(init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
+    def remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
         '''
         Iterates through base atoms of RDKit mol object.
         Calls method to deionize and return new RDKit mol object.
@@ -386,15 +386,16 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         mol_dict = {}
         for key, value in atom_dict.items():
-            mw = self._remove_ion(init_mol, key, value[3], ion_atomic_num, sanitize, optimize)
-            mol_dict[value[3]] = mw
+            mw = self._remove_ion(
+                init_mol, key, ion_atomic_num, sanitize, optimize)
+            mol_dict[key] = mw
         return mol_dict
 
-    def negative_mode(self, init_mol, ion_atomic_num, batch=True, single_atom_idx=None, sanitize=False, optimize=False):
+    def negative_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize):
         '''
         Removes specified anion from RDKit mol object at every potential base atom.
         '''
-        atom_dict = self.modify_atom_dict(init_mol, mode='negative')
+        atom_dict = self.modify_atom_dict(init_mol, ion_atomic_num, mode='negative')
         if ((batch == False) and (single_atom_idx is not None)):
             mol_dict = self.remove_ion(
                 init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
@@ -404,7 +405,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             raise ValueError('Must provide an index value with batch==False.')
         return mol_dict
 
-    def generator(self, sanitize=False, optimize=False):
+    def generator(self, batch=True, single_atom_idx=None, sanitize=True, optimize=True):
         '''
         Creates specified adducts at every atom site.
         '''
@@ -414,18 +415,16 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         complex_dict = {}
 
         for ion in self.cations:
-            sion = ion.strip('+')
-            ion_atomic_num = pt.GetAtomicNumber(sion)
+            ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', ion)[0])
             mol_dict = self.positive_mode(self.geom.mol, ion_atomic_num,
-                                          sanitize=sanitize, optimize=optimize)
+                                          batch, single_atom_idx, sanitize, optimize)
             cation_dict[ion] = mol_dict
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self.cations = cation_dict
         for ion in self.anions:
-            sion = ion.strip('-')
-            ion_atomic_num = pt.GetAtomicNumber(sion)
+            ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', ion)[0])
             mol_dict = self.negative_mode(self.geom.mol, ion_atomic_num,
-                                          sanitize=sanitize, optimize=optimize)
+                                          batch, single_atom_idx, sanitize, optimize)
             anion_dict[ion] = mol_dict
             # anion_dict defined as {ion-:{base_atom_index: self.geom}}
             # TODO make change from mol object returned to self.geom
@@ -495,15 +494,56 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         self.anions = safelist(anions)
         self.complex = safelist(complex)
 
-    def check_valid(self, ion):
+    def _check_atom_group(self, ion_atomic_num):
+        """
+        Checks periodic group atom belongs to.
+        xtb supports alkali and alkaline earth metals.
+        """
+        return ion_atomic_num in [1, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]
+
+    def _filter_supported_by_xtb(self, unknown_valid_list):
+        """
+        Filters ions by what is supported by xtb software.
+        consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
+        """
+        pt = Chem.GetPeriodicTable()
+        valid_list = []
+        for ion in unknown_valid_list:
+            parsed_ion = re.findall('(.+?)[0-9]?[+-]', ion)
+            if len(parsed_ion) == 0:
+                raise ValueError(f"Couldn't check supplied ion {ion} in _check_supported_by_xtb")
+            else:
+                parsed_num = [pt.GetAtomicNumber(i) for i in parsed_ion]
+                group_check = [self._check_atom_group(i) for i in parsed_num]
+                if False in group_check:
+                    continue
+                else:
+                    valid_list.append(ion)
+        return valid_list
+
+    def _filter_by_substructure_match(self, init_mol, unknown_valid_list):
+        valid_list = []
+        for ion in unknown_valid_list:
+            parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
+            subset = [f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
+            subset_mol = [Chem.MolFromSmiles(i, sanitize=False) for i in subset]
+            substruc_check = [i for i in subset_mol if init_mol.HasSubstructMatch(subset_mol)]
+            if False in substruc_check:
+                continue
+            else:
+                valid_list.append(ion)
+        return valid_list
+
+    def check_valid(self):
         '''
         Performs substructure search and checks if supported by CREST documentation
         '''
-        # mol.HasSubstructMatch((ion.strip('+')).strip('-'))
+        self.cations = self._filter_supported_by_xtb(self.cations)
+        self.anions = self._filter_supported_by_xtb(self.anions)
+        self.complex = self._filter_supported_by_xtb(self.complex)
 
-        # TODO institute ion list check against list of supported CREST ions
-        # downfilter by supported ions
-        # consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
+        self.anions = self._filter_by_substructure_match(self.geom, self.anions)
+        self.complex = self._filter_by_substructure_match(self.geom, self.complex)
 
     def positive_mode(self, forcefield, ewin, cation, molecular_charge, optlevel, dryrun):
         '''
