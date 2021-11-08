@@ -82,7 +82,7 @@ def md(geom, program='xtb', **kwargs):
     # res['geometry'] will be None or a path to an xyz file(s).
     res = mdw.finish()
 
-    geom = geom._update_structure(False, xyz=res.geometry)
+    geom = res.geometry
 
     # Erase old properties and add new event and MD properties
     geom.global_properties = {}
@@ -116,7 +116,7 @@ class XTBWrapper(WrapperInterface):
 
     def __init__(self):
         '''
-        Initialize :obj:`MDChemWrapper` instance.
+        Initialize :obj:`XTBWrapper` instance.
 
         Creates temporary directory for intermediate files, establishes aliases
         for preconfigured tasks.
