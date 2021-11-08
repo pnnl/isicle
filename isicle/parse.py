@@ -5,7 +5,7 @@ import glob
 import os
 import pickle
 import numpy as np
-import pybel
+from openbabel import pybel
 import isicle
 
 
