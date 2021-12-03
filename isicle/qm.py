@@ -415,7 +415,7 @@ class NWChemWrapper(WrapperInterface):
         s += self._configure_dft(functional=functional)
 
         # Add driver block
-        s += self._configure_driver(max_iter=150)
+        s += self._configure_driver(max_iter=max_iter)
 
         # Add COSMO block
         if cosmo:

@@ -82,15 +82,15 @@ def md(geom, program='xtb', **kwargs):
     # res['geometry'] will be None or a path to an xyz file(s).
     res = mdw.finish()
 
-    geom = res.geometry
+    # geom = res.geometry
 
-    # Erase old properties and add new event and MD properties
-    geom.global_properties = {}
-    geom._update_history('md')
-    geom.add_global_properties(res.to_dict())
+    # # Erase old properties and add new event and MD properties
+    # geom.global_properties = {}
+    # geom._update_history('md')
+    # geom.add_global_properties(res.to_dict())
 
     # Finish/clean up
-    return geom, res
+    return res
 
 class XTBWrapper(WrapperInterface):
     '''
