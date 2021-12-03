@@ -1,0 +1,7 @@
+sphinx >=3
+sphinxcontrib-napoleon
+sphinx_rtd_theme
+numpy>=1.19.4
+pandas>=1.1.4
+snakemake>=6.3.0
+statsmodels>=0.12.1

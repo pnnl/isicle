@@ -1,4 +1,8 @@
-Copyright (c) 2018-2021, Battelle Memorial Institute
+=======
+License
+=======
+
+Copyright (c) 2018, Battelle Memorial Institute
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
