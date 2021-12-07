@@ -97,7 +97,9 @@ def dft(geom, program='NWChem', template=None, **kwargs):
     geom._update_history('dft')
     geom = geom.add_global_properties(res.to_dict())
 
-    return geom, res
+    res.geometry = geom
+
+    return res
 
 
 class NWChemWrapper(WrapperInterface):
