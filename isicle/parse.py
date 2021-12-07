@@ -460,6 +460,7 @@ class NWChemParser(FileParserInterface):
 
         # Initialize result object to store info
         result = NWChemResult()
+        result.path = self.path
 
         try:
             protocol = self._parse_protocol()
