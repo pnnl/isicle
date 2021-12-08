@@ -1,3 +1,4 @@
+from io import StringIO
 from isicle.interfaces import XYZGeometryInterface, GeometryInterface
 import isicle
 import pickle
@@ -335,7 +336,6 @@ def load(path: str, force=False):
     '''
 
     # TODO: update doc to reflect possible return of xyzgeom
-
     path = path.strip()
     extension = os.path.splitext(path)[-1].lower()
 
@@ -390,7 +390,6 @@ class XYZGeometry(XYZGeometryInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        print(kwargs)
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
@@ -625,22 +624,25 @@ class XYZGeometry(XYZGeometryInterface):
         props = self.get_global_properties()
 
         # Check for charges in global properties
-        if ('energy' not in props) or (props['energy']['charges'] is None):
+        if ('energy' not in props) or ('charge' not in props):
             raise KeyError('DFT energy optimization required. '
                            'See isicle.qm.dft.')
 
         # Get XYZ coordinates
-        xyz = self.to_xyzblock()
+        xyz = pd.read_csv(StringIO(self.to_xyzblock()),
+                          skiprows=2, header=None,
+                          delim_whitespace=True,
+                          names=['Atom', 'x', 'y', 'z'])
 
         # Extract and append charges
-        xyz['Charge'] = props['energy']['charges']
+        xyz['Charge'] = props['charge']
 
         # Load masses and merge
         masses = isicle.utils.atomic_masses()[['Symbol', 'Mass']]
         mfj = pd.merge(xyz, masses, left_on='Atom', right_on='Symbol')
 
         # Rename columns
-        mfj = mfj[['x', 'y', 'z', 'Mass', 'Charge']]
+        mfj = mfj[['x', 'y', 'z', 'Mass', 'Charge']].astype(float)
 
         # Write to file
         with open(path, 'w') as f:
