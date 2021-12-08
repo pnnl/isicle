@@ -97,4 +97,4 @@ class TypedList(collections.abc.MutableSequence):
 
 def atomic_masses():
     path = resource_filename('isicle', 'resources/atomic_masses.tsv')
-    return pd.read_csv(path, sep='\t')
+    return pd.read_csv(path, delim_whitespace=True)
