@@ -24,8 +24,7 @@ class NWChemResult():
         self.protocol = None  # Dictionary
 
     def set_energy(self, energy):
-        result = {'energy': [energy[0]]}
-        self.energy = result
+        self.energy = energy
         return self.energy
 
     def set_geometry(self, geometry):
@@ -58,8 +57,7 @@ class NWChemResult():
         return self.timing
 
     def set_charge(self, charge):
-        result = {'charge': charge}
-        self.charge = result
+        self.charge = charge
         return self.charge
 
     def set_molden(self, molden_filename):
@@ -188,6 +186,14 @@ class NWChemParser(FileParserInterface):
 
         return name
 
+    def _parse_geometry(self):
+        search = os.path.dirname(self.path)
+        geoms = sorted(glob.glob(os.path.join(search, '*.xyz')))
+        if len(geoms) > 0:
+            return isicle.geometry.load(geoms[-1])
+        print(4)
+        raise Exception
+
     def _parse_energy(self):
 
         # TO DO: Add Initial energy and final energy if different
@@ -199,9 +205,9 @@ class NWChemParser(FileParserInterface):
         for line in self.contents:
             if 'Total DFT energy' in line:
                 # Overwrite last saved energy
-                energy = line.split()[-1]
+                energy = float(line.split()[-1])
 
-        return energy, None
+        return energy
 
     def _parse_shielding(self):
 
@@ -299,6 +305,8 @@ class NWChemParser(FileParserInterface):
         if has_frequency is True:
             freq = np.array([float(x.split()[1]) for x in self.contents[freq_start:freq_stop + 1]])
             return freq, enthalpies, entropies, capacities, zpe
+        
+        raise Exception
 
     def _parse_charge(self):
         # TO DO: Parse molecular charge and atomic charges
@@ -325,14 +333,15 @@ class NWChemParser(FileParserInterface):
             # elif ready is True:
             #     lowdinIdx.append(i + 2)
             #     ready = False
-            elif 'Shell Charges' in line and ready is True:  # Shell Charges
-                lowdinIdx.append(i + 2)
-                ready = False
-            elif 'Lowdin Population Analysis' in line:
-                ready = True
+            # elif 'Shell Charges' in line and ready is True:  # Shell Charges
+            #     lowdinIdx.append(i + 2)
+            #     ready = False
+            # elif 'Lowdin Population Analysis' in line:
+            #     ready = True
 
         # Process table if one was found
         if len(charges) > 0:
+            # return charges
 
             # Remove blank line in charges (table edge)
             charges = charges[1:]
@@ -343,9 +352,9 @@ class NWChemParser(FileParserInterface):
             df.Number = df.Number.astype('int')
             df.Charge = df.Number - df.Charge.astype('float')
 
-            return energy, df.Charge.tolist()
+            return df.Charge.values
 
-        return None
+        raise Exception
 
     def _parse_timing(self):
 
@@ -400,7 +409,7 @@ class NWChemParser(FileParserInterface):
         m = glob.glob(search + '*.molden')
 
         if len(m) != 1:
-            return None
+            raise Exception
 
         return m[0]
 
@@ -465,18 +474,21 @@ class NWChemParser(FileParserInterface):
         try:
             protocol = self._parse_protocol()
             result.set_protocol(protocol)  # Stored as dictionary
-        except IndexError:
+        except:
             pass
 
         if 'geometry' in to_parse:
 
             try:
-                if geom_path is None:
-                    geom_path = self.path
-                geometry_filename = self._parse_geometry_filename(geom_path)
-                result.set_geometry(geometry_filename)  # Store as filename
+                # if geom_path is None:
+                #     geom_path = self.path
+                # geometry_filename = self._parse_geometry_filename(geom_path)
+                # result.set_geometry(geometry_filename)  # Store as filename
 
-            except IndexError:
+                geom = self._parse_geometry()
+                result.set_geometry(geom)
+
+            except:
                 pass
 
         if 'energy' in to_parse:
@@ -484,28 +496,28 @@ class NWChemParser(FileParserInterface):
             try:
                 energy = self._parse_energy()
                 result.set_energy(energy)  # Stored as dictionary
-            except IndexError:
+            except:
                 pass
 
         if 'shielding' in to_parse:
             try:
                 shielding = self._parse_shielding()
                 result.set_shielding(shielding)  # Stored as dictionary
-            except UnboundLocalError:  # Must be no shielding info
+            except:  # Must be no shielding info
                 pass
 
         if 'spin' in to_parse:  # N2S
             try:
                 spin = self._parse_spin()
                 result.set_spin(spin)
-            except IndexError:
+            except:
                 pass
 
         if 'frequency' in to_parse:
             try:
                 frequency = self._parse_frequency()
                 result.set_frequency(frequency)
-            except IndexError:
+            except:
                 pass
 
         if 'molden' in to_parse:
@@ -514,21 +526,21 @@ class NWChemParser(FileParserInterface):
                     molden_path = self.path
                 molden_filename = self._parse_molden(molden_path)
                 result.set_molden(molden_filename)
-            except IndexError:
+            except:
                 pass
 
         if 'charge' in to_parse:
             try:
                 charge = self._parse_charge()
                 result.set_charge(charge)
-            except IndexError:
+            except:
                 pass
 
         if 'timing' in to_parse:
             try:
                 timing = self._parse_timing()
                 result.set_timing(timing)
-            except IndexError:
+            except:
                 pass
 
         self.result = result
