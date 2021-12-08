@@ -88,16 +88,16 @@ def dft(geom, program='NWChem', template=None, **kwargs):
     # Finish/clean up
     res = qmw.finish()
 
-    # Create new Geometry with updated structure
-    # res['geometry'] will be None or a path to an xyz file.
-    geom = geom._update_structure(False, xyz_filename=res['geometry'])
+    # # Create new Geometry with updated structure
+    # # res['geometry'] will be None or a path to an xyz file.
+    # geom = geom._update_structure(False, xyz_filename=res['geometry'])
 
-    # Erase old properties and add new event and DFT properties
-    geom.global_properties = {}
-    geom._update_history('dft')
-    geom = geom.add_global_properties(res.to_dict())
+    # # Erase old properties and add new event and DFT properties
+    # geom.global_properties = {}
+    # geom._update_history('dft')
+    # geom = geom.add_global_properties(res.to_dict())
 
-    res.geometry = geom
+    # res.geometry = geom
 
     return res
 
@@ -791,8 +791,8 @@ class NWChemWrapper(WrapperInterface):
         parser = NWChemParser()
         parser.load(os.path.join(self.temp_dir.name,
                                  self.geom.basename + '.out'))
-        result = parser.parse(to_parse=['energy', 'shielding', 'spin',
-                                        'molden', 'frequency'])
+        result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'charge',
+                                        'geometry', 'molden', 'frequency'])
 
         if keep_files is True:
             import shutil
@@ -814,7 +814,7 @@ class NWChemWrapper(WrapperInterface):
 
                 [shutil.copy2(x, path) for x in geoms]
 
-        # Remove temporary files
-        self.temp_dir.cleanup()
+        # # Remove temporary files
+        # self.temp_dir.cleanup()
 
         return result
