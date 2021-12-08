@@ -38,15 +38,6 @@ class MobcalWrapper(WrapperInterface):
 
     def __init__(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.atom_params = os.path.join(self.temp_dir.name,
-                                        'atomtype_parameters.in')
-        self.mobcal_params = os.path.join(self.temp_dir.name,
-                                          'mobcal.params')
-
-        self.infile = os.path.join(self.temp_dir.name,
-                                   self.geom.basename + '.mfj')
-        self.outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
-        self.logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
 
     def set_geometry(self, geom):
         '''
@@ -61,6 +52,12 @@ class MobcalWrapper(WrapperInterface):
 
         # Assign geometry
         self.geom = geom
+
+        # other files
+        self.infile = os.path.join(self.temp_dir.name,
+                                   self.geom.basename + '.mfj')
+        self.outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
+        self.logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
 
     def save_geometry(self):
         '''
@@ -80,6 +77,9 @@ class MobcalWrapper(WrapperInterface):
         if path is None:
             path = resource_filename('isicle', 'resources/lennard_jones.txt')
 
+        self.atom_params = os.path.join(self.temp_dir.name,
+                                        'atomtype_parameters.in')
+
         shutil.copy2(path, self.atom_params)
 
     def _configure_mobcal(self, i2=5013489, buffer_gas='helium',
@@ -96,8 +96,12 @@ class MobcalWrapper(WrapperInterface):
              'IMP': imp,
              'NUM_THREADS': processes}
 
+        self.mobcal_params = os.path.join(self.temp_dir.name,
+                                          'mobcal.params')
+
         with open(self.mobcal_params, 'w') as f:
             f.write('\n'.join(['{} {}'.format(k, v) for k, v in d.items()]))
+            f.write('\n')
 
     def configure(self, lennard_jones='default', i2=5013489,
                   buffer_gas='helium', buffer_gas_mass=4.0026, temp=300,
