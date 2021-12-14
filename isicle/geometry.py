@@ -812,6 +812,21 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
+    def initial_optimize(self, inplace=False):
+        mol = self.to_mol()
+        try:
+            Chem.AllChem.EmbedMolecule(mol)
+            Chem.AllChem.UFFOptimizeMolecule(mol)
+        except:
+            Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+            Chem.AllChem.UFFOptimizeMolecule(mol)
+        
+        geom = self._update_structure(inplace, mol=mol)
+        geom.global_properties = {}
+        geom._update_history('initial_optimize')
+
+        return geom
+
     # TODO: enable multiple salts to be passed, defaulting to all possible
     # salts
     def desalt(self, salts=None, inplace=False):
