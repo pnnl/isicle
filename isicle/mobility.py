@@ -142,6 +142,6 @@ class MobcalWrapper(WrapperInterface):
         result = parser.parse()
 
         # Remove temporary files
-        self.temp_dir.cleanup()
+        # self.temp_dir.cleanup()
 
         return result
