@@ -70,7 +70,7 @@ def md(geom, program='xtb', **kwargs):
         mdw.save_geometry()
 
     # Build command line 
-    mdw.configure()
+    mdw.configure(**kwargs)
 
     #Save configuration
     mdw.save_config()
@@ -262,7 +262,7 @@ class XTBWrapper(WrapperInterface):
             s += '-swel ' + ion + ' '
 
         if charge is not None:
-            s += '-chrg ' + charge + ' '
+            s += '-chrg ' + str(charge) + ' '
 
         # Add dryrun option
         if dryrun:
