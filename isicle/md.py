@@ -161,7 +161,7 @@ class XTBWrapper(WrapperInterface):
         self.geom.save(outfile)
         self.geom.path = outfile
 
-    def _configure_xtb(self, forcefield='gff', optlevel='normal',charge=None):
+    def _configure_xtb(self, forcefield='gff', optlevel='normal', charge=None):
         '''
         Set command line for xtb simulations.
 
@@ -206,7 +206,7 @@ class XTBWrapper(WrapperInterface):
 
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
                        protonate=False, deprotonate=False, tautomerize=False,
-                       ion=None, charge=None, dryrun=False):
+                       ion=None, charge=None, dryrun=False, processes=1):
 
         '''
         Set command line for crest simulations.
@@ -280,6 +280,9 @@ class XTBWrapper(WrapperInterface):
         # Add scratch folder
         s += '--scratch '
 
+        # Number of processes
+        s += '-T ' + str(processes) + ' '
+
         # Add output
         s += '&>' + ' '
 
@@ -290,7 +293,7 @@ class XTBWrapper(WrapperInterface):
         return s
 
     def configure(self, task='optimize', forcefield='gff', charge=None,
-                  ewin=6, ion=None, optlevel='Normal', dryrun=False):
+                  ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1):
         '''
         Generate command line 
 
@@ -351,7 +354,8 @@ class XTBWrapper(WrapperInterface):
                                            tautomerize=t,
                                            ion=i,
                                            charge=charge,
-                                           dryrun=dryrun)
+                                           dryrun=dryrun,
+                                           processes=processes)
 
         self.task = task
 
