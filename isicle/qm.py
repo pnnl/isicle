@@ -746,7 +746,7 @@ class NWChemWrapper(WrapperInterface):
         parser.load(os.path.join(self.temp_dir.name,
                                  self.geom.basename + '.out'))
         result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'charge',
-                                        'geometry', 'molden', 'frequency'])
+                                        'geometry', 'molden', 'frequency', 'timing'])
 
         self.__dict__.update(result)
         self.geom.add_global_properties({k: v for k, v in result.items() if k != 'geom'})
