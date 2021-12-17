@@ -35,15 +35,22 @@ def _program_selector(program):
                          .format(program))
 
 
-def dft(program='NWChem'):
+def dft(geom, program='NWChem', template=None, **kwargs):
     '''
     Optimize geometry via density functional theory using supplied functional
     and basis set.
 
     Parameters
     ----------
+    geom : :obj:`~isicle.geometry.Geometry`
+        Molecule representation.
     program : str
         Alias for program selection (NWChem).
+    template : str
+        Path to optional template to bypass default configuration process.
+    **kwargs
+        Keyword arguments to configure the simulation.
+        See :meth:`~isicle.qm.NWChemWrapper.configure`.
 
     Returns
     -------
@@ -53,9 +60,7 @@ def dft(program='NWChem'):
     '''
 
     # Select program
-    qmw = _program_selector(program)
-
-    return qmw
+    return _program_selector(program).run(geom, template=template, **kwargs)
 
 
 class NWChemWrapper(WrapperInterface):
@@ -768,9 +773,6 @@ class NWChemWrapper(WrapperInterface):
             Wrapper object containing relevant outputs from the simulation.
 
         '''
-        
-        # New instance
-        self = NWChemWrapper()
 
         # Set geometry
         self.set_geometry(geom)
