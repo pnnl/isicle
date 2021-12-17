@@ -756,8 +756,9 @@ class NWChemWrapper(WrapperInterface):
         result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'charge',
                                         'geometry', 'molden', 'frequency'])
 
-        self.result = result
-        return self.result
+        self.__dict__.update(result)
+        self.geom.add_global_properties({k: v for k, v in result.items() if k != 'geom'})
+        return self
 
     def run(self, geom, template=None, **kwargs):
         '''
@@ -780,6 +781,9 @@ class NWChemWrapper(WrapperInterface):
             Wrapper object containing relevant outputs from the simulation.
 
         '''
+        # New instance
+        self = NWChemWrapper()
+
         # Set geometry
         self.set_geometry(geom)
 
@@ -799,9 +803,6 @@ class NWChemWrapper(WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        result = self.finish()
-
-        # TODO: mesh res/qmw
+        self.finish()
 
         return self
-
