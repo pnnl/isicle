@@ -558,12 +558,12 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
         Performs substructure search and checks if supported by CREST documentation
         '''
-        self.cations = self._filter_supported_by_xtb(self._cations)
-        self.anions = self._filter_supported_by_xtb(self._anions)
-        self.complex = self._filter_supported_by_xtb(self._complex)
+        self._cations = self._filter_supported_by_xtb(self._cations)
+        self._anions = self._filter_supported_by_xtb(self._anions)
+        self._complex = self._filter_supported_by_xtb(self._complex)
 
-        self.anions = _filter_by_substructure_match(self._geom.mol, self._anions)
-        self.complex = _filter_by_substructure_match(self._geom.mol, self._complex)
+        self._anions = _filter_by_substructure_match(self._geom.mol, self._anions)
+        self._complex = _filter_by_substructure_match(self._geom.mol, self._complex)
 
     def configure(self, ion_path=None, ion_list=None):
         self._set_ions(ion_path=ion_path, ion_list=ion_list)
