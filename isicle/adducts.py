@@ -1,14 +1,15 @@
+import isicle
 from isicle.interfaces import IonizeWrapperInterface
-from isicle import geometry
 from isicle.md import md
 from isicle.utils import safelist
 from isicle.conformers import ConformationalEnsemble
 import os
 from rdkit import Chem
 import re
+import rdkit.Chem.rdchem as rdc
 
 
-def load_ions(path):
+def _parse_file_ions(path):
     '''
     Read adduct ions (eg. 'Na+', 'H+', 'Mg2+') from file.
 
@@ -29,7 +30,7 @@ def load_ions(path):
     return parsed_contents
 
 
-def parse_ions(ion_list):
+def _parse_list_ions(ion_list):
     '''
     Parse and categorize list of ions by ion type.
 
@@ -66,7 +67,18 @@ def parse_ions(ion_list):
     return (cations, anions, complex)
 
 
-def _ionize_method_selector(ion_method):
+def parse_ions(ion_path=None, ion_list=None):
+    if ion_path is not None:
+        # Load ion file
+        ion_list = _parse_file_ions(ion_path)
+    if ion_list is not None:
+        # Parse ion file
+        return _parse_list_ions(ion_list)
+    else:
+        raise RuntimeError('No ions supplied to parse.')
+
+
+def ionize(ion_method):
     '''
     Selects a supported ionization method.
     Currently only Explicit ionization has been implemented.
@@ -94,6 +106,20 @@ def _check_atom_group(ion_atomic_num):
 
     """
     return ion_atomic_num in [1, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]
+
+
+def _filter_by_substructure_match(init_mol, unknown_valid_list):
+    valid_list = []
+    for ion in unknown_valid_list:
+        parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
+        subset = [f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
+        subset_mol = [Chem.MolFromSmiles(i, sanitize=False) for i in subset]
+        substruc_check = [i for i in subset_mol if init_mol.HasSubstructMatch(i)]
+        if False in substruc_check:
+            continue
+        else:
+            valid_list.append(ion)
+    return valid_list
 
 
 def proton_affinity(MH, M, temp=298.15):
@@ -139,6 +165,7 @@ def gas_basicity(MH, M, temp=298.15, SH=108.8):
 def build_adduct_ensembl(geometries):
     '''
     Create an adduct ensemble from a collection of geometries.
+    Parses adduct dictionaries and returns a list of all geometry objects.
 
     Parameters
     ----------
@@ -147,123 +174,52 @@ def build_adduct_ensembl(geometries):
 
     Returns
     -------
-    list : geom
+    list : geometries nested inside adduct dictionaries
 
     '''
     ensembl = []
     for k, v in geometries.items():
         for geom in v:
-            print(geom)
             ensembl.append(geom.mol)
 
     return ensembl
 
 
-def ionize(geom, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
-    '''
-    Ionize geometry via with supplied geometry and file containing list of ions.
-    Parameters
-    ----------
-    geom : :obj:`~isicle.geometry.Geometry`
-        Molecule representation.
-    ion_method : str
-        Alias for ionaztion method selection (explicit).
-    ion_list : list
-        List of ion str.
-        See :meth`~isicle.adducts.parse_ions`.
-    **kwargs
-        Keyword arguments to configure how ionization is run.
-        See :meth:`~isicle.adducts.CRESTIonizationWrapper.generator`
-         or :meth:`~isicle.adducts.ExplicitIonizationWrapper.generator`.
-    Returns
-    -------
-    :obj:`~isicle.adducts.ExplicitIonizationWrapper`
-        Dictionary of
-    '''
-    if ion_path is not None:
-        # Load ion file
-        ion_list = load_ions(ion_path)
-    if ion_list is not None:
-        # Parse ion file
-        cations, anions, complex = parse_ions(ion_list)
-    else:
-        raise RuntimeError('No ions to parse.')
-
-    # Select ionization method
-    iw = _ionize_method_selector(ion_method)
-
-    # Load in geometry of geom object
-    iw.set_geometry(geom)
-
-    # Load specified ions by type
-    iw.set_ions(cations, anions, complex)
-
-    # Validity check if negative ionization can be done
-    # Validity check if CREST supports the ions specified
-    iw.check_valid()
-
-    # Generate adducts
-    iw.generator(**kwargs)
-
-    # Combine/ optionally write files
-    res = iw.finish()
-
-    #geom = geom._update_structure(False, mol=res)
-    geom.global_properties = {}
-    geom._update_history('ionize')
-    geom.add_global_properties(res)
-    return geom, res
-
-
 class ExplicitIonizationWrapper(IonizeWrapperInterface):
-    def __init__(self, geom=None, anions=None, cations=None, complex=None):
+    def __init__(self):
         '''
         Initialize :obj:`~isicle.adducts.ExplicitIonizationWrapper` instance.
-        Creates temporary directory for intermediate files, establishes aliases
-        for preconfigured tasks.
         '''
-        self.geom = geom
-        self.anions = anions
-        self.cations = cations
-        self.complex = complex
+        pass
 
     def set_geometry(self, geom):
         '''
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
         Parameters
         ----------
-        geom : :obj:`~isicle.geometry.Geometry`
+        geometry : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
+        Note
+        ----
+        geometry is not modified in isicle.adducts; see
         '''
         # Assign geometry
-        self.geom = geom
+        self._geom = geom
 
-    def set_ions(self, cations, anions, complex):
+    def set_ions(self, ion_path=None, ion_list=None):
+        cations, anions, complex = parse_ions(ion_path=ion_path, ion_list=ion_list)
         # Cast to list safely
         self.cations = safelist(cations)
         self.anions = safelist(anions)
         self.complex = safelist(complex)
-
-    def _filter_by_substructure_match(self, init_mol, unknown_valid_list):
-        valid_list = []
-        for ion in unknown_valid_list:
-            parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
-            subset = [f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
-            subset_mol = [Chem.MolFromSmiles(i, sanitize=False) for i in subset]
-            substruc_check = [i for i in subset_mol if init_mol.HasSubstructMatch(i)]
-            if False in substruc_check:
-                continue
-            else:
-                valid_list.append(ion)
-        return valid_list
 
     def check_valid(self):
         '''
         Perform substructure search
         Check ion list against CREST nomenclature for ions, supported ion type
         '''
-        self.anions = self._filter_by_substructure_match(self.geom.mol, self.anions)
-        self.complex = self._filter_by_substructure_match(self.geom.mol, self.complex)
+        self.anions = _filter_by_substructure_match(self._geom.mol, self.anions)
+        self.complex = _filter_by_substructure_match(self._geom.mol, self.complex)
 
     def modify_atom_dict(self, init_mol, ion_atomic_num, mode=None, include_Alkali_ne=False):
         '''
@@ -328,9 +284,10 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         if sanitize is True:
             Chem.SanitizeMol(mw)
         if optimize is True:
+            # TODO revisit EmbedMolecule error for large molecules
             Chem.AllChem.EmbedMolecule(mw)
             Chem.AllChem.UFFOptimizeMolecule(mw)
-        geom = geometry.Geometry(mol=mw, history=self.geom.get_history())
+        geom = isicle.geometry.Geometry(mol=mw, history=self._geom.get_history())
         geom._update_history('ionize')
         return geom
 
@@ -371,7 +328,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
         Returns deionized RDKit mol object.
         '''
-        import rdkit.Chem.rdchem as rdc
+
         mw = Chem.RWMol(init_mol)
         ba = mw.GetAtomWithIdx(base_atom_idx)
         fc = ba.GetFormalCharge()
@@ -382,9 +339,10 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         if sanitize is True:
             Chem.SanitizeMol(mw)
         if optimize is True:
+            # TODO revisit EmbedMolecule issues for large molecules
             Chem.AllChem.EmbedMolecule(mw)
             Chem.AllChem.UFFOptimizeMolecule(mw)
-        geom = geometry.Geometry(mol=mw, history=self.geom.get_history())
+        geom = isicle.geometry.Geometry(mol=mw, history=self._geom.get_history())
         geom._update_history('ionize')
         return geom
 
@@ -428,14 +386,14 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         for ion in self.cations:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', ion)[0])
-            mol_dict = self.positive_mode(self.geom.mol, ion_atomic_num,
+            mol_dict = self.positive_mode(self._geom.mol, ion_atomic_num,
                                           batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
             cation_dict[ion] = list(mol_dict.values())
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self.cations = cation_dict
         for ion in self.anions:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', ion)[0])
-            mol_dict = self.negative_mode(self.geom.mol, ion_atomic_num,
+            mol_dict = self.negative_mode(self._geom.mol, ion_atomic_num,
                                           batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
             anion_dict[ion] = list(mol_dict.values())
             # anion_dict defined as {ion-:{base_atom_index: mol}}
@@ -443,7 +401,7 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
 
         for ion in self.complex:
             split_ion = re.findall('.+?[0-9]?[+-]', ion)
-            temp_mols = [self.geom]
+            temp_mols = [self._geom]
             out_mols = []
             for sion in split_ion:
                 ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+-]', sion)[0])
@@ -463,7 +421,56 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
             complex_dict[ion] = out_mols
         self.complex = complex_dict
 
-    def finish(self, write_files=False, path=None, fmt=None):
+    def run(self, geom, ion_path=None, ion_list=None, **kwargs):
+        '''
+        Ionize geometry via with supplied geometry and file containing list of ions.
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        ion_method : str
+            Alias for ionaztion method selection (explicit).
+        ion_list : list
+            List of ion str.
+            See :meth`~isicle.adducts.parse_ions`.
+        **kwargs
+            Keyword arguments to configure how ionization is run.
+            See :meth:`~isicle.adducts.ExplicitIonizationWrapper.generator`.
+        Returns
+        -------
+        :obj:`~isicle.adducts.ExplicitIonizationWrapper`
+
+        '''
+        self.set_geometry(geom)
+
+        # Load specified ions by type
+        self.set_ions(ion_path=ion_path, ion_list=ion_list)
+
+        # Validity check if negative ionization can be done
+        # Validity check if CREST supports the ions specified
+        self.check_valid()
+
+        # Generate adducts
+        self.generator(**kwargs)
+
+        # Combine/ optionally write files
+        self.finish()
+
+        return self
+
+    def finish(self):
+        '''
+        Combine generated structures and optionally save
+
+        Returns
+        -------
+        :obj:`~isicle.parse.XTBResult`
+            Parsed result data.
+        '''
+        # ion dict format {ion<charge>:mol}
+        return {**self.cations, **self.anions, **self.complex}
+
+    def write(self, path=None, fmt=None):
         '''
         Combine generated structures and optionally save
 
@@ -481,29 +488,29 @@ class ExplicitIonizationWrapper(IonizeWrapperInterface):
         :obj:`~isicle.parse.NWChemResult`
             Parsed result data
         '''
-        ion_dict = {**self.cations, **self.anions, **self.complex}
-        # ion dict format {ion<charge>:{base_atom_index: mol}}
-
-        if write_files is True:
+        if (path is not None) and (fmt is not None):
             if path is None:
                 raise ValueError('Must supply `path`.')
             if fmt is None:
                 raise ValueError('Must supply `fmt`.')
-            for key, value in ion_dict.items():
+            for key, value in self.finish().items():
                 for key2, value2 in value.items():
-                    geometry.Geometry.save(value2, os.path.join(
+                    isicle.geometry.Geometry.save(value2, os.path.join(
                         path, '{}{}.{}'.format(key, key2, fmt)), fmt)
-
-        return ion_dict
+            return
+        elif path is not None:
+            raise(
+                'path passed to isicle.adducts.ExplicitIonizationWrapper.finish; fmt flag must also be passed; data not saved.')
+        elif fmt is not None:
+            raise(
+                'fmt is supplied to isicle.adducts.ExplicitIonizationWrapper.finish; path flag must also be passed; data not saved. ')
+        else:
+            return
 
 
 class CRESTIonizationWrapper(IonizeWrapperInterface):
-    def __init__(self, geom=None, path=None, cations=None, anions=None, complex=None):
-        self.geom = geom
-        self.path = path
-        self.cations = cations
-        self.anions = anions
-        self.complex = complex
+    def __init__(self):
+        pass
 
     def set_geometry(self, geom):
         '''
@@ -514,9 +521,10 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
             Molecule representation.
         '''
         # Assign geometry
-        self.geom = geom
+        self._geom = geom
 
-    def set_ions(self, cations, anions, complex):
+    def set_ions(self, ion_path=None, ion_list=None):
+        cations, anions, complex = parse_ions(ion_path=ion_path, ion_list=ion_list)
         # Cast to list safely
         self.cations = safelist(cations)
         self.anions = safelist(anions)
@@ -543,19 +551,6 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
                     valid_list.append(ion)
         return valid_list
 
-    def _filter_by_substructure_match(self, init_mol, unknown_valid_list):
-        valid_list = []
-        for ion in unknown_valid_list:
-            parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
-            subset = [f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
-            subset_mol = [Chem.MolFromSmiles(i, sanitize=False) for i in subset]
-            substruc_check = [i for i in subset_mol if init_mol.HasSubstructMatch(subset_mol)]
-            if False in substruc_check:
-                continue
-            else:
-                valid_list.append(ion)
-        return valid_list
-
     def check_valid(self):
         '''
         Performs substructure search and checks if supported by CREST documentation
@@ -564,22 +559,30 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
         self.anions = self._filter_supported_by_xtb(self.anions)
         self.complex = self._filter_supported_by_xtb(self.complex)
 
-        self.anions = self._filter_by_substructure_match(self.geom, self.anions)
-        self.complex = self._filter_by_substructure_match(self.geom, self.complex)
+        self.anions = _filter_by_substructure_match(self._geom.mol, self.anions)
+        self.complex = _filter_by_substructure_match(self._geom.mol, self.complex)
 
     def positive_mode(self, forcefield, ewin, cation, molecular_charge, optlevel, dryrun):
         '''
         Call isicle.md.md for specified geom and cation
         '''
-        return md(self.geom, program='xtb', task='protonate', forcefield=forcefield,
-                  ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=molecular_charge)
+        try:
+            output = md(self._geom, program='xtb', task='protonate', forcefield=forcefield,
+                        ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=molecular_charge)
+        except:
+            output = None
+        return output
 
     def negative_mode(self, forcefield, ewin, anion, molecular_charge, optlevel, dryrun):
         '''
         Call isicle.md.md for specified geom and anion
         '''
-        return md(self.geom, program='xtb', task='deprotonate', forcefield=forcefield,
-                  ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=molecular_charge)
+        try:
+            output = md(self._geom, program='xtb', task='deprotonate', forcefield=forcefield,
+                        ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=molecular_charge)
+        except:
+            output = None
+        return output
 
     def generator(self, molecular_charge=0, forcefield='gff', ewin=100, optlevel='Normal', dryrun=False):
         '''
@@ -630,15 +633,48 @@ class CRESTIonizationWrapper(IonizeWrapperInterface):
 
         self.complex = complex_dict
 
+    def run(self, geom, ion_path=None, ion_list=None, **kwargs):
+        '''
+        Ionize geometry via with supplied geometry and file containing list of ions.
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        ion_method : str
+            Alias for ionaztion method selection (explicit).
+        ion_list : list
+            List of ion str.
+            See :meth`~isicle.adducts.parse_ions`.
+        **kwargs
+            Keyword arguments to configure how ionization is run.
+            See :meth:`~isicle.adducts.CRESTIonizationWrapper.generator`
+        Returns
+        -------
+        :obj:`~isicle.adducts.CRESTIonizationWrapper`
+
+        '''
+        self.set_geometry(geom)
+
+        # Load specified ions by type
+        self.set_ions(ion_path=ion_path, ion_list=ion_list)
+
+        # Validity check if negative ionization can be done
+        # Validity check if CREST supports the ions specified
+        self.check_valid()
+
+        # Generate adducts
+        self.generator(**kwargs)
+
+        return self
+
     def finish(self):
         '''
         Combine generated structures and optionally save
 
         Returns
         -------
-        :obj:`~isicle.parse.NWChemResult`
+        :obj:`~isicle.parse.XTBResult`
             Parsed result data.
         '''
-        ion_dict = {**self.cations, **self.anions, **self.complex}
         # ion dict format {ion<charge>:mol}
-        return ion_dict
+        return {**self.cations, **self.anions, **self.complex}
