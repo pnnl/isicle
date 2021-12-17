@@ -332,7 +332,7 @@ class NWChemParser(FileParserInterface):
 
         if 'geometry' in to_parse:
             try:
-                result['geometry'] = self._parse_geometry()
+                result['geom'] = self._parse_geometry()
 
             except:
                 pass
