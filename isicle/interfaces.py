@@ -152,48 +152,6 @@ class GeometryInterface(XYZGeometryInterface):
         raise NotImplementedError
 
 
-class IonizeWrapperInterface(metaclass=abc.ABCMeta):
-
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'set_geometry')
-                and callable(subclass.set_geometry)
-                and hasattr(subclass, 'set_ions')
-                and callable(subclass.set_ions)
-                and hasattr(subclass, 'check_valid')
-                and callable(subclass.check_valid)
-                and hasattr(subclass, 'generator')
-                and callable(subclass.generator)
-                and hasattr(subclass, 'finish')
-                and callable(subclass.finish)
-                or NotImplemented)
-
-    @abc.abstractmethod
-    def set_geometry(self):
-        '''Load the input geometry.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def set_ions(self):
-        '''Load the input ions.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def check_valid(self):
-        '''Check the validity of specified ions.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def generator(self):
-        '''Generate adducts.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def finish(self, path: str):
-        '''Finalize, parse, return result object.'''
-        raise NotImplementedError
-
-
 class WrapperInterface(metaclass=abc.ABCMeta):
     '''
     Abstract base class for wrapper interface. All QM
@@ -206,8 +164,8 @@ class WrapperInterface(metaclass=abc.ABCMeta):
                 and callable(subclass.set_geometry)
                 and hasattr(subclass, 'configure')
                 and callable(subclass.configure)
-                and hasattr(subclass, 'save_config')
-                and callable(subclass.save_config)
+                and hasattr(subclass, 'submit')
+                and callable(subclass.submit)
                 and hasattr(subclass, 'run')
                 and callable(subclass.run)
                 and hasattr(subclass, 'finish')
