@@ -225,7 +225,7 @@ class WrapperInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save_config(self):
+    def submit(self):
         '''Configure the run.'''
         raise NotImplementedError
 
