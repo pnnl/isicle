@@ -9,35 +9,13 @@ import shutil
 
 def calculate_ccs(geom, **kwargs):
     # Initialize wrapper
-    mw = MobcalWrapper()
-
-    # Set geometry
-    mw.set_geometry(geom)
-
-    # Save geometry
-    mw.save_geometry()
-
-    # Configure
-    mw.configure(**kwargs)
-
-    # Save config
-    mw.save_config()  # Currently does nothing...
-
-    # Run mobility calculation
-    mw.run()
-
-    # Finish/clean up
-    res = mw.finish()
-
-    # TODO: update geometry object with CCS result
-
-    return res
+    return MobcalWrapper().run(geom, **kwargs)
 
 
 class MobcalWrapper(WrapperInterface):
 
     def __init__(self):
-        self.temp_dir = tempfile.TemporaryDirectory()
+        pass
 
     def set_geometry(self, geom):
         '''
@@ -53,11 +31,8 @@ class MobcalWrapper(WrapperInterface):
         # Assign geometry
         self.geom = geom
 
-        # other files
-        self.infile = os.path.join(self.temp_dir.name,
-                                   self.geom.basename + '.mfj')
-        self.outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
-        self.logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
+        # Save to path
+        self.save_geometry()
 
     def save_geometry(self):
         '''
@@ -69,6 +44,15 @@ class MobcalWrapper(WrapperInterface):
             If geometry loaded from .xyz is saved to another format.
 
         '''
+
+        # Temp directory
+        self.temp_dir = tempfile.TemporaryDirectory()
+
+        # Files
+        self.infile = os.path.join(self.temp_dir.name,
+                                   self.geom.basename + '.mfj')
+        self.outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
+        self.logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
 
         # All other formats
         self.geom.save(self.infile)
@@ -120,10 +104,7 @@ class MobcalWrapper(WrapperInterface):
                                temp=temp, ipr=ipr, itn=itn, inp=inp, imp=imp,
                                processes=processes)
 
-    def save_config(self):
-        pass
-
-    def run(self):
+    def submit(self):
         subprocess.call('mobcal {} {} {} {} &> {}'.format(self.mobcal_params,
                                                           self.atom_params,
                                                           self.infile,
@@ -141,7 +122,23 @@ class MobcalWrapper(WrapperInterface):
         # Extract result
         result = parser.parse()
 
-        # Remove temporary files
-        # self.temp_dir.cleanup()
+        # Update objects
+        self.__dict__.update(result)
+        self.geom.add_global_properties(result)
+        
+        return self
 
-        return result
+    def run(self, geom, **kwargs):
+        # Set geometry
+        self.set_geometry(geom)
+
+        # Configure
+        self.configure(**kwargs)
+
+        # Run mobility calculation
+        self.submit()
+
+        # Finish/clean up
+        self.finish()
+
+        return self

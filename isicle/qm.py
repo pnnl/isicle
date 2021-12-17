@@ -22,7 +22,7 @@ def _program_selector(program):
     -------
     program
         Wrapped functionality of the selected program. Must implement
-        :class:`~isicle.interfaces.QMWrapperInterface`.
+        :class:`~isicle.interfaces.WrapperInterface`.
 
     '''
 
@@ -35,15 +35,22 @@ def _program_selector(program):
                          .format(program))
 
 
-def dft(program='NWChem'):
+def dft(geom, program='NWChem', template=None, **kwargs):
     '''
     Optimize geometry via density functional theory using supplied functional
     and basis set.
 
     Parameters
     ----------
+    geom : :obj:`~isicle.geometry.Geometry`
+        Molecule representation.
     program : str
         Alias for program selection (NWChem).
+    template : str
+        Path to optional template to bypass default configuration process.
+    **kwargs
+        Keyword arguments to configure the simulation.
+        See :meth:`~isicle.qm.NWChemWrapper.configure`.
 
     Returns
     -------
@@ -53,16 +60,14 @@ def dft(program='NWChem'):
     '''
 
     # Select program
-    qmw = _program_selector(program)
-
-    return qmw
+    return _program_selector(program).run(geom, template=template, **kwargs)
 
 
 class NWChemWrapper(WrapperInterface):
     '''
     Wrapper for NWChem functionality.
 
-    Implements :class:`~isicle.interfaces.QMWrapperInterface` to ensure
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure
     required methods are exposed.
 
     Attributes
@@ -85,12 +90,10 @@ class NWChemWrapper(WrapperInterface):
         '''
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
-        Creates temporary directory for intermediate files, establishes aliases
-        for preconfigured tasks.
+        Establishes aliases for preconfigured tasks.
 
         '''
 
-        self.temp_dir = tempfile.TemporaryDirectory()
         self.task_map = {'optimize': self._configure_optimize,
                          'shielding': self._configure_shielding,
                          'spin': self._configure_spin}
@@ -109,27 +112,21 @@ class NWChemWrapper(WrapperInterface):
         # Assign geometry
         self.geom = geom
 
-    def save_geometry(self, fmt='xyz'):
+        # Save
+        self.save_geometry()
+
+    def save_geometry(self):
         '''
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
-        Parameters
-        ----------
-        fmt : str
-            Filetype used by NWChem. Must be "xyz" or "pdb."
-
-        Raises
-        ------
-        TypeError
-            If geometry loaded from .xyz is saved to another format.
+        Creates temporary directory for intermediate files.
 
         '''
 
         # Path operations
-        self.fmt = fmt.lower()
+        self.temp_dir = tempfile.TemporaryDirectory()
         outfile = os.path.join(self.temp_dir.name,
-                               '{}.{}'.format(self.geom.basename,
-                                              self.fmt.lower()))
+                               '{}.xyz'.format(self.geom.basename))
 
         # All other formats
         self.geom.save(outfile)
@@ -190,13 +187,12 @@ class NWChemWrapper(WrapperInterface):
         '''
 
         d = {'basename': self.geom.basename,
-             'fmt': self.fmt,
              'dirname': self.temp_dir.name,
              'charge': charge}
 
         return ('\ncharge {charge}\n'
                 'geometry noautoz noautosym\n'
-                ' load {dirname}/{basename}.{fmt}\n'
+                ' load {dirname}/{basename}.xyz\n'
                 'end\n').format(**d)
 
     def _configure_basis(self, basis_set='6-31G*', ao_basis='cartesian'):
@@ -270,12 +266,11 @@ class NWChemWrapper(WrapperInterface):
         '''
 
         d = {'basename': self.geom.basename,
-             'fmt': self.fmt,
              'max_iter': max_iter}
 
         return ('\ndriver\n'
                 ' maxiter {max_iter}\n'
-                ' {fmt} {basename}_geom\n'
+                ' xyz {basename}_geom\n'
                 'end\n').format(**d)
 
     def _configure_cosmo(self, solvent='H2O', gas=False):
@@ -691,9 +686,6 @@ class NWChemWrapper(WrapperInterface):
         else:
             kwargs['dirname'] = self.temp_dir.name
 
-        # Tied to save_geometry, required
-        kwargs['fmt'] = self.fmt
-
         # Open template
         with open(path, 'r') as f:
             template = Template(f.read())
@@ -754,7 +746,7 @@ class NWChemWrapper(WrapperInterface):
         parser.load(os.path.join(self.temp_dir.name,
                                  self.geom.basename + '.out'))
         result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'charge',
-                                        'geometry', 'molden', 'frequency'])
+                                        'geometry', 'molden', 'frequency', 'timing'])
 
         self.__dict__.update(result)
         self.geom.add_global_properties({k: v for k, v in result.items() if k != 'geom'})
@@ -781,17 +773,9 @@ class NWChemWrapper(WrapperInterface):
             Wrapper object containing relevant outputs from the simulation.
 
         '''
-        # New instance
-        self = NWChemWrapper()
 
         # Set geometry
         self.set_geometry(geom)
-
-        # Save geometry
-        if 'fmt' in kwargs:
-            self.save_geometry(fmt=kwargs.pop('fmt'))
-        else:
-            self.save_geometry()
 
         # Configure
         if template is not None:

@@ -453,7 +453,7 @@ class MobcalParser(FileParserInterface):
 
     def load(self, path: str):
         '''Load in the data file'''
-        with open(path, 'rb') as f:
+        with open(path, 'r') as f:
             self.contents = f.readlines()
 
         return self.contents
@@ -471,7 +471,7 @@ class MobcalParser(FileParserInterface):
             elif 'standard deviation (percent)' in line:
                 done = True
         if done is True:
-            self.result = {'ccs': [ccs_mn], 'std': [ccs_std]}
+            self.result = {'ccs': ccs_mn, 'std': ccs_std}
 
         return self.result
 
