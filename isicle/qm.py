@@ -22,7 +22,7 @@ def _program_selector(program):
     -------
     program
         Wrapped functionality of the selected program. Must implement
-        :class:`~isicle.interfaces.QMWrapperInterface`.
+        :class:`~isicle.interfaces.WrapperInterface`.
 
     '''
 
@@ -67,7 +67,7 @@ class NWChemWrapper(WrapperInterface):
     '''
     Wrapper for NWChem functionality.
 
-    Implements :class:`~isicle.interfaces.QMWrapperInterface` to ensure
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure
     required methods are exposed.
 
     Attributes
