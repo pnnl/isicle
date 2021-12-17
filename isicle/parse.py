@@ -9,136 +9,6 @@ from openbabel import pybel
 import isicle
 
 
-class NWChemResult():
-    '''Organize parsed results from NWChem outputs'''
-
-    def __init__(self):
-        self.energy = None  # Dictionary, keys: energy, charges
-        self.geometry = None  # String, filename (for now)
-        self.shielding = None  # Dictionary
-        self.spin = None  # Not set
-        self.frequency = None  # Dictionary, see function for keys
-        self.molden = None  # String, filename (for now)
-        self.timing = None  # Dictionary, see function for keys
-        self.charge = None  # Dictionary
-        self.protocol = None  # Dictionary
-
-    def set_energy(self, energy):
-        self.energy = energy
-        return self.energy
-
-    def set_geometry(self, geometry):
-        self.geometry = geometry
-        return self.geometry
-
-    def set_shielding(self, shielding):
-        result = {'index': shielding[0], 'atom': shielding[1],
-                  'shielding': shielding[2]}
-        self.shielding = result
-        return self.shielding
-
-    def set_spin(self, spin):
-        result = {'pair indices': spin[0], 'spin couplings': [1],
-                  'index': spin[2], 'g-tensors': spin[3]}
-        self.spin = result
-        return self.spin
-
-    def set_frequency(self, frequency):
-        result = {'frequencies': frequency[0], 'correction to enthalpy': frequency[1],
-                  'total entropy': frequency[2], 'constant volume heat capacity': frequency[3],
-                  'zero-point correction': frequency[4]}
-        self.frequency = result
-        return self.frequency
-
-    def set_timing(self, timing):
-        result = {'single point': timing[0], 'geometry optimization': timing[1],
-                  'frequency': timing[2], 'total': timing[3]}
-        self.timing = result
-        return self.timing
-
-    def set_charge(self, charge):
-        self.charge = charge
-        return self.charge
-
-    def set_molden(self, molden_filename):
-        self.molden = molden_filename
-        return self.molden
-
-    def set_protocol(self, protocol):
-        result = {'functional': protocol[0], 'basis set': protocol[1],
-                  'solvation': protocol[2], 'tasks': protocol[3]}
-        self.protocol = result
-        return self.protocol
-
-    def get_energy(self):
-        return self.energy
-
-    def get_geometry(self):
-        return self.geometry
-
-    def get_shielding(self):
-        return self.shielding
-
-    def get_spin(self):
-        return self.spin
-
-    def get_frequency(self):
-        return self.frequency
-
-    def get_timing(self):
-        return self.timing
-
-    def get_charge(self):
-        return self.charge
-
-    def get_molden(self):
-        return self.molden
-
-    def get_protocol(self):
-        return self.protocol
-
-    def save(self, path):
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-        return
-
-    def load(self, path):
-        '''
-        Load saved class data to this (overwrites all variables)
-        '''
-
-        # Load existing file
-        with open(path, 'rb') as f:
-            saved_result = pickle.load(f)
-
-        # Overwrite the variables in this object
-        self.geometry = saved_result.get_geometry()
-        self.energy = saved_result.get_energy()
-        self.shielding = saved_result.get_shielding()
-        self.spin = saved_result.get_spin()
-        self.frequency = saved_result.get_frequency()
-        self.molden = saved_result.get_molden()
-        self.timing = saved_result.get_timing()
-        self.charge = saved_result.get_charge()
-        self.protocol = saved_result.get_protocol()
-        return
-
-    def to_dict(self):
-        d = {}
-
-        d['geometry'] = self.geometry
-        d['energy'] = self.energy
-        d['shielding'] = self.shielding
-        d['spin'] = self.spin
-        d['frequency'] = self.frequency
-        d['molden'] = self.molden
-        d['timing'] = self.timing
-        d['charge'] = self.charge
-        d['protocol'] = self.protocol
-
-        return d
-
-
 class NWChemParser(FileParserInterface):
     '''Extract text from an NWChem simulation output file.'''
 
@@ -154,44 +24,13 @@ class NWChemParser(FileParserInterface):
         self.path = path
         return self.contents
 
-    def _parse_geometry_filename(self, path):
-        '''Grab path to .xyz file or generate .xyz file from *.out file '''
-        search = splitext(path)[0]
-        geoms = glob.glob(search + '*.xyz')
-        coor_substr = 'Output coordinates in angstroms'
-
-        # Extracting Atoms & Coordinates
-        ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
-        ii.sort()
-
-        coord = ''
-        g = ii[-1]+4
-        natoms = 0
-        while g <= len(self.contents)-1:
-            if self.contents[g] != ' \n':
-                line = self.contents[g].split()
-                xyz_line = line[1] + '\t' + line[3] + '\t' + line[4] + '\t' + line[5] + '\n'
-                coord += xyz_line
-                natoms += 1
-
-            else:
-                break
-            g += 1
-
-        coord = str(natoms) + '\n\n' + coord
-        name = search + '.xyz'
-        xyz_file = open(name, 'w')
-        f = xyz_file.write(coord)
-        xyz_file.close()
-
-        return name
-
     def _parse_geometry(self):
         search = os.path.dirname(self.path)
         geoms = sorted(glob.glob(os.path.join(search, '*.xyz')))
+        
         if len(geoms) > 0:
             return isicle.geometry.load(geoms[-1])
-        print(4)
+
         raise Exception
 
     def _parse_energy(self):
@@ -229,7 +68,12 @@ class NWChemParser(FileParserInterface):
                 shields.append(shield)
                 ready = False
 
-        return shield_idxs, shield_atoms, shields
+        if len(shields) > 1:
+            return {'index': shield_idxs,
+                    'atom': shield_atoms,
+                    'shielding': shields}
+        
+        raise Exception
 
     def _parse_spin(self):
         # TO DO: Add g-factors
@@ -263,7 +107,8 @@ class NWChemParser(FileParserInterface):
                     g = float(line[5])
                     g_factor.append(g)
 
-        return coup_pairs, coup, index, g_factor
+        return {'pair indices': coup_pairs, 'spin couplings': coup,
+                'index': index, 'g-tensors': g_factor}
 
     def _parse_frequency(self):
         # TO DO: Add freq intensities
@@ -279,7 +124,7 @@ class NWChemParser(FileParserInterface):
         has_frequency = None
 
         for i, line in enumerate(self.contents):
-            if ('Geometry' in line) and (natoms is None):
+            if ('geometry' in line) and (natoms is None):
                 atom_start = i + 7
             if ('Atomic Mass' in line) and (natoms is None):
                 atom_stop = i - 2
@@ -304,7 +149,10 @@ class NWChemParser(FileParserInterface):
 
         if has_frequency is True:
             freq = np.array([float(x.split()[1]) for x in self.contents[freq_start:freq_stop + 1]])
-            return freq, enthalpies, entropies, capacities, zpe
+            
+            return {'frequencies': freq, 'correction to enthalpy': enthalpies,
+                    'total entropy': entropies, 'constant volume heat capacity': capacities,
+                    'zero-point correction': zpe}
         
         raise Exception
 
@@ -352,6 +200,7 @@ class NWChemParser(FileParserInterface):
             df.Number = df.Number.astype('int')
             df.Charge = df.Number - df.Charge.astype('float')
 
+            # TODO: is this how we want to return?
             return df.Charge.values
 
         raise Exception
@@ -364,8 +213,8 @@ class NWChemParser(FileParserInterface):
         geomoptTime = 0
         freqTime = 0
         cpuTime = 0
-        wallTime = 0
-        ready = False
+        # wallTime = 0
+        # ready = False
         opt = False
         freq = False
 
@@ -381,7 +230,7 @@ class NWChemParser(FileParserInterface):
                 indices.append(i - 2)  # 3
 
             # Check for optimization and frequency calcs
-            if 'NWChem Geometry Optimization' in line:
+            if 'NWChem geometry Optimization' in line:
                 opt = True
             elif 'NWChem Nuclear Hessian and Frequency Analysis' in line:
                 freq = True
@@ -396,16 +245,17 @@ class NWChemParser(FileParserInterface):
 
             if 'Total times' in line:
                 cpuTime = float(line.rstrip().split(':')[1].split('s')[0])
-                wallTime = float(line.rstrip().split(':')[2].split('s')[0])
+                # wallTime = float(line.rstrip().split(':')[2].split('s')[0])
                 freqTime = (cpuTime - geomoptTime - preoptTime)
 
-        natoms = int(self.contents[indices[1] - 1].split()[0])
+        # natoms = int(self.contents[indices[1] - 1].split()[0])
 
-        return preoptTime, geomoptTime, freqTime, cpuTime
+        return {'single point': preoptTime, 'geometry optimization': geomoptTime,
+                'frequency': freqTime, 'total': cpuTime}
 
-    def _parse_molden(self, path):
+    def _parse_molden(self):
 
-        search = splitext(path)[0]
+        search = splitext(self.path)[0]
         m = glob.glob(search + '*.molden')
 
         if len(m) != 1:
@@ -429,9 +279,14 @@ class NWChemParser(FileParserInterface):
             if '* library' in line:
                 basis = line.split()[-1]
             if ' xc ' in line:
-                func = line.split('xc')[-1]
+                func = line.split(' xc ')[-1].strip()
             if 'solvent ' in line:
                 solvent = line.split()[-1]
+            if 'task dft optimize' in line:
+                tasks.append('optimize')
+                basis_set.append(basis)
+                functional.append(func)
+                solvation.append(solvent)
             if 'SHIELDING' in line:
                 tasks.append('shielding')
                 basis_set.append(basis)
@@ -448,10 +303,10 @@ class NWChemParser(FileParserInterface):
                 functional.append(func)
                 solvation.append(solvent)
 
-        return functional, basis_set, solvation, tasks
+        return {'functional': functional, 'basis set': basis_set,
+                  'solvation': solvation, 'tasks': tasks}
 
-    def parse(self, to_parse=['geometry', 'energy'],
-              geom_path=None, molden_path=None):
+    def parse(self, to_parse=['geometry', 'energy']):
         '''
         Extract relevant information from NWChem output
 
@@ -468,87 +323,67 @@ class NWChemParser(FileParserInterface):
             raise RuntimeError('Incomplete NWChem run: {}'.format(self.path))
 
         # Initialize result object to store info
-        result = NWChemResult()
-        result.path = self.path
+        result = {}
 
         try:
-            protocol = self._parse_protocol()
-            result.set_protocol(protocol)  # Stored as dictionary
+            result['protocol'] = self._parse_protocol()
         except:
             pass
 
         if 'geometry' in to_parse:
-
             try:
-                # if geom_path is None:
-                #     geom_path = self.path
-                # geometry_filename = self._parse_geometry_filename(geom_path)
-                # result.set_geometry(geometry_filename)  # Store as filename
-
-                geom = self._parse_geometry()
-                result.set_geometry(geom)
+                result['geometry'] = self._parse_geometry()
 
             except:
                 pass
 
         if 'energy' in to_parse:
-
             try:
-                energy = self._parse_energy()
-                result.set_energy(energy)  # Stored as dictionary
+                result['energy'] = self._parse_energy()
             except:
                 pass
 
         if 'shielding' in to_parse:
             try:
-                shielding = self._parse_shielding()
-                result.set_shielding(shielding)  # Stored as dictionary
+                result['shielding'] = self._parse_shielding()
             except:  # Must be no shielding info
                 pass
 
         if 'spin' in to_parse:  # N2S
             try:
-                spin = self._parse_spin()
-                result.set_spin(spin)
+                result['spin'] = self._parse_spin()
             except:
                 pass
 
         if 'frequency' in to_parse:
             try:
-                frequency = self._parse_frequency()
-                result.set_frequency(frequency)
+                result['frequency'] = self._parse_frequency()
             except:
                 pass
 
         if 'molden' in to_parse:
             try:
-                if molden_path is None:
-                    molden_path = self.path
-                molden_filename = self._parse_molden(molden_path)
-                result.set_molden(molden_filename)
+                 result['molden'] = self._parse_molden()
             except:
                 pass
 
         if 'charge' in to_parse:
             try:
-                charge = self._parse_charge()
-                result.set_charge(charge)
+                result['charge'] = self._parse_charge()
             except:
                 pass
 
         if 'timing' in to_parse:
             try:
-                timing = self._parse_timing()
-                result.set_timing(timing)
+                result['timing'] = self._parse_timing()
             except:
                 pass
 
-        self.result = result
         return result
 
-    def save(self, path: str):
-        '''Write parsed object to file'''
-        self.result.save(path)
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
         return
 
 
@@ -666,7 +501,7 @@ class XTBResult():
 
     def __init__(self):
         self.energy = None  # Dictionary, keys: energy, charges
-        self.geometry = None  # Geometry object or array of geometry obejects
+        self.geom = None  # geometry object or array of geometry obejects
         self.timing = None  # Dictionary, see function for keys
         self.protocol = None  # Dictionary
 
@@ -675,9 +510,9 @@ class XTBResult():
         self.energy = result
         return self.energy
 
-    def set_geometry(self, geometry):
-        self.geometry = geometry
-        return self.geometry
+    def set_geometry(self, geom):
+        self.geom = geom
+        return self.geom
 
     def set_timing(self, timing):
         result = timing
@@ -693,7 +528,7 @@ class XTBResult():
         return self.energy
 
     def get_geometry(self):
-        return self.geometry
+        return self.geom
 
     def get_timing(self):
         return self.timing
@@ -716,7 +551,7 @@ class XTBResult():
             saved_result = pickle.load(f)
 
         # Overwrite the variables in this object
-        self.geometry = saved_result.get_geometry()
+        self.geom = saved_result.get_geometry()
         self.energy = saved_result.get_energy()
         self.timing = saved_result.get_timing()
         self.protocol = saved_result.get_protocol()
@@ -725,7 +560,7 @@ class XTBResult():
     def to_dict(self):
         d = {}
 
-        d['geometry'] = self.geometry
+        d['geometry'] = self.geom
         d['energy'] = self.energy
         d['timing'] = self.timing
         d['protocol'] = self.protocol
@@ -941,19 +776,19 @@ class XTBParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
-            x = [isicle.geometry.load(i) for i in geom_list]
+            x = [isicle.geom.load(i) for i in geom_list]
 
         else:
-            x = [isicle.geometry.load(FILE)]
+            x = [isicle.geom.load(FILE)]
 
         return isicle.conformers.ConformationalEnsemble(x)
 
     def _parse_xyz(self):
 
         FILE = self.xyz_path
-        geometry = self._separate_xyz(FILE)
+        geom = self._separate_xyz(FILE)
 
-        return geometry
+        return geom
 
     def parse(self, to_parse=['energy']):
         '''Extract relevant information from data'''
@@ -974,8 +809,8 @@ class XTBParser(FileParserInterface):
             if 'geometry' in to_parse:
                 try:
                     self.xyz_path = self.path
-                    geometry = self._parse_xyz()
-                    result.set_geometry(geometry)
+                    geom = self._parse_xyz()
+                    result.set_geometry(geom)
                 except IndexError:
                     pass
 
@@ -1009,8 +844,8 @@ class XTBParser(FileParserInterface):
                     temp_dir = os.path.dirname(self.path)
                     self.xyz_path = os.path.join(temp_dir, XYZ)
                     try:
-                        geometry = self._parse_xyz()
-                        result.set_geometry(geometry)
+                        geom = self._parse_xyz()
+                        result.set_geometry(geom)
                     except IndexError:
                         pass
 

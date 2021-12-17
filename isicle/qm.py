@@ -35,71 +35,27 @@ def _program_selector(program):
                          .format(program))
 
 
-def dft(geom, program='NWChem', template=None, **kwargs):
+def dft(program='NWChem'):
     '''
     Optimize geometry via density functional theory using supplied functional
     and basis set.
 
     Parameters
     ----------
-    geom : :obj:`~isicle.geometry.Geometry`
-        Molecule representation.
     program : str
         Alias for program selection (NWChem).
-    template : str
-        Path to optional template to bypass default configuration process.
-    **kwargs
-        Keyword arguments to configure the simulation.
-        See :meth:`~isicle.qm.NWChemWrapper.configure`.
 
     Returns
     -------
-    :obj:`~isicle.geometry.Geometry`
-        DFT-optimized molecule representation.
-    :obj:`~isicle.parse.NWChemResult`
-        Result object containing relevant outputs from the simulation.
+    :obj:`~isicle.qm.QMWrapper`
+        Instance of selected QMWrapper.
 
     '''
 
     # Select program
     qmw = _program_selector(program)
 
-    # Set geometry
-    qmw.set_geometry(geom)
-
-    # Save geometry
-    if 'fmt' in kwargs:
-        qmw.save_geometry(fmt=kwargs.pop('fmt'))
-    else:
-        qmw.save_geometry()
-
-    # Configure
-    if template is not None:
-        qmw.configure_from_template(template)
-    else:
-        qmw.configure(**kwargs)
-
-    # Save configuration file
-    qmw.save_config()
-
-    # Run QM simulation
-    qmw.run()
-
-    # Finish/clean up
-    res = qmw.finish()
-
-    # # Create new Geometry with updated structure
-    # # res['geometry'] will be None or a path to an xyz file.
-    # geom = geom._update_structure(False, xyz_filename=res['geometry'])
-
-    # # Erase old properties and add new event and DFT properties
-    # geom.global_properties = {}
-    # geom._update_history('dft')
-    # geom = geom.add_global_properties(res.to_dict())
-
-    # res.geometry = geom
-
-    return res
+    return qmw
 
 
 class NWChemWrapper(WrapperInterface):
@@ -690,6 +646,9 @@ class NWChemWrapper(WrapperInterface):
         # Store as atrribute
         self.config = config
 
+        # Save
+        self.save_config()
+
         return self.config
 
     def configure_from_template(self, path, basename_override=None,
@@ -741,6 +700,9 @@ class NWChemWrapper(WrapperInterface):
 
         # Store as attribute
         self.config = template.substitute(**kwargs)
+        
+        # Save
+        self.save_config()
 
         return self.config
 
@@ -755,9 +717,9 @@ class NWChemWrapper(WrapperInterface):
                                self.geom.basename + '.nw'), 'w') as f:
             f.write(self.config)
 
-    def run(self):
+    def submit(self):
         '''
-        Run the NWChem simulation according to configured inputs.
+        Submit the NWChem simulation according to configured inputs.
 
         '''
 
@@ -768,7 +730,7 @@ class NWChemWrapper(WrapperInterface):
                                                       outfile,
                                                       logfile), shell=True)
 
-    def finish(self, keep_files=False, path=None):
+    def finish(self):
         '''
         Parse NWChem simulation results and clean up temporary directory.
 
@@ -794,27 +756,52 @@ class NWChemWrapper(WrapperInterface):
         result = parser.parse(to_parse=['energy', 'shielding', 'spin', 'charge',
                                         'geometry', 'molden', 'frequency'])
 
-        if keep_files is True:
-            import shutil
-            import glob
+        self.result = result
+        return self.result
 
-            if path is None:
-                raise ValueError('Must supply `path`.')
-            else:
-                # TODO: anything else to keep?
-                shutil.copy2(os.path.join(self.temp_dir.name,
-                                          self.geom.basename + '.nw'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name,
-                                          self.geom.basename + '.out'), path)
-                shutil.copy2(os.path.join(self.temp_dir.name,
-                                          self.geom.basename + '.log'), path)
+    def run(self, geom, template=None, **kwargs):
+        '''
+        Optimize geometry via density functional theory using supplied functional
+        and basis set.
 
-                geoms = glob.glob(os.path.join(self.temp_dir.name,
-                                               '*.{}'.format(self.fmt)))
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        template : str
+            Path to optional template to bypass default configuration process.
+        **kwargs
+            Keyword arguments to configure the simulation.
+            See :meth:`~isicle.qm.NWChemWrapper.configure`.
 
-                [shutil.copy2(x, path) for x in geoms]
+        Returns
+        -------
+        :obj:`~isicle.qm.NWChemWrapper`
+            Wrapper object containing relevant outputs from the simulation.
 
-        # # Remove temporary files
-        # self.temp_dir.cleanup()
+        '''
+        # Set geometry
+        self.set_geometry(geom)
 
-        return result
+        # Save geometry
+        if 'fmt' in kwargs:
+            self.save_geometry(fmt=kwargs.pop('fmt'))
+        else:
+            self.save_geometry()
+
+        # Configure
+        if template is not None:
+            self.configure_from_template(template)
+        else:
+            self.configure(**kwargs)
+
+        # Run QM simulation
+        self.submit()
+
+        # Finish/clean up
+        result = self.finish()
+
+        # TODO: mesh res/qmw
+
+        return self
+
