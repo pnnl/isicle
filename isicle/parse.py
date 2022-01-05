@@ -497,77 +497,6 @@ class SanderParser(FileParserInterface):
         raise NotImplementedError
 
 
-class XTBResult():
-
-    def __init__(self):
-        self.energy = None  # Dictionary, keys: energy, charges
-        self.geom = None  # geometry object or array of geometry obejects
-        self.timing = None  # Dictionary, see function for keys
-        self.protocol = None  # Dictionary
-
-    def set_energy(self, energy):
-        result = energy
-        self.energy = result
-        return self.energy
-
-    def set_geometry(self, geom):
-        self.geom = geom
-        return self.geom
-
-    def set_timing(self, timing):
-        result = timing
-        self.timing = result
-        return self.timing
-
-    def set_protocol(self, protocol):
-        result = protocol
-        self.protocol = result
-        return self.protocol
-
-    def get_energy(self):
-        return self.energy
-
-    def get_geometry(self):
-        return self.geom
-
-    def get_timing(self):
-        return self.timing
-
-    def get_protocol(self):
-        return self.protocol
-
-    def save(self, path):
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-        return
-
-    def load(self, path):
-        '''
-        Load saved class data to this (overwrites all variables)
-        '''
-
-        # Load existing file
-        with open(path, 'rb') as f:
-            saved_result = pickle.load(f)
-
-        # Overwrite the variables in this object
-        self.geom = saved_result.get_geometry()
-        self.energy = saved_result.get_energy()
-        self.timing = saved_result.get_timing()
-        self.protocol = saved_result.get_protocol()
-        return
-
-    def to_dict(self):
-        d = {}
-
-        d['geometry'] = self.geom
-        d['energy'] = self.energy
-        d['timing'] = self.timing
-        d['protocol'] = self.protocol
-
-        return d
-
-
 class XTBParser(FileParserInterface):
     def __init__(self):
         self.contents = None
@@ -590,7 +519,7 @@ class XTBParser(FileParserInterface):
         ready = False
         h = 0
         while h <= len(self.contents)-1:
-            if 'Erel/kcal     Etot      weight/tot conformer' in self.contents[h]:
+            if 'Erel/kcal' in self.contents[h]:
                 g = h + 1
                 while g <= len(self.contents)-1:
                     line = self.contents[g].split()
@@ -615,27 +544,33 @@ class XTBParser(FileParserInterface):
 
     def _crest_timing(self):
 
+        def grab_time(line):
+            line = line.replace(' ', '')
+            line = line.split(':')
+
+            return ':'.join(line[1:]).strip('\n')
+
         ready = False
         for line in self.contents:
             if "test MD wall time" in line:
-                test_MD = line
+                test_MD = grab_time(line)
                 ready = True
 
             if "MTD wall time" in line:
-                MTD = line
+                MTD_time = grab_time(line)
 
             if "multilevel OPT wall time" in line:
-                multilevel_OPT = line
+                multilevel_OPT = grab_time(line)
 
             if "MD wall time" in line and ready == True:
-                MD = line
+                MD = grab_time(line)
                 ready = False
 
             if "GC wall time" in line:
-                GC = line
+                GC = grab_time(line)
 
             if "Overall wall time" in line:
-                overall = line
+                overall = grab_time(line)
 
         return {'test MD wall time': test_MD,
                 'metadynamics wall time': MTD_time,
@@ -671,25 +606,21 @@ class XTBParser(FileParserInterface):
 
     def _isomer_timing(self):
 
-        def time(LINE):
-            line = LINE.split(':')
-            hr = line[1].split()
-            mn = line[2].split()
-            sc = line[3].split()
-            hr = (LINE.split(':'))[1].split()
-            mn = (LINE.split(':'))[2].split()
-            sc = (LINE.split(':'))[3].split()
-            return hr + mn + sc
+        def grab_time(line):
+            line = line.replace(' ', '')
+            line = line.split(':')
+
+            return ':'.join(line[1:]).strip('\n')
 
         for line in self.contents:
             if "LMO calc. wall time" in line:
-                LMO_time = time(line)
+                LMO_time = grab_time(line)
 
             if "multilevel OPT wall time" in line:
-                OPT_time = time(line)
+                OPT_time = grab_time(line)
 
             if "Overall wall time" in line:
-                OVERALL_time = time(line)
+                OVERALL_time = grab_time(line)
 
         return {'local molecular orbital wall time': LMO_time,
                 'multilevel opt wall time': OPT_time,
@@ -700,16 +631,15 @@ class XTBParser(FileParserInterface):
             if 'TOTAL ENERGY' in line:
                 energy = line.split()[3] + ' Hartrees'
 
-        return None, energy
+        return {'Total energy': energy}
 
     def _opt_timing(self):
 
-        def time(LINE):
-            line = LINE.split(',')
-            hr = line[1].split()
-            mn = line[2].split()
-            sc = line[3].split()
-            return hr + mn + sc
+        def grab_time(line):
+            line = line.replace(' ', '')
+            line = line.split(':')
+
+            return ':'.join(line[1:]).strip('\n')
 
         tot = False
         scf = False
@@ -717,15 +647,15 @@ class XTBParser(FileParserInterface):
 
         for line in self.contents:
             if "wall-time" in line and tot is False:
-                total_time = time(line)
+                total_time = grab_time(line)
                 tot = True
 
             elif "wall-time" in line and scf is False:
-                scf_time = time(line)
+                scf_time = grab_time(line)
                 scf = True
 
             if "wall-time" in line and anc is False:
-                anc_time = time(line)
+                anc_time = grab_time(line)
                 anc = True
 
         return {'Total wall time': total_time,
@@ -754,17 +684,18 @@ class XTBParser(FileParserInterface):
         protocol = None
 
         for line in self.contents:
-            if ">" in line:
-                protocol = line
-            elif "program call" in line:
-                protocol = line
-
+            if " > " in line:
+                protocol = line.strip('\n')
+            if "program call" in line:
+                protocol = (line.split(':')[1]).strip('\n')
         return protocol
 
-    def _separate_xyz(self, FILE):
+    def _parse_xyz(self):
         '''
         Split .xyz into separate XYZGeometry instances
         '''
+
+        FILE = self.xyz_path
 
         if len(list(pybel.readfile('xyz', FILE))) > 1:
             geom_list = []
@@ -776,99 +707,93 @@ class XTBParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
-            x = [isicle.geom.load(i) for i in geom_list]
+            x = [isicle.geometry.load(i) for i in geom_list]
 
         else:
-            x = [isicle.geom.load(FILE)]
+            x = [isicle.geometry.load(self.xyz_path)]
 
         return isicle.conformers.ConformationalEnsemble(x)
 
-    def _parse_xyz(self):
-
-        FILE = self.xyz_path
-        geom = self._separate_xyz(FILE)
-
-        return geom
-
-    def parse(self, to_parse=['energy']):
+    def parse(self, to_parse=['geometry', 'energy', 'timing']):
         '''Extract relevant information from data'''
 
         # Check that the file is valid first
         if len(self.contents) == 0:
             raise RuntimeError('No contents to parse: {}'.format(self.path))
+        if "terminated normally" not in self.contents[-1]:
+            if "ratio" not in self.contents[-2]:
+                raise RuntimeError('XTB job failed: {}'.format(self.path))
 
         self.parse_crest = False
         self.parse_opt = False
         self.parse_isomer = False
 
         # Initialize result object to store info
-        result = XTBResult()
+        result = {}
+
+        try:
+            result['protocol'] = self._parse_protocol()
+        except:
+            pass
+
+        print(result['protocol'])
 
         if self.path.endswith('xyz'):
 
             if 'geometry' in to_parse:
                 try:
                     self.xyz_path = self.path
-                    geom = self._parse_xyz()
-                    result.set_geometry(geom)
-                except IndexError:
+                    result['geom'] = self._parse_xyz()
+                    
+                except:
                     pass
 
         if self.path.endswith('out') or self.path.endswith('log'):
-            protocol = self._parse_protocol()
-            result.set_protocol(protocol)  # Stored as string
 
             if 'geometry' in to_parse:
                 XYZ = None
-                if 'xtb' in protocol:
+                if 'xtb' in result['protocol']:
                     self.parse_opt = True
                     XYZ = 'xtbopt.xyz'
-                if 'deprotonate' in protocol:
+                if 'deprotonate' in result['protocol']:
                     self.parse_isomer = True
-                    XYZ = 'deprotonate.xyz'
-                elif 'protonate' in protocol:
+                    XYZ = 'deprotonated.xyz'
+                elif 'protonate' in result['protocol']:
                     self.parse_isomer = True
                     XYZ = 'protonated.xyz'
-                elif 'tautomer' in protocol:
+                elif 'tautomer' in result['protocol']:
                     self.parse_isomer = True
                     XYZ = 'tautomers.xyz'
-                elif 'crest' in protocol:
+                elif 'crest' in result['protocol']:
                     self.parse_crest = True
                     XYZ = 'crest_conformers.xyz'
 
                 if XYZ is None:
-                    raise RuntimeError('XYZ file associated with XTB job not available, \
+                    raise RuntimeError('XYZ file associated with XTB job not available,\
                                         please parse separately.')
 
                 else:
                     temp_dir = os.path.dirname(self.path)
                     self.xyz_path = os.path.join(temp_dir, XYZ)
-                    try:
-                        geom = self._parse_xyz()
-                        result.set_geometry(geom)
-                    except IndexError:
-                        pass
+
+                    result['geom'] = self._parse_xyz()
+
 
             if 'timing' in to_parse:
-
                 try:
-                    timing = self._parse_timing()
-                    result.set_timing(timing)  # Stored as dictionary
-                except IndexError:
+                    result['timing'] = self._parse_timing()
+                except:
                     pass
 
             if 'energy' in to_parse:
-
                 try:
-                    energy = self._parse_energy()
-                    result.set_energy(energy)  # Stored as dictionary
-                except IndexError:
+                    result['energy'] = self._parse_energy()
+                except:
                     pass
 
-        self.result = result
         return result
 
-    def save(self, path: str):
-        '''Write parsed object to file'''
-        self.result.save(path)
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
         return

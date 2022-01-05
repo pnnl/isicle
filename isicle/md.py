@@ -1,5 +1,6 @@
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
+import subprocess
 import tempfile
 import os
 
@@ -42,13 +43,8 @@ def md(geom, program='xtb', **kwargs):
 
     Parameters
     ----------
-    geom : :obj:`~isicle.geometry.Geometry`
-        Molecule representation.
     program : str
         Alias for program selection (xtb).
-    **kwargs
-        Keyword arguments to configure the simulation.
-        See :meth:`~isicle.qm.XTBWrapper.configure`.
 
     Returns
     -------
@@ -58,39 +54,8 @@ def md(geom, program='xtb', **kwargs):
     '''
 
     # Select program
-    mdw = _program_selector(program)
-
-    # Set geometry
-    mdw.set_geometry(geom)
-
-    # Save geometry
-    if 'fmt' in kwargs:
-        mdw.save_geometry(fmt=kwargs.pop('fmt'))
-    else:
-        mdw.save_geometry()
-
-    # Build command line 
-    mdw.configure(**kwargs)
-
-    #Save configuration
-    mdw.save_config()
-
-    # Run MD simulation
-    mdw.run()
-
-    # Create new Geometry with updated structure
-    # res['geometry'] will be None or a path to an xyz file(s).
-    res = mdw.finish()
-
-    # geom = res.geometry
-
-    # # Erase old properties and add new event and MD properties
-    # geom.global_properties = {}
-    # geom._update_history('md')
-    # geom.add_global_properties(res.to_dict())
-
-    # Finish/clean up
-    return res
+    return _program_selector(program).run(geom, **kwargs)
+    
 
 class XTBWrapper(WrapperInterface):
     '''
@@ -122,9 +87,7 @@ class XTBWrapper(WrapperInterface):
         for preconfigured tasks.
 
         '''
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.task_map = {'xtb': self._configure_xtb,
-                         'crest': self._configure_crest}
+        pass
 
     def set_geometry(self, geom):
         '''
@@ -140,6 +103,9 @@ class XTBWrapper(WrapperInterface):
         # Assign geometry
         self.geom = geom
 
+        # Save geometry
+        self.save_geometry()
+
     def save_geometry(self, fmt='xyz'):
         '''
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
@@ -152,6 +118,7 @@ class XTBWrapper(WrapperInterface):
 
         '''
         # Path operationspyth
+        self.temp_dir = tempfile.TemporaryDirectory()
         self.fmt = fmt.lower()
         outfile = os.path.join(self.temp_dir.name,
                                '{}.{}'.format(self.geom.basename,
@@ -202,7 +169,6 @@ class XTBWrapper(WrapperInterface):
 
         s += '{}.{}'.format(self.geom.basename, "out")
         return s
-
 
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
                        protonate=False, deprotonate=False, tautomerize=False,
@@ -344,18 +310,21 @@ class XTBWrapper(WrapperInterface):
                 p, d, t, i = False, True, False, ion
 
             elif task == 'tautomerize':
-                p, d, t, i = False, False, True, ion 
+                p, d, t, i = False, False, True, ion
 
-            config = self._configure_crest(ewin=ewin, 
-                                           optlevel=optlevel, 
-                                           forcefield=forcefield,
-                                           protonate=p, 
-                                           deprotonate=d, 
-                                           tautomerize=t,
-                                           ion=i,
-                                           charge=charge,
-                                           dryrun=dryrun,
-                                           processes=processes)
+            if p is not None:
+                config = self._configure_crest(ewin=ewin, 
+                                               optlevel=optlevel, 
+                                               forcefield=forcefield,
+                                               protonate=p, 
+                                               deprotonate=d, 
+                                               tautomerize=t,
+                                               ion=i,
+                                               charge=charge,
+                                               dryrun=dryrun,
+                                               processes=processes)
+            else:
+                raise Error('Task not assignmed properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
 
         self.task = task
 
@@ -366,56 +335,68 @@ class XTBWrapper(WrapperInterface):
         self = self
         return 
 
-    def run(self):
+    def submit(self):
         '''
         Run xtb or crest simulation according to configured inputs.
         '''
         owd = os.getcwd()
         os.chdir(self.temp_dir.name)
         job = self.config
-        os.system(job)
-
+        subprocess.call(job,shell=True)
         os.chdir(owd)
 
-    def finish(self, keep_files=False, path=None):
+    def finish(self):
         '''
         Parse results, save xtb output files, and clean temporary directory
-
         '''
 
         parser = XTBParser()
 
         parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
-        result = parser.parse(to_parse=['energy', 'geometry'])
+        result = parser.parse(to_parse=['energy', 'geometry', 'timing'])
 
-        if keep_files is True:
-            import shutil
+        self.__dict__.update(result)
+        for i in self.geom:
+            i.add_global_properties({k: v for k, v in result.items() if k != 'geom'})
+        self.result = result
+        return self
 
-            if path is None:
-                raise ValueError('Must supply `path`.')
-            else:
-                shutil.copy2(os.path.join(self.temp_dir.name,
-                                          self.geom.basename + '.out'), path)
-                if 'optimize' in self.task:
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'xtbopt.{}'.format(self.fmt.lower())), path)
-                if 'crest' in self.task:
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'crest_conformers.xyz'), path)
-                if 'protonate' in self.task:
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'protonated.xyz'), path)
-                if 'deprotonate' in self.task:
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'deprotonated.xyz'), path)
-                if 'tautomer' in self.task:
-                    shutil.copy2(os.path.join(self.temp_dir.name,
-                                              'tautomers.xyz'), path)
+    def run(self, geom, **kwargs):
+        '''
+        Optimize geometry via density functional theory using supplied functional
+        and basis set.
 
-        # Remove temporary files
-        self.temp_dir.cleanup()
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        **kwargs
+            Keyword arguments to configure the simulation.
+            See :meth:`~isicle.md.XTBWrapper.configure`.
 
-        return result
+        Returns
+        -------
+        :obj:`~isicle.md.XTBWrapper`
+            Wrapper object containing relevant outputs from the simulation.
+
+        '''
+        
+        # New instance
+        self = XTBWrapper()
+
+        # Set geometry
+        self.set_geometry(geom)
+
+        # Configure
+        self.configure(**kwargs)
+
+        # Run QM simulation
+        self.submit()
+
+        # Finish/clean up
+        self.finish()
+
+        return self
 
 def amber():
     # Don't work on this one yet
