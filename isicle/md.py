@@ -128,7 +128,7 @@ class XTBWrapper(WrapperInterface):
         self.geom.save(outfile)
         self.geom.path = outfile
 
-    def _configure_xtb(self, forcefield='gff', optlevel='normal', charge=None):
+    def _configure_xtb(self, forcefield='gff', optlevel='normal', charge=None, solvation=None):
         '''
         Set command line for xtb simulations.
 
@@ -164,6 +164,10 @@ class XTBWrapper(WrapperInterface):
         if charge is not None:
             s += '--chrg '+ charge + ' '
 
+        # Add optional implicit solvation
+        if solvation is not None:
+            s += '--alpb ' + solvation + ' '
+
         # Add output
         s += '&>' + ' ' 
 
@@ -172,7 +176,8 @@ class XTBWrapper(WrapperInterface):
 
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
                        protonate=False, deprotonate=False, tautomerize=False,
-                       ion=None, charge=None, dryrun=False, processes=1):
+                       ion=None, charge=None, dryrun=False, processes=1,
+                       solvation=None):
 
         '''
         Set command line for crest simulations.
@@ -246,6 +251,10 @@ class XTBWrapper(WrapperInterface):
         # Add scratch folder
         s += '--scratch '
 
+        # Add optional solvation
+        if solvation is not None:
+            s += '--alpb ' + solvation + ' '
+
         # Number of processes
         s += '-T ' + str(processes) + ' '
 
@@ -259,7 +268,8 @@ class XTBWrapper(WrapperInterface):
         return s
 
     def configure(self, task='optimize', forcefield='gff', charge=None,
-                  ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1):
+                  ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
+                  solvation=None):
         '''
         Generate command line 
 
@@ -322,7 +332,8 @@ class XTBWrapper(WrapperInterface):
                                                ion=i,
                                                charge=charge,
                                                dryrun=dryrun,
-                                               processes=processes)
+                                               processes=processes,
+                                               solvation=solvation)
             else:
                 raise Error('Task not assignmed properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
 
