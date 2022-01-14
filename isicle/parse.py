@@ -517,12 +517,11 @@ class XTBParser(FileParserInterface):
         population = []
 
         ready = False
-        h = 0
-        while h <= len(self.contents)-1:
+        for h in range(len(self.contents), 0, -1):
             if 'Erel/kcal' in self.contents[h]:
                 g = h + 1
-                while g <= len(self.contents)-1:
-                    line = self.contents[g].split()
+                for j in range(g,len(self.contents)):
+                    line = self.contents[j].split()
                     if len(line) == 8:
                         relative_energy.append(float(line[1]))
                         total_energy.append(float(line[2]))
@@ -531,12 +530,8 @@ class XTBParser(FileParserInterface):
 
                     if '/K' in line[1]:
                         break
-
-                    g += 1
             if ready == True:
                 break
-
-            h += 1
 
         return {'relative energies': relative_energy,
                 'total energies': total_energy,
