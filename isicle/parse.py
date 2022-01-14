@@ -583,13 +583,12 @@ class XTBParser(FileParserInterface):
         complete = False
         relative_energies = []
         total_energies = []
-        g = len(self.contents)-1
-        while g >= 0:
-            if 'structure    ΔE(kcal/mol)   Etot(Eh)' in self.contents[g]:
-                h = g + 1
-                while h <= len(self.contents)-1:
-                    if self.contents[h] != ' \n':
-                        line = self.contents[h].split()
+        for i in range(len(self.contents), 0, -1):
+            if 'structure    ΔE(kcal/mol)   Etot(Eh)' in self.contents[i]:
+                h = i + 1
+                for j in range(h,len(self.contents)):
+                    if self.contents[j] != ' \n':
+                        line = self.contents[j].split()
                         relative_energies.append(float(line[1]))
                         total_energies.append(float(line[2]))
                     else:
@@ -598,8 +597,6 @@ class XTBParser(FileParserInterface):
 
             if complete == True:
                 break
-
-            g -= 1
 
         return {'relative energy': relative_energies,
                 'total energy': total_energies}
@@ -775,7 +772,6 @@ class XTBParser(FileParserInterface):
                     self.xyz_path = os.path.join(temp_dir, XYZ)
 
                     result['geom'] = self._parse_xyz()
-
 
             if 'timing' in to_parse:
                 try:
