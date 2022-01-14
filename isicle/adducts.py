@@ -573,22 +573,19 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
         Call isicle.md.md for specified geom and cation
         '''
-        try:
-            output = md(self._geom, program='xtb', task='protonate', forcefield=forcefield,
-                        ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
-        except:
-            output = None
+        output = md(self._geom, program='xtb', task='protonate', forcefield=forcefield,
+                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
+
         return output
 
     def _negative_mode(self, forcefield, ewin, anion, charge, optlevel, dryrun, processes, solvation):
         '''
         Call isicle.md.md for specified geom and anion
         '''
-        try:
-            output = md(self._geom, program='xtb', task='deprotonate', forcefield=forcefield,
-                        ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
-        except:
-            output = None
+
+        output = md(self._geom, program='xtb', task='deprotonate', forcefield=forcefield,
+                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
+
         return output
 
     def submit(self, forcefield='gff', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None):
