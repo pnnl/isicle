@@ -5,9 +5,10 @@ import tempfile
 import os
 
 '''
-Files resulting from an xtb job always run in the same directory that the command is 
+Files resulting from an xtb job always run in the same directory that the command is
 issued in, no matter where the input is. Can direct the .log file, but no other files.
 '''
+
 
 def _program_selector(program):
     '''
@@ -55,7 +56,7 @@ def md(geom, program='xtb', **kwargs):
 
     # Select program
     return _program_selector(program).run(geom, **kwargs)
-    
+
 
 class XTBWrapper(WrapperInterface):
     '''
@@ -134,7 +135,7 @@ class XTBWrapper(WrapperInterface):
 
         Parameters
         ----------
-        forcefield : str 
+        forcefield : str
             GFN forcefield for the optimization
             Default: gff
             Supported forcefields: gfn2, gfn1, gff
@@ -152,33 +153,32 @@ class XTBWrapper(WrapperInterface):
         s = 'xtb '
 
         # Add geometry
-        s += '{}.{}'.format(self.geom.basename,self.fmt.lower())
- 
+        s += '{}.{}'.format(self.geom.basename, self.fmt.lower())
+
         # Add optimize tag
         s += ' --opt ' + optlevel + ' '
 
         # Add forcefield
-        s += '--'+ forcefield + ' ' 
+        s += '--' + forcefield + ' '
 
         # Add optional charge
         if charge is not None:
-            s += '--chrg '+ charge + ' '
+            s += '--chrg ' + charge + ' '
 
         # Add optional implicit solvation
         if solvation is not None:
             s += '--alpb ' + solvation + ' '
 
         # Add output
-        s += '&>' + ' ' 
+        s += '&>' + ' '
 
         s += '{}.{}'.format(self.geom.basename, "out")
         return s
 
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
-                       protonate=False, deprotonate=False, tautomerize=False,
-                       ion=None, charge=None, dryrun=False, processes=1,
-                       solvation=None):
-
+                         protonate=False, deprotonate=False, tautomerize=False,
+                         ion=None, charge=None, dryrun=False, processes=1,
+                         solvation=None):
         '''
         Set command line for crest simulations.
 
@@ -196,7 +196,7 @@ class XTBWrapper(WrapperInterface):
             Default: gff
             Supported forcefields: gfn2, gfn1, gff
         protonate : bool
-            Signal to initiate protomer search. Suggested ewin = 30. 
+            Signal to initiate protomer search. Suggested ewin = 30.
             Default : False
         deprotonate : bool
             Signal to initiate deprotonated conformers. Suggesting ewin = 30.
@@ -217,10 +217,10 @@ class XTBWrapper(WrapperInterface):
 
         # Add geometry
         s += str(os.path.join(self.temp_dir.name,
-                               '{}.{}'.format(self.geom.basename,
-                                              self.fmt.lower())))
+                              '{}.{}'.format(self.geom.basename,
+                                             self.fmt.lower())))
 
-        s += ' '       
+        s += ' '
         # Add optional tag
         if protonate:
             s += '-protonate '
@@ -246,7 +246,7 @@ class XTBWrapper(WrapperInterface):
         s += '--optlevel ' + optlevel + ' '
 
         # Add forcefield
-        s += '-'+ forcefield + ' '
+        s += '-' + forcefield + ' '
 
         # Add scratch folder
         s += '--scratch '
@@ -262,8 +262,8 @@ class XTBWrapper(WrapperInterface):
         s += '&>' + ' '
 
         s += os.path.join(self.temp_dir.name,
-                               '{}.{}'.format(self.geom.basename,
-                                              "out"))
+                          '{}.{}'.format(self.geom.basename,
+                                         "out"))
 
         return s
 
@@ -271,7 +271,7 @@ class XTBWrapper(WrapperInterface):
                   ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
                   solvation=None):
         '''
-        Generate command line 
+        Generate command line
 
         Parameters
         ----------
@@ -285,10 +285,10 @@ class XTBWrapper(WrapperInterface):
         ewin : int
             Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search.
             Default : 6
-        ion : str 
+        ion : str
             Ion for protomer calculation.
         optlevel : str or list of str
-            Set optimization level. Supply globally or per task. 
+            Set optimization level. Supply globally or per task.
         ion : str
             Keyword to couple with protonate to ionize molecule with an ion other than a proton.
             See :obj:`~isicle.adduct.parse_ion` for list of ion options.
@@ -303,7 +303,6 @@ class XTBWrapper(WrapperInterface):
             raise TypeError('Initiate one forcefield at a time.')
         if type(optlevel) == list:
             raise TypeError('Initiate one opt level at a time.')
-
 
         if task == 'optimize':
             config = self._configure_xtb(optlevel=optlevel,
@@ -323,11 +322,11 @@ class XTBWrapper(WrapperInterface):
                 p, d, t, i = False, False, True, ion
 
             if p is not None:
-                config = self._configure_crest(ewin=ewin, 
-                                               optlevel=optlevel, 
+                config = self._configure_crest(ewin=ewin,
+                                               optlevel=optlevel,
                                                forcefield=forcefield,
-                                               protonate=p, 
-                                               deprotonate=d, 
+                                               protonate=p,
+                                               deprotonate=d,
                                                tautomerize=t,
                                                ion=i,
                                                charge=charge,
@@ -335,7 +334,8 @@ class XTBWrapper(WrapperInterface):
                                                processes=processes,
                                                solvation=solvation)
             else:
-                raise Error('Task not assignmed properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
+                raise Error(
+                    'Task not assignmed properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
 
         self.task = task
 
@@ -344,7 +344,7 @@ class XTBWrapper(WrapperInterface):
     def save_config(self):
         '''Filler function to match WrapperInterface'''
         self = self
-        return 
+        return
 
     def submit(self):
         '''
@@ -353,7 +353,7 @@ class XTBWrapper(WrapperInterface):
         owd = os.getcwd()
         os.chdir(self.temp_dir.name)
         job = self.config
-        subprocess.call(job,shell=True)
+        subprocess.call(job, shell=True)
         os.chdir(owd)
 
     def finish(self):
@@ -391,7 +391,7 @@ class XTBWrapper(WrapperInterface):
             Wrapper object containing relevant outputs from the simulation.
 
         '''
-        
+
         # New instance
         self = XTBWrapper()
 
@@ -408,6 +408,7 @@ class XTBWrapper(WrapperInterface):
         self.finish()
 
         return self
+
 
 def amber():
     # Don't work on this one yet
