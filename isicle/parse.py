@@ -707,11 +707,10 @@ class XTBParser(FileParserInterface):
                 count += 1
 
             x = [isicle.geometry.load(i) for i in geom_list]
+            return isicle.conformers.ConformationalEnsemble(x) 
 
         else:
-            x = [isicle.geometry.load(self.xyz_path)]
-
-        return isicle.conformers.ConformationalEnsemble(x)
+            return isicle.geometry.load(self.xyz_path)
 
     def parse(self, to_parse=['geometry', 'energy', 'timing']):
         '''Extract relevant information from data'''
@@ -735,8 +734,6 @@ class XTBParser(FileParserInterface):
         except:
             pass
 
-        print(result['protocol'])
-
         if self.path.endswith('xyz'):
 
             if 'geometry' in to_parse:
@@ -751,7 +748,7 @@ class XTBParser(FileParserInterface):
 
             if 'geometry' in to_parse:
                 XYZ = None
-                if 'xtb' in result['protocol']:
+                if result['protocol'].split()[0] == 'xtb':
                     self.parse_opt = True
                     XYZ = 'xtbopt.xyz'
                 if 'deprotonate' in result['protocol']:
@@ -763,17 +760,24 @@ class XTBParser(FileParserInterface):
                 elif 'tautomer' in result['protocol']:
                     self.parse_isomer = True
                     XYZ = 'tautomers.xyz'
-                elif 'crest' in result['protocol']:
+                elif result['protocol'].split()[1] == 'crest':
                     self.parse_crest = True
                     XYZ = 'crest_conformers.xyz'
+
+                if 'scratch' in self._parse_protocol():
+                    xyz_dir = 'scratc'
 
                 if XYZ is None:
                     raise RuntimeError('XYZ file associated with XTB job not available,\
                                         please parse separately.')
 
                 else:
-                    temp_dir = os.path.dirname(self.path)
-                    self.xyz_path = os.path.join(temp_dir, XYZ)
+                    if 'scratch' in self._parse_protocol:
+                        temp_dir = os.path.dirname(self.path)+'/scratch'
+                        self.xyz_path = os.path.join(temp_dir, XYZ)
+                    else:
+                        temp_dir = os.path.dirname(self.path)
+                        self.xyz_path = os.path.join(temp_dir, XYZ)
 
                     result['geom'] = self._parse_xyz()
 

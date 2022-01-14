@@ -612,7 +612,12 @@ class NWChemWrapper(WrapperInterface):
                              'per task.')
 
         # Extract atom index information
-        self.idx = self.geom.get_atom_indices(atoms=atoms)
+        idx = self.geom.get_atom_indices(atoms=atoms)
+        new_idx = []
+        for i in idx:
+            new_idx.append(str(int(i)+1))
+        
+        self.idx = new_idx
 
         # Generate header information
         config += self._configure_header(scratch_dir=scratch_dir,
