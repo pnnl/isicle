@@ -27,7 +27,7 @@ class NWChemParser(FileParserInterface):
     def _parse_geometry(self):
         search = os.path.dirname(self.path)
         geoms = sorted(glob.glob(os.path.join(search, '*.xyz')))
-
+        
         if len(geoms) > 0:
             return isicle.geometry.load(geoms[-1])
 
@@ -72,7 +72,7 @@ class NWChemParser(FileParserInterface):
             return {'index': shield_idxs,
                     'atom': shield_atoms,
                     'shielding': shields}
-
+        
         raise Exception
 
     def _parse_spin(self):
@@ -149,11 +149,11 @@ class NWChemParser(FileParserInterface):
 
         if has_frequency is True:
             freq = np.array([float(x.split()[1]) for x in self.contents[freq_start:freq_stop + 1]])
-
+            
             return {'frequencies': freq, 'correction to enthalpy': enthalpies,
                     'total entropy': entropies, 'constant volume heat capacity': capacities,
                     'zero-point correction': zpe}
-
+        
         raise Exception
 
     def _parse_charge(self):
@@ -264,6 +264,7 @@ class NWChemParser(FileParserInterface):
         return m[0]
 
     def _parse_protocol(self):
+
         '''Parse out dft protocol'''
         functional = []
         basis_set = []
@@ -303,7 +304,7 @@ class NWChemParser(FileParserInterface):
                 solvation.append(solvent)
 
         return {'functional': functional, 'basis set': basis_set,
-                'solvation': solvation, 'tasks': tasks}
+                  'solvation': solvation, 'tasks': tasks}
 
     def parse(self, to_parse=['geometry', 'energy']):
         '''
@@ -312,7 +313,7 @@ class NWChemParser(FileParserInterface):
         Parameters
         ----------
         to_parse : list of str
-            geometry, energy, shielding, spin, frequency, molden, charge, timing
+            geometry, energy, shielding, spin, frequency, molden, charge, timing 
         '''
 
         # Check that the file is valid first
@@ -362,7 +363,7 @@ class NWChemParser(FileParserInterface):
 
         if 'molden' in to_parse:
             try:
-                result['molden'] = self._parse_molden()
+                 result['molden'] = self._parse_molden()
             except:
                 pass
 
@@ -707,10 +708,11 @@ class XTBParser(FileParserInterface):
                 count += 1
 
             x = [isicle.geometry.load(i) for i in geom_list]
-            return isicle.conformers.ConformationalEnsemble(x) 
 
         else:
-            return isicle.geometry.load(self.xyz_path)
+            x = [isicle.geometry.load(self.xyz_path)]
+
+        return isicle.conformers.ConformationalEnsemble(x)
 
     def parse(self, to_parse=['geometry', 'energy', 'timing']):
         '''Extract relevant information from data'''
@@ -740,7 +742,7 @@ class XTBParser(FileParserInterface):
                 try:
                     self.xyz_path = self.path
                     result['geom'] = self._parse_xyz()
-
+                    
                 except:
                     pass
 
@@ -769,14 +771,11 @@ class XTBParser(FileParserInterface):
                                         please parse separately.')
 
                 else:
-                    if 'scratch' in result['protocol']:
-                        temp_dir = os.path.dirname(self.path)+'/scratch'
-                        self.xyz_path = os.path.join(temp_dir, XYZ)
-                    else:
-                        temp_dir = os.path.dirname(self.path)
-                        self.xyz_path = os.path.join(temp_dir, XYZ)
+                    temp_dir = os.path.dirname(self.path)
+                    self.xyz_path = os.path.join(temp_dir, XYZ)
 
                     result['geom'] = self._parse_xyz()
+
 
             if 'timing' in to_parse:
                 try:
