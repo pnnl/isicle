@@ -765,9 +765,6 @@ class XTBParser(FileParserInterface):
                     self.parse_crest = True
                     XYZ = 'crest_conformers.xyz'
 
-                if 'scratch' in self._parse_protocol():
-                    xyz_dir = 'scratc'
-
                 if XYZ is None:
                     raise RuntimeError('XYZ file associated with XTB job not available,\
                                         please parse separately.')
