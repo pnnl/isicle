@@ -248,9 +248,6 @@ class XTBWrapper(WrapperInterface):
         # Add forcefield
         s += '-'+ forcefield + ' '
 
-        # Add scratch folder
-        s += '--scratch '
-
         # Add optional solvation
         if solvation is not None:
             s += '--alpb ' + solvation + ' '

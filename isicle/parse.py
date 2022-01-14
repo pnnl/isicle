@@ -770,7 +770,7 @@ class XTBParser(FileParserInterface):
                                         please parse separately.')
 
                 else:
-                    if 'scratch' in self._parse_protocol:
+                    if 'scratch' in result['protocol']:
                         temp_dir = os.path.dirname(self.path)+'/scratch'
                         self.xyz_path = os.path.join(temp_dir, XYZ)
                     else:
