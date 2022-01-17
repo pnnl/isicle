@@ -306,6 +306,18 @@ class ExplicitIonizationWrapper(WrapperInterface):
         elif mode == None:
             raise NotImplementedError
 
+    def _subset_atom_dict(self, atom_dict, index_list=None, element_list=None):
+        subset_atom_dict = {}
+        if index_list is not None:
+            for k, v in atom_dict.items():
+                if k in index_list:
+                    subset_atom_dict[k] = v
+        if element_list is not None:
+            for k, v in atom_dict.items():
+                if v[0] in element_list:
+                    subset_atom_dict[k] = v
+        return subset_atom_dict
+
     def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
@@ -342,7 +354,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             mol_dict[key] = mw
         return mol_dict
 
-    def _positive_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize, include_Alkali_ne):
+    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, include_Alkali_ne):
         '''
         Adds specified cation to RDKit mol object.
         batch=True: adduct generated at every potential base atom
@@ -350,14 +362,20 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         atom_dict = self._modify_atom_dict(
             init_mol, ion_atomic_num, mode='positive', include_Alkali_ne=include_Alkali_ne)
-
-        if ((batch == False) and (single_atom_idx is not None)):
-            mol_dict = self._apply_add_ion(
-                init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
+        if index_list is not None:
+            subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
+            mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
+                                           ion_atomic_num, sanitize, optimize)
+        elif element_list is not None:
+            subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
+            mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
+                                           ion_atomic_num, sanitize, optimize)
         elif batch == True:
             mol_dict = self._apply_add_ion(init_mol, atom_dict, ion_atomic_num, sanitize, optimize)
         else:
-            raise ValueError('Must provide an index value with batch==False.')
+            raise ValueError(
+                'Must provide a list of atom indexes, list of elements, or set batch=True.')
+
         return mol_dict
 
     def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
@@ -397,42 +415,54 @@ class ExplicitIonizationWrapper(WrapperInterface):
             mol_dict[key] = mw
         return mol_dict
 
-    def _negative_mode(self, init_mol, ion_atomic_num, batch, single_atom_idx, sanitize, optimize, include_Alkali_ne):
+    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, include_Alkali_ne):
         '''
         Removes specified anion from RDKit mol object at every potential base atom.
         '''
         atom_dict = self._modify_atom_dict(
             init_mol, ion_atomic_num, mode='negative', include_Alkali_ne=include_Alkali_ne)
-        if ((batch == False) and (single_atom_idx is not None)):
+        if index_list is not None:
+            subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, {single_atom_idx: atom_dict[single_atom_idx]}, ion_atomic_num, sanitize, optimize)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize)
+        elif element_list is not None:
+            subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
+            mol_dict = self._apply_remove_ion(
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize)
         elif batch == True:
             mol_dict = self._apply_remove_ion(
                 init_mol, atom_dict, ion_atomic_num, sanitize, optimize)
         else:
-            raise ValueError('Must provide an index value with batch==False.')
+            raise ValueError(
+                'Must provide a list of atom indexes, list of elements, or set batch=True.')
         return mol_dict
 
-    def submit(self, batch=True, single_atom_idx=None, sanitize=True, optimize=True, include_Alkali_ne=False):
+    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, optimize=True, include_Alkali_ne=False):
         '''
         Creates specified adducts at every atom site.
         '''
         pt = Chem.GetPeriodicTable()
+
         anion_dict = {}
         cation_dict = {}
         complex_dict = {}
 
+        if index_list is not None:
+            index_list = safelist(index_list)
+        if element_list is not None:
+            element_list = safelist(element_list)
+
         for ion in self._cations:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', ion)[0])
             mol_dict = self._positive_mode(self._geom.mol, ion_atomic_num,
-                                           batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+                                           batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
             cation_dict[ion] = list(mol_dict.values())
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self._cations = cation_dict
         for ion in self._anions:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', ion)[0])
             mol_dict = self._negative_mode(self._geom.mol, ion_atomic_num,
-                                           batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+                                           batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
             anion_dict[ion] = list(mol_dict.values())
             # anion_dict defined as {ion-:{base_atom_index: mol}}
         self._anions = anion_dict
@@ -446,10 +476,10 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 for temp_mol in temp_mols:
                     if '+' in sion:
                         mol_dict = self._positive_mode(temp_mol.mol, ion_atomic_num,
-                                                       batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+                                                       batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
                     elif '-' in sion:
                         mol_dict = self._negative_mode(temp_mol.mol, ion_atomic_num,
-                                                       batch, single_atom_idx, sanitize, optimize, include_Alkali_ne)
+                                                       batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
                     else:
                         raise ValueError
                     if len(temp_mols) > 1:
@@ -508,6 +538,33 @@ class ExplicitIonizationWrapper(WrapperInterface):
         self.finish()
 
         return self
+
+    def save_pickle(self, path):
+        '''
+        Pickle this class instance.
+
+        Parameters
+        ----------
+        path : str
+            Path to save pickle object to.
+
+        '''
+
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+
+    def save(self, path):
+        '''
+        Save this class instance.
+
+        Parameters
+        ----------
+        path : str
+            Path to save object to.
+
+        '''
+
+        self.save_pickle(path)
 
 
 class CRESTIonizationWrapper(WrapperInterface):
@@ -684,3 +741,30 @@ class CRESTIonizationWrapper(WrapperInterface):
         self.finish()
 
         return self
+
+    def save_pickle(self, path):
+        '''
+        Pickle this class instance.
+
+        Parameters
+        ----------
+        path : str
+            Path to save pickle object to.
+
+        '''
+
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+
+    def save(self, path):
+        '''
+        Save this class instance.
+
+        Parameters
+        ----------
+        path : str
+            Path to save object to.
+
+        '''
+
+        self.save_pickle(path)
