@@ -129,7 +129,7 @@ class XTBWrapper(WrapperInterface):
         self.geom.save(outfile)
         self.geom.path = outfile
 
-    def _configure_xtb(self, forcefield='gff', optlevel='normal', charge=None, solvation=None):
+    def _configure_xtb(self, forcefield='gfn2', optlevel='normal', charge=None, solvation=None):
         '''
         Set command line for xtb simulations.
 
@@ -175,7 +175,7 @@ class XTBWrapper(WrapperInterface):
         s += '{}.{}'.format(self.geom.basename, "out")
         return s
 
-    def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gff',
+    def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gfn2',
                          protonate=False, deprotonate=False, tautomerize=False,
                          ion=None, charge=None, dryrun=False, processes=1,
                          solvation=None):
@@ -264,7 +264,7 @@ class XTBWrapper(WrapperInterface):
 
         return s
 
-    def configure(self, task='optimize', forcefield='gff', charge=None,
+    def configure(self, task='optimize', forcefield='gfn2', charge=None,
                   ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
                   solvation=None):
         '''
