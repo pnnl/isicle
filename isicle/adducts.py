@@ -68,6 +68,22 @@ def _parse_list_ions(ion_list):
 
 
 def _parse_ions(ion_path=None, ion_list=None):
+    '''
+    Parses supplied ion information to recognized format
+
+    Params
+    ------
+    ion_path: str
+        Filepath to text file with an ion on each new line
+        For more layout information, see: adducts._parse_file_ions()
+    ion_list: list of str
+        List of ions in format 'ioncharge' (eg. 'H+' or 'Na+')
+        For more information on complex ions, see: adducts._parse_list_ions()
+
+    Returns
+    -------
+    Tuple of (cations, anions, complex ions)
+    '''
     if ion_path is not None:
         # Load ion file
         ion_list = _parse_file_ions(ion_path)
@@ -81,11 +97,12 @@ def _parse_ions(ion_path=None, ion_list=None):
 def ionize(ion_method):
     '''
     Selects a supported ionization method.
-    Currently only Explicit ionization has been implemented.
-    Parameters
+
+    Params
     ----------
     ion_method : str
         Alias for ion method selection (e.g. explicit).
+
     Returns
     -------
     program
@@ -101,14 +118,30 @@ def ionize(ion_method):
 
 
 def _check_atom_group(ion_atomic_num):
-    """
-    Checks periodic group atom belongs to.
+    '''
+    Checks periodic group atom belongs to
 
-    """
+    Params
+    ------
+    ion_atomic_num: Int
+
+    Returns
+    -------
+    Bool
+    '''
     return ion_atomic_num in [1, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]
 
 
 def _filter_by_substructure_match(init_mol, unknown_valid_list):
+    '''
+    Filters ions in supplied list that are a substructure match to the supplied mol
+
+    Params
+    ------
+    init_mol: RDKit mol object
+    unknown_valid_list: list of str
+        List of ions (eg. ['H-'])
+    '''
     valid_list = []
     for ion in unknown_valid_list:
         parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
