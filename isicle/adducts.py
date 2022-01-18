@@ -262,7 +262,19 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Downselect atom sites that can accept ions
 
-        Methods
+        Params
+        ------
+        init_mol: RDKit mol object
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be added or removed
+        mode: str
+            'positive' for positive mode
+            'negative' for negative mode
+        include_Alkaline_ne: Bool
+            If False: removes alkali and alkaline metals from base atoms to be ionized (default)
+            If True: Adducts are attempted to be formed at these atoms, in addition to other atoms.
+
+        Returns
         -------
         all_atom_dict defined as {<atom.rdkit.obj>:['C',3,2,1]}
             -atom.GetSymbol() returns atomic symbol e.g. 'C'
@@ -304,9 +316,30 @@ class ExplicitIonizationWrapper(WrapperInterface):
             return atom_dict
 
         elif mode == None:
-            raise NotImplementedError
+            raise ValueError('Must supply an ionization mode to _modify_atom_dict')
 
     def _subset_atom_dict(self, atom_dict, index_list=None, element_list=None):
+        '''
+        Downselect atom sites to user supplied atom indices or element symbols
+
+        Params
+        ------
+        atom_dict: Dict
+            Dictionary of format {<atom.rdkit.obj>:[atom Symbol, atom Total Valence, atom Degree, # bonded H atoms]}
+        index_list: list
+            list of integers denoting IUPAC atom indexes of base atoms to be ionized (eg. [0,1])
+        element_list: list
+            list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
+
+        Returns
+        -------
+        subset_atom_dict defined as {<atom.rdkit.obj>:['C',3,2,1]}
+            -atom.GetSymbol() returns atomic symbol e.g. 'C'
+            -atom.GetTotalValence() returns total (explicit+implicit) valence
+            -atom.GetDegree() returns number of directly-bonded neighbours
+             indep. of bond order, dep. of Hs set to explicit
+            -atom.GetTotalNumHs returns total (explicit+implicit) Hs on atom
+        '''
         subset_atom_dict = {}
         if index_list is not None:
             for k, v in atom_dict.items():
@@ -318,10 +351,61 @@ class ExplicitIonizationWrapper(WrapperInterface):
                     subset_atom_dict[k] = v
         return subset_atom_dict
 
-    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
+    def _forcefield_selector(self, optimize, mw):
+        '''
+        Checks if user specified forcefield is compatible with supplied mol
+
+        Params
+        ------
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        mw: RDKit mol object
+
+        Returns
+        -------
+        RDKit forcefield optimization function that must be implemented
+        '''
+        optimize = optimize.lower()
+        if optimize == 'uff':
+            if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
+                return Chem.AllChem.UFFOptimizeMolecule
+            else:
+                raise ValueError('UFF is not available for all atoms in molecule.')
+        elif optimize in ['mmff', 'mmff94', 'mmff94s']:
+            if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
+                Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
+            else:
+                raise ValueError('specified MMFF is not available for all atoms in molecule.')
+        return
+
+    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize, embed, ff_iter):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
-        Returns ionized RDKit mol object.
+
+        Params
+        ------
+        init_mol: RDKit mol object
+        base_atom_idx: Int
+            Integer denoting the the atom to which an ion will be added
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be added
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield
+
+        Returns
+        _______
+        Ionized RDKit mol object
         '''
         mw = Chem.RWMol(init_mol)
         atom_idx = mw.AddAtom(Chem.Atom(ion_atomic_num))
@@ -332,56 +416,134 @@ class ExplicitIonizationWrapper(WrapperInterface):
         mw.UpdatePropertyCache(strict=False)
         if sanitize is True:
             Chem.SanitizeMol(mw)
-        if optimize is True:
-            # TODO revisit EmbedMolecule error for large molecules
-            Chem.AllChem.EmbedMolecule(mw)
-            Chem.AllChem.UFFOptimizeMolecule(mw)
+        if embed is True:
+            try:
+                Chem.AllChem.EmbedMolecule(mw)
+            except:
+                Chem.AllChem.EmbedMolecule(mw, useRandomCoords=True)
+        if optimize:
+            tempff = self._forcefield_selector(optimize, mw)
+            if 'mmff94s' in optimize:
+                tempff(mw, mmffVariant=optimize, maxIters=ff_iter)
+            else:
+                tempff(mw, maxIters=ff_iter)
         geom = isicle.geometry.Geometry(mol=mw, history=self._geom.get_history())
         geom._update_history('ionize')
         return geom
 
-    def _apply_add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
+    def _apply_add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter):
         '''
-        Iterates through base atoms of RDKit mol object.
-        Calls method to ionize and return new RDKit mol object.
-        Returns dictionary of {base atom: ionized RDKit mol object}.
+        Iteratively ionize all atoms in a supplied dictionary.
+
+        Params
+        ------
+        init_mol: RDKit mol object
+        atom_dict: Dict
+            Dictionary of format {<atom.rdkit.obj>:[atom Symbol, atom Total Valence, atom Degree, # bonded H atoms]}
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be added
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield
+
+        Returns
+        -------
+        Dictionary of style {base atom index: ionized RDKit mol object}
         '''
 
         mol_dict = {}
         for key in atom_dict.keys():
-            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, optimize)
+            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, optimize, embed, ff_iter)
             # Format {atom_base_idx:<newmol>}
             mol_dict[key] = mw
         return mol_dict
 
-    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, include_Alkali_ne):
+    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne):
         '''
-        Adds specified cation to RDKit mol object.
-        batch=True: adduct generated at every potential base atom
-        batch=False, single_atom_idx!=None: adduct generated at specified atom index
+        Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
+
+        Params
+        ------
+        init_mol: RDKit mol object
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be added
+        batch: Bool
+            Whether adducts should be formed from all possible heavy atoms
+        index_list: list
+            list of integers denoting IUPAC atom indexes of base atoms to be ionized (eg. [0,1])
+        element_list: list
+            list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield
+        include_Alkaline_ne: Bool
+            If False: removes alkali and alkaline metals from base atoms to be ionized
+            If True: Adducts are attempted to be formed at these atoms, in addition to other atoms.
+
+        Returns
+        -------
+        Dictionary of style {base atom index: ionized RDKit mol object}
         '''
         atom_dict = self._modify_atom_dict(
             init_mol, ion_atomic_num, mode='positive', include_Alkali_ne=include_Alkali_ne)
         if index_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
-                                           ion_atomic_num, sanitize, optimize)
+                                           ion_atomic_num, sanitize, optimize, embed, ff_iter)
         elif element_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
-                                           ion_atomic_num, sanitize, optimize)
+                                           ion_atomic_num, sanitize, optimize, embed, ff_iter)
         elif batch == True:
-            mol_dict = self._apply_add_ion(init_mol, atom_dict, ion_atomic_num, sanitize, optimize)
+            mol_dict = self._apply_add_ion(
+                init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
         else:
             raise ValueError(
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
 
         return mol_dict
 
-    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize):
+    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize, embed, ff_iter):
         '''
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
-        Returns deionized RDKit mol object.
+
+        Params
+        ------
+        init_mol: RDKit mol object
+        base_atom_idx: Int
+            Integer denoting the the atom from which an ion will be removed from
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be removed
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield
+        Returns
+        _______
+        Deionized RDKit mol object
         '''
 
         mw = Chem.RWMol(init_mol)
@@ -393,53 +555,138 @@ class ExplicitIonizationWrapper(WrapperInterface):
         mw.UpdatePropertyCache(strict=False)
         if sanitize is True:
             Chem.SanitizeMol(mw)
-        if optimize is True:
-            # TODO revisit EmbedMolecule issues for large molecules
-            Chem.AllChem.EmbedMolecule(mw)
-            Chem.AllChem.UFFOptimizeMolecule(mw)
+        if embed is True:
+            try:
+                Chem.AllChem.EmbedMolecule(mw)
+            except:
+                Chem.AllChem.EmbedMolecule(mw, useRandomCoords=True)
+        if optimize:
+            tempff = self._forcefield_selector(optimize, mw)
+            if 'mmff94s' in optimize:
+                tempff(mw, mmffVariant=optimize, maxIters=ff_iter)
+            else:
+                tempff(mw, maxIters=ff_iter)
         geom = isicle.geometry.Geometry(mol=mw, history=self._geom.get_history())
         geom._update_history('ionize')
         return geom
 
-    def _apply_remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize):
+    def _apply_remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter):
         '''
-        Iterates through base atoms of RDKit mol object.
-        Calls method to deionize and return new RDKit mol object.
-        Returns dictionary of {base atom: deionized RDKit mol object}.
+        Iteratively deionize all atoms in a supplied dictionary.
+
+        Params
+        ------
+        init_mol: RDKit mol object
+        atom_dict: Dict
+            Dictionary of format {<atom.rdkit.obj>:[atom Symbol, atom Total Valence, atom Degree, # bonded H atoms]}
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be removed
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield
+
+        Returns
+        -------
+        Dictionary of style {base atom index: deionized RDKit mol object}
         '''
 
         mol_dict = {}
         for key, value in atom_dict.items():
             mw = self._remove_ion(
-                init_mol, key, ion_atomic_num, sanitize, optimize)
+                init_mol, key, ion_atomic_num, sanitize, optimize, embed, ff_iter)
             mol_dict[key] = mw
         return mol_dict
 
-    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, include_Alkali_ne):
+    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne):
         '''
-        Removes specified anion from RDKit mol object at every potential base atom.
+        Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
+
+        Params
+        ------
+        init_mol: RDKit mol object
+        ion_atomic_num: Int
+            Integer denoting the atomic number of the ion to be removed
+        batch: Bool
+            Whether adducts should be formed from all possible heavy atoms
+        index_list: list
+            list of integers denoting IUPAC atom indexes of base atoms to be deionized (eg. [0,1])
+        element_list: list
+            list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield
+        include_Alkaline_ne: Bool
+            If False: removes alkali and alkaline metals from base atoms to be deionized
+            If True: Adducts are attempted to be formed at these atoms, in addition to other atoms.
+
+        Returns
+        -------
+        Dictionary of style {base atom index: deionized RDKit mol object}
         '''
         atom_dict = self._modify_atom_dict(
             init_mol, ion_atomic_num, mode='negative', include_Alkali_ne=include_Alkali_ne)
         if index_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
         elif element_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
         elif batch == True:
             mol_dict = self._apply_remove_ion(
-                init_mol, atom_dict, ion_atomic_num, sanitize, optimize)
+                init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
         else:
             raise ValueError(
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
         return mol_dict
 
-    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, optimize=True, include_Alkali_ne=False):
+    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, optimize='UFF', embed=False, ff_iter=200, include_Alkali_ne=False):
         '''
-        Creates specified adducts at every atom site.
+        Calls positive or negative ionization modes based upon supplied ion list.
+
+        Params
+        ------
+        batch: Bool
+            Whether adducts should be formed from all possible heavy atoms
+        index_list: list
+            list of integers denoting IUPAC atom indexes of base atoms to be ionized (eg. [0,1])
+        element_list: list
+            list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
+        sanitize: Bool
+            Kekulize, check valencies, set aromaticity, conjugation and hybridization
+        optimize: str
+            Specify "UFF" for Universal Force Field optimization by RDKit (default)
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        embed: Bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        ff_iter: Int
+            Integer specifying the max iterations for the specified forcefield (200 default)
+        include_Alkaline_ne: Bool
+            If False: removes alkali and alkaline metals from base atoms to be ionized (default)
+            If True: Adducts are attempted to be formed at these atoms, in addition to other atoms.
+
+        Returns
+        -------
+        Dictionary of style {base atom index: ionized RDKit mol object}
         '''
         pt = Chem.GetPeriodicTable()
 
@@ -455,14 +702,14 @@ class ExplicitIonizationWrapper(WrapperInterface):
         for ion in self._cations:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', ion)[0])
             mol_dict = self._positive_mode(self._geom.mol, ion_atomic_num,
-                                           batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
+                                           batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
             cation_dict[ion] = list(mol_dict.values())
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self._cations = cation_dict
         for ion in self._anions:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', ion)[0])
             mol_dict = self._negative_mode(self._geom.mol, ion_atomic_num,
-                                           batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
+                                           batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
             anion_dict[ion] = list(mol_dict.values())
             # anion_dict defined as {ion-:{base_atom_index: mol}}
         self._anions = anion_dict
@@ -476,10 +723,10 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 for temp_mol in temp_mols:
                     if '+' in sion:
                         mol_dict = self._positive_mode(temp_mol.mol, ion_atomic_num,
-                                                       batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
+                                                       batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
                     elif '-' in sion:
                         mol_dict = self._negative_mode(temp_mol.mol, ion_atomic_num,
-                                                       batch, index_list, element_list, sanitize, optimize, include_Alkali_ne)
+                                                       batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
                     else:
                         raise ValueError
                     if len(temp_mols) > 1:
@@ -491,12 +738,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
 
     def finish(self):
         '''
-        Combine generated structures and optionally save
-
-        Returns
-        -------
-        :obj:`~isicle.parse.XTBResult`
-            Parsed result data.
+        Expand ion dictionaries into one dictionary self.adducts
         '''
         # ion dict format {ion<charge>:mol}
         self.adducts = {**self._cations, **self._anions, **self._complex}
@@ -508,14 +750,12 @@ class ExplicitIonizationWrapper(WrapperInterface):
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
-        ion_method : str
-            Alias for ionaztion method selection (explicit).
         ion_list : list
-            List of ion str.
+            List of ion str (eg. ['H+','H-'])
             See :meth`~isicle.adducts.parse_ions`.
         **kwargs
             Keyword arguments to configure how ionization is run.
-            See :meth:`~isicle.adducts.ExplicitIonizationWrapper.generator`.
+            See :meth:`~isicle.adducts.ExplicitIonizationWrapper.submit`.
         Returns
         -------
         :obj:`~isicle.adducts.ExplicitIonizationWrapper`
