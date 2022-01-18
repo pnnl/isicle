@@ -375,10 +375,11 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 raise ValueError('UFF is not available for all atoms in molecule.')
         elif optimize in ['mmff', 'mmff94', 'mmff94s']:
             if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
-                Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
+                return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
             else:
                 raise ValueError('specified MMFF is not available for all atoms in molecule.')
-        return
+        else:
+            raise ValueError('RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
 
     def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize, embed, ff_iter):
         '''
