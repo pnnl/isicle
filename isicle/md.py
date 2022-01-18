@@ -1,3 +1,4 @@
+from codecs import ignore_errors
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 import subprocess
@@ -178,7 +179,7 @@ class XTBWrapper(WrapperInterface):
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gfn2',
                          protonate=False, deprotonate=False, tautomerize=False,
                          ion=None, charge=None, dryrun=False, processes=1,
-                         solvation=None):
+                         solvation=None, ignore_topology=False):
         '''
         Set command line for crest simulations.
 
@@ -255,6 +256,9 @@ class XTBWrapper(WrapperInterface):
         # Number of processes
         s += '-T ' + str(processes) + ' '
 
+        if ignore_topology:
+            s += '--noreftopo '
+
         # Add output
         s += '&>' + ' '
 
@@ -266,7 +270,7 @@ class XTBWrapper(WrapperInterface):
 
     def configure(self, task='optimize', forcefield='gfn2', charge=None,
                   ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
-                  solvation=None):
+                  solvation=None, ignore_topology=False):
         '''
         Generate command line
 
@@ -329,7 +333,8 @@ class XTBWrapper(WrapperInterface):
                                                charge=charge,
                                                dryrun=dryrun,
                                                processes=processes,
-                                               solvation=solvation)
+                                               solvation=solvation,
+                                               ignore_topology=ignore_topology)
             else:
                 raise Error(
                     'Task not assignmed properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
