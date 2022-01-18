@@ -886,7 +886,7 @@ class CRESTIonizationWrapper(WrapperInterface):
 
         return output
 
-    def submit(self, forcefield='gff', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None):
+    def submit(self, forcefield='gfn2', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None):
         '''
         Call positive_mode and negative_mode to ionize according to parsed ion lists
         isicle.md.md returned by both modes to self.anion, self.cation, self.complex \
