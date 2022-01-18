@@ -189,46 +189,6 @@ def write(IonizationWrapper, path=None, fmt=None):
         return
 
 
-def proton_affinity(MH, M, temp=298.15):
-    '''
-    Calculate proton affinity relative to passed M+H, M values
-    𝑃𝐴(𝐵)=[𝐸𝑒𝑙𝑒(𝐵)−𝐸𝑒𝑙𝑒(𝐵𝐻+)]+[𝑍𝑃𝐸(𝐵)−𝑍𝑃𝐸(𝐵𝐻+)]+(5/2)𝑅𝑇
-
-    Parameters
-    ----------
-    MH : dict
-        Dict with keys: energy (kcal/mol), zpe (kcal/mol)
-    M : dict
-        Dict with keys(): energy (kcal/mol), zpe (kcal/mol)
-    temp : opt, default 298.15 K
-    '''
-    R = 0.00198720425864083
-    PA = M['energy'] - MH['energy'] + M['zpe'] - MH['zpe'] + (5/2)*R*temp
-    return PA
-
-
-def gas_basicity(MH, M, temp=298.15, SH=108.8):
-    '''
-    Calculate gas basicity relative to passed M+H, M
-    𝐺𝐵(𝐵)=[𝐸𝑒𝑙𝑒(𝐵)−𝐸𝑒𝑙𝑒(𝐵𝐻+)]+[𝑍𝑃𝐸(𝐵)−𝑍𝑃𝐸(𝐵𝐻+)]+(5/2)𝑅𝑇−𝑇[𝑆(𝐵)+𝑆(𝐻+)−𝑆(𝐵𝐻+)]
-
-    Parameters
-    ----------
-    MH : dict
-        Dict with keys: zpe, enthalpy, entropy
-    M : dict
-        Dict with keys(): zpe, enthalpy, entropy
-    temp : opt , default 298.15 K
-    SH : opt, default 108.8 J.mol/K
-    '''
-    # need Energy, ZPE, Temperature, entropy
-    # S(H+) = 108.8 J mol/K, 298 K)
-    R = 0.00198720425864083
-    GB = M['energy'] - MH['energy'] + M['zpe'] - MH['zpe'] + \
-        (5/2)*R*temp - temp*(M['entropy'] + SH - MH['entropy'])
-    return GB
-
-
 def build_adduct_ensembl(geometries):
     '''
     Create an adduct ensemble from a collection of geometries.
