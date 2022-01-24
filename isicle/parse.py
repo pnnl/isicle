@@ -449,7 +449,7 @@ class MobcalParser(FileParserInterface):
 
     def __init__(self):
         self.contents = None
-        self.result = None
+        self.result = {}
 
     def load(self, path: str):
         '''Load in the data file'''
@@ -471,7 +471,7 @@ class MobcalParser(FileParserInterface):
             elif 'standard deviation (percent)' in line:
                 done = True
         if done is True:
-            self.result = {'ccs': ccs_mn, 'std': ccs_std}
+            self.result['ccs'] = {'mean': ccs_mn, 'std': ccs_std}
 
         return self.result
 
@@ -745,18 +745,20 @@ class XTBParser(FileParserInterface):
                 if result['protocol'].split()[0] == 'xtb':
                     self.parse_opt = True
                     XYZ = 'xtbopt.xyz'
-                if 'deprotonate' in result['protocol']:
-                    self.parse_isomer = True
-                    XYZ = 'deprotonated.xyz'
-                elif 'protonate' in result['protocol']:
-                    self.parse_isomer = True
-                    XYZ = 'protonated.xyz'
-                elif 'tautomer' in result['protocol']:
-                    self.parse_isomer = True
-                    XYZ = 'tautomers.xyz'
-                elif result['protocol'].split()[1] == 'crest':
-                    self.parse_crest = True
-                    XYZ = 'crest_conformers.xyz'
+                if result['protocol'].split()[1] == 'crest':
+
+                    if '-deprotonate' in result['protocol']:
+                        self.parse_isomer = True
+                        XYZ = 'deprotonated.xyz'
+                    elif '-protonate' in result['protocol']:
+                        self.parse_isomer = True
+                        XYZ = 'protonated.xyz'
+                    elif '-tautomer' in result['protocol']:
+                        self.parse_isomer = True
+                        XYZ = 'tautomers.xyz'
+                    else:
+                        self.parse_crest = True
+                        XYZ = 'crest_conformers.xyz'
 
                 if XYZ is None:
                     raise RuntimeError('XYZ file associated with XTB job not available,\
