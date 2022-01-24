@@ -860,26 +860,26 @@ class CRESTIonizationWrapper(WrapperInterface):
         self._set_ions(ion_path=ion_path, ion_list=ion_list)
         self._check_valid()
 
-    def _positive_mode(self, forcefield, ewin, cation, charge, optlevel, dryrun, processes, solvation):
+    def _positive_mode(self, forcefield, ewin, cation, charge, optlevel, dryrun, processes, solvation, ignore_topology):
         '''
         Call isicle.md.md for specified geom and cation
         '''
         output = md(self._geom, program='xtb', task='protonate', forcefield=forcefield,
-                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
+                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology).result['geom']
 
         return output
 
-    def _negative_mode(self, forcefield, ewin, anion, charge, optlevel, dryrun, processes, solvation):
+    def _negative_mode(self, forcefield, ewin, anion, charge, optlevel, dryrun, processes, solvation, ignore_topology):
         '''
         Call isicle.md.md for specified geom and anion
         '''
 
         output = md(self._geom, program='xtb', task='deprotonate', forcefield=forcefield,
-                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
+                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology).result['geom']
 
         return output
 
-    def submit(self, forcefield='gfn2', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None):
+    def submit(self, forcefield='gfn2', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None, ignore_topology=False):
         '''
         Call positive_mode and negative_mode to ionize according to parsed ion lists
         isicle.md.md returned by both modes to self.anion, self.cation, self.complex \
@@ -897,12 +897,12 @@ class CRESTIonizationWrapper(WrapperInterface):
         for x in self._cations:
             # TODO update how MD is parsed, ensure is geometry object in memory
             cation_dict[x] = self._positive_mode(
-                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation)
+                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation, ignore_topology)
         self._cations = cation_dict
 
         for x in self._anions:
             anion_dict[x] = self._negative_mode(
-                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation)
+                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation, ignore_topology)
         self._anions = anion_dict
 
         for x in self._complex:
@@ -918,11 +918,11 @@ class CRESTIonizationWrapper(WrapperInterface):
                     chrg = int(chrg[0])
                 if ('+') in ion:
                     complex_dict[x] = self._positive_mode(
-                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation)
+                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation, ignore_topology)
                     mol_chrg += chrg
                 elif ('-') in ion:
                     complex_dict[x] = self._negative_mode(
-                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation)
+                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation, ignore_topology)
                     mol_chrg -= chrg
 
         self._complex = complex_dict
