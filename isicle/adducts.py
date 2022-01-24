@@ -94,29 +94,6 @@ def _parse_ions(ion_path=None, ion_list=None):
         raise RuntimeError('No ions supplied to parse.')
 
 
-def ionize(ion_method):
-    '''
-    Selects a supported ionization method.
-
-    Params
-    ----------
-    ion_method : str
-        Alias for ion method selection (e.g. explicit).
-
-    Returns
-    -------
-    program
-        Wrapped functionality of the selected program. Must implement
-        :class:`~isicle.interfaces.AdductInterface`.
-    '''
-    ion_method_map = {'explicit': ExplicitIonizationWrapper, 'crest': CRESTIonizationWrapper}
-
-    if ion_method.lower() in ion_method_map.keys():
-        return ion_method_map[ion_method.lower()]
-    else:
-        raise ValueError('{} not a supported ionization method.'.format(ion_method))
-
-
 def _check_atom_group(ion_atomic_num):
     '''
     Checks periodic group atom belongs to
@@ -140,7 +117,7 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     ------
     init_mol: RDKit mol object
     unknown_valid_list: list of str
-        List of ions (eg. ['H-'])
+        List of ions (eg. [`H-`])
     '''
     valid_list = []
     for ion in unknown_valid_list:
@@ -155,25 +132,41 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     return valid_list
 
 
-def write(IonizationWrapper, path=None, fmt=None):
+def ionize(ion_method):
+    '''
+    Selects a supported ionization method.
+
+    Params
+    ----------
+    ion_method : str
+        Alias for ion method selection (e.g. explicit).
+
+    Returns
+    -------
+    program
+        Wrapped functionality of the selected program. Must implement
+        :class:`~isicle.interfaces.AdductInterface`.
+    '''
+    ion_method_map = {'explicit': ExplicitIonizationWrapper, 'crest': CRESTIonizationWrapper}
+
+    if ion_method.lower() in ion_method_map.keys():
+        return ion_method_map[ion_method.lower()]
+    else:
+        raise ValueError('{} not a supported ionization method.'.format(ion_method))
+
+
+def write(IonizationWrapper, path, fmt):
     '''
     Write mol objects to file.
 
     Parameters
     ----------
-    write_files : boolean
-        Indicate whether to write all mol objects to file
     path : str
-        Directory to write output files. Only used if `write_files` is
-        True
+        Directory to write output files
     fmt : str
-        Format in which to save the RDKit mol object
+        Format in which to save the RDKit mol object (eg. 'mol2', 'pdb')
     '''
-    if (path is not None) and (fmt is not None):
-        if path is None:
-            raise ValueError('Must supply `path`.')
-        if fmt is None:
-            raise ValueError('Must supply `fmt`.')
+    if path is not None and fmt is not None:
         for key, value in IonizatinWrapper.adducts.items():
             for key2, value2 in value.items():
                 isicle.geometry.Geometry.save(value2, os.path.join(
@@ -181,33 +174,33 @@ def write(IonizationWrapper, path=None, fmt=None):
         return
     elif path is not None:
         raise(
-            'path passed to isicle.adducts.ExplicitIonizationWrapper.finish; fmt flag must also be passed; data not saved.')
+            'path passed to isicle.adducts.write; fmt flag must also be passed; data not written')
     elif fmt is not None:
         raise(
-            'fmt is supplied to isicle.adducts.ExplicitIonizationWrapper.finish; path flag must also be passed; data not saved. ')
+            'fmt is supplied to isicle.adducts.write; path flag must also be passed; data not saved')
     else:
         return
 
 
-def build_adduct_ensembl(geometries):
+def build_adduct_ensembl(adducts):
     '''
-    Create an adduct ensemble from a collection of geometries.
-    Parses adduct dictionaries and returns a list of all geometry objects.
+    Create an adduct ensemble from a dictionary of adduct geometries.
+    Parses wrapper.adducts dictionary and returns a list of adduct geometry objects.
 
-    Parameters
-    ----------
-    geometries : dictionary object from generator output
-                 {'IonCharge' : [single_geom...]}
+    Params
+    ------
+    adducts : {<IonCharge>: [<geomObjects>]}
+        Dictionary returned from `isicle.adducts.<IonMethod>Wrapper.run`
 
     Returns
     -------
-    list : geometries nested inside adduct dictionaries
+    List of adduct geometries
 
     '''
     ensembl = []
-    for k, v in geometries.items():
+    for k, v in adducts.items():
         for geom in v:
-            ensembl.append(geom.mol)
+            ensembl.append(geom)
 
     return ensembl
 
@@ -744,9 +737,13 @@ class ExplicitIonizationWrapper(WrapperInterface):
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
+        ion_path : str
+            Filepath to text file containing ions with charge (eg. `H+`) to be considered
+            Either ion_path or ion_list must be specified
         ion_list : list
-            List of ion str (eg. ['H+','H-'])
-            See :meth`~isicle.adducts.parse_ions`.
+            List of strings of adducts to be considered.
+            Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
+            Either ion_path or ion_list must be specified
         **kwargs
             Keyword arguments to configure how ionization is run.
             See :meth:`~isicle.adducts.ExplicitIonizationWrapper.submit`.
