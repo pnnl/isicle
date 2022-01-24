@@ -528,40 +528,53 @@ class XYZGeometry(XYZGeometryInterface):
 
         return geom, res
 
-    def generate_adducts(self, ion_path=None, ion_list=None, ion_method='explicit', inplace=False, **kwargs):
+    def ionize(self, ion_path=None, ion_list=None, ion_method='explicit', save=False, write=False, path=None, fmt=None, ensembl=False, **kwargs):
         '''
         Ionize geometry, using specified list of ions and method of ionization.
 
         Parameters
         ----------
         ion_path : str
-            Filepath to text file containing ions with charge (eg. H+) to be considered
+            Filepath to text file containing ions with charge (eg. `H+`) to be considered
             Either ion_path or ion_list must be specified
         ion_list : list
             List of strings of adducts to be considered.
-            Must be specifed in syntax 'Atom+' or 'Atom-', eg. 'H+', 'Na+', 'H-Na+'
+            Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
             Either ion_path or ion_list must be specified
         ion_method : str
             Method of ionization to be used, 'explicit' or 'crest' is accepted
-        write_files : boolean (optional)
-            Indicate whether to write all mol objects to file
+        save : bool
+            Saves wrapper object to .pkl in specified path directory
+        write : bool (optional)
+            Writes all RDKit mol objects to file
         path : str (optional)
-            Directory to write output files. Only used if `write_files` is True
+            Directory to write output files
         fmt : str (optional)
-            Format in which to save the RDKit mol object. Only used if `write_files` is True
-        sanitize : boolean (optional)
-            If receiving a kekulize RDKit error, set flag to False
-        optimize : boolean (optional)
-            If receiving a kekulize RDKit error, set flag to False
+            Format in which to save the RDKit mol object (eg. `mol2`, `pdb`)
+        ensembl : bool (optional)
+            Returns instead a list of adduct geometries
+        **kwargs:
+            see :meth: `~isicle.adducts.ExplicitIonizationWrapper.submit` or
+                       `~isicle.adducts.CRESTIonizationWrapper.submit`
+            for more options
+
+        Returns
+        -------
+        Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
         '''
+        iw = isicle.adducts.ionize(ion_method).run(
+            self.geom, ion_path=ion_path, ion_list=ion_list, **kwargs)
 
-        geom, res = isicle.adducts.ionize(self.__copy__(), ion_path=ion_path, ion_list=ion_list,
-                                          ion_method=ion_method, **kwargs)
-        #AE = isicle.adducts.build_adduct_ensemble(res)
-        # res format {ion<charge>:{base_atom_index: mol}} if explicit
-        # res format {ion<charge>:mol} if crest
+        if save == True and path is not None:
+            iw.save(path)
 
-        return geom, res
+        if write == True and path is not None and fmt is not None:
+            isicle.adducts.write(iw, path, fmt)
+
+        if ensembl == True:
+            return isicle.adducts.build_adduct_ensemble(iw.adducts)
+
+        return iw.adducts
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
@@ -820,7 +833,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         except:
             Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
             Chem.AllChem.UFFOptimizeMolecule(mol)
-        
+
         geom = self._update_structure(inplace, mol=mol)
         geom.global_properties = {}
         geom._update_history('initial_optimize')
