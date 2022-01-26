@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 from isicle.geometry import Geometry, XYZGeometry
-from isicle.utils import TypedList
+from isicle.utils import TypedList, safelist
 
 
 def _function_selector(func):
@@ -351,9 +351,15 @@ class ConformationalEnsemble(TypedList):
 
         '''
 
-        if not all(attr in x.get_global_properties() for x in self):
-            raise AttributeError('"{}" not found for all conformational '
-                                 'ensemble members.'.format(attr))
+        value = [x.get_global_properties() for x in self]
+        for key in safelist(attr):
+            if not all(key in x for x in value):
+                raise AttributeError('"{}" not found for all conformational '
+                                    'ensemble members.'.format(attr))
+            value = [x.get(key) for x in value]
+
+        if type(value[0]) is dict:
+            raise AttributeError('"{}" has additional keys: {}'.format(attr, value[0].keys()))
 
     def reduce(self, attr, func='boltzmann', **kwargs):
         '''
@@ -385,8 +391,10 @@ class ConformationalEnsemble(TypedList):
         if _energy_based(f):
             self._check_attributes('energy')
 
-        # Extract value attribute
-        value = [x.get_global_properties()[attr] for x in self]
+        # Extract (possibly nested) value attribute
+        value = [x.get_global_properties() for x in self]
+        for key in safelist(attr):
+            value = [x.get(key) for x in value]
 
         # Check for index
         if type(value[0]) is dict and 'index' in value[0]:
@@ -399,7 +407,7 @@ class ConformationalEnsemble(TypedList):
 
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array([x.get_global_properties()['energy']['energy'] * pad for x in self])
+            energy = np.array([x.get_global_properties()['energy'] * pad for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method
