@@ -107,7 +107,7 @@ class NWChemWrapper(WrapperInterface):
                            'spin': 4}
 
         # Set up temporary directory
-        self.temp_dir = tempfile.TemporaryDirectory(temp_dir)
+        self.temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
 
 
     def set_geometry(self, geom):
