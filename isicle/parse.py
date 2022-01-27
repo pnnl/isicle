@@ -306,7 +306,7 @@ class NWChemParser(FileParserInterface):
         return {'functional': functional, 'basis set': basis_set,
                   'solvation': solvation, 'tasks': tasks}
 
-    def parse(self, to_parse=['geometry', 'energy']):
+    def parse(self):
         '''
         Extract relevant information from NWChem output
 
@@ -330,54 +330,51 @@ class NWChemParser(FileParserInterface):
         except:
             pass
 
-        if 'geometry' in to_parse:
-            try:
-                result['geom'] = self._parse_geometry()
+        
+        try:
+            result['geom'] = self._parse_geometry()
 
-            except:
-                pass
+        except:
+            pass
 
-        if 'energy' in to_parse:
-            try:
-                result['energy'] = self._parse_energy()
-            except:
-                pass
+        try:
+            result['energy'] = self._parse_energy()
+        except:
+            pass
 
-        if 'shielding' in to_parse:
-            try:
-                result['shielding'] = self._parse_shielding()
-            except:  # Must be no shielding info
-                pass
+        try:
+            result['shielding'] = self._parse_shielding()
+        except:  # Must be no shielding info
+            pass
 
-        if 'spin' in to_parse:  # N2S
-            try:
-                result['spin'] = self._parse_spin()
-            except:
-                pass
 
-        if 'frequency' in to_parse:
-            try:
-                result['frequency'] = self._parse_frequency()
-            except:
-                pass
+        try:
+            result['spin'] = self._parse_spin()
+        except:
+            pass
 
-        if 'molden' in to_parse:
-            try:
-                 result['molden'] = self._parse_molden()
-            except:
-                pass
 
-        if 'charge' in to_parse:
-            try:
-                result['charge'] = self._parse_charge()
-            except:
-                pass
+        try:
+            result['frequency'] = self._parse_frequency()
+        except:
+            pass
 
-        if 'timing' in to_parse:
-            try:
-                result['timing'] = self._parse_timing()
-            except:
-                pass
+
+        try:
+            result['molden'] = self._parse_molden()
+        except:
+            pass
+
+
+        try:
+            result['charge'] = self._parse_charge()
+        except:
+            pass
+
+        try:
+            result['timing'] = self._parse_timing()
+        except:
+            pass
 
         return result
 
@@ -706,7 +703,7 @@ class XTBParser(FileParserInterface):
 
         return isicle.conformers.ConformationalEnsemble(x)
 
-    def parse(self, to_parse=['geometry', 'energy', 'timing']):
+    def parse(self):
         '''Extract relevant information from data'''
 
         # Check that the file is valid first
@@ -740,7 +737,8 @@ class XTBParser(FileParserInterface):
 
         if self.path.endswith('out') or self.path.endswith('log'):
 
-            if 'geometry' in to_parse:
+            # try geometry parsing
+            try:
                 XYZ = None
                 if result['protocol'].split()[0] == 'xtb':
                     self.parse_opt = True
@@ -760,27 +758,27 @@ class XTBParser(FileParserInterface):
                         self.parse_crest = True
                         XYZ = 'crest_conformers.xyz'
 
-                if XYZ is None:
-                    raise RuntimeError('XYZ file associated with XTB job not available,\
+                    if XYZ is None:
+                        raise RuntimeError('XYZ file associated with XTB job not available,\
                                         please parse separately.')
 
-                else:
-                    temp_dir = os.path.dirname(self.path)
-                    self.xyz_path = os.path.join(temp_dir, XYZ)
+                    else:
+                        temp_dir = os.path.dirname(self.path)
+                        self.xyz_path = os.path.join(temp_dir, XYZ)
 
-                    result['geom'] = self._parse_xyz()
+                        result['geom'] = self._parse_xyz()
+            except:
+                pass
 
-            if 'timing' in to_parse:
-                try:
-                    result['timing'] = self._parse_timing()
-                except:
-                    pass
+            try:
+                result['timing'] = self._parse_timing()
+            except:
+                pass
 
-            if 'energy' in to_parse:
-                try:
-                    result['energy'] = self._parse_energy()
-                except:
-                    pass
+            try:
+                result['energy'] = self._parse_energy()
+            except:
+                pass
 
         return result
 

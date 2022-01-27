@@ -94,29 +94,6 @@ def _parse_ions(ion_path=None, ion_list=None):
         raise RuntimeError('No ions supplied to parse.')
 
 
-def ionize(ion_method):
-    '''
-    Selects a supported ionization method.
-
-    Params
-    ----------
-    ion_method : str
-        Alias for ion method selection (e.g. explicit).
-
-    Returns
-    -------
-    program
-        Wrapped functionality of the selected program. Must implement
-        :class:`~isicle.interfaces.AdductInterface`.
-    '''
-    ion_method_map = {'explicit': ExplicitIonizationWrapper, 'crest': CRESTIonizationWrapper}
-
-    if ion_method.lower() in ion_method_map.keys():
-        return ion_method_map[ion_method.lower()]
-    else:
-        raise ValueError('{} not a supported ionization method.'.format(ion_method))
-
-
 def _check_atom_group(ion_atomic_num):
     '''
     Checks periodic group atom belongs to
@@ -140,7 +117,7 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     ------
     init_mol: RDKit mol object
     unknown_valid_list: list of str
-        List of ions (eg. ['H-'])
+        List of ions (eg. [`H-`])
     '''
     valid_list = []
     for ion in unknown_valid_list:
@@ -155,25 +132,41 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     return valid_list
 
 
-def write(IonizationWrapper, path=None, fmt=None):
+def ionize(ion_method):
+    '''
+    Selects a supported ionization method.
+
+    Params
+    ----------
+    ion_method : str
+        Alias for ion method selection (e.g. explicit).
+
+    Returns
+    -------
+    program
+        Wrapped functionality of the selected program. Must implement
+        :class:`~isicle.interfaces.AdductInterface`.
+    '''
+    ion_method_map = {'explicit': ExplicitIonizationWrapper, 'crest': CRESTIonizationWrapper}
+
+    if ion_method.lower() in ion_method_map.keys():
+        return ion_method_map[ion_method.lower()]
+    else:
+        raise ValueError('{} not a supported ionization method.'.format(ion_method))
+
+
+def write(IonizationWrapper, path, fmt):
     '''
     Write mol objects to file.
 
     Parameters
     ----------
-    write_files : boolean
-        Indicate whether to write all mol objects to file
     path : str
-        Directory to write output files. Only used if `write_files` is
-        True
+        Directory to write output files
     fmt : str
-        Format in which to save the RDKit mol object
+        Format in which to save the RDKit mol object (eg. 'mol2', 'pdb')
     '''
-    if (path is not None) and (fmt is not None):
-        if path is None:
-            raise ValueError('Must supply `path`.')
-        if fmt is None:
-            raise ValueError('Must supply `fmt`.')
+    if path is not None and fmt is not None:
         for key, value in IonizatinWrapper.adducts.items():
             for key2, value2 in value.items():
                 isicle.geometry.Geometry.save(value2, os.path.join(
@@ -181,33 +174,33 @@ def write(IonizationWrapper, path=None, fmt=None):
         return
     elif path is not None:
         raise(
-            'path passed to isicle.adducts.ExplicitIonizationWrapper.finish; fmt flag must also be passed; data not saved.')
+            'path passed to isicle.adducts.write; fmt flag must also be passed; data not written')
     elif fmt is not None:
         raise(
-            'fmt is supplied to isicle.adducts.ExplicitIonizationWrapper.finish; path flag must also be passed; data not saved. ')
+            'fmt is supplied to isicle.adducts.write; path flag must also be passed; data not saved')
     else:
         return
 
 
-def build_adduct_ensembl(geometries):
+def build_adduct_ensembl(adducts):
     '''
-    Create an adduct ensemble from a collection of geometries.
-    Parses adduct dictionaries and returns a list of all geometry objects.
+    Create an adduct ensemble from a dictionary of adduct geometries.
+    Parses wrapper.adducts dictionary and returns a list of adduct geometry objects.
 
-    Parameters
-    ----------
-    geometries : dictionary object from generator output
-                 {'IonCharge' : [single_geom...]}
+    Params
+    ------
+    adducts : {<IonCharge>: [<geomObjects>]}
+        Dictionary returned from `isicle.adducts.<IonMethod>Wrapper.run`
 
     Returns
     -------
-    list : geometries nested inside adduct dictionaries
+    List of adduct geometries
 
     '''
     ensembl = []
-    for k, v in geometries.items():
+    for k, v in adducts.items():
         for geom in v:
-            ensembl.append(geom.mol)
+            ensembl.append(geom)
 
     return ensembl
 
@@ -344,13 +337,13 @@ class ExplicitIonizationWrapper(WrapperInterface):
                     subset_atom_dict[k] = v
         return subset_atom_dict
 
-    def _forcefield_selector(self, optimize, mw):
+    def _forcefield_selector(self, forcefield, mw):
         '''
         Checks if user specified forcefield is compatible with supplied mol
 
         Params
         ------
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -360,13 +353,13 @@ class ExplicitIonizationWrapper(WrapperInterface):
         -------
         RDKit forcefield optimization function that must be implemented
         '''
-        optimize = optimize.lower()
-        if optimize == 'uff':
+        forcefield = forcefield.lower()
+        if forcefield == 'uff':
             if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
                 return Chem.AllChem.UFFOptimizeMolecule
             else:
                 raise ValueError('UFF is not available for all atoms in molecule.')
-        elif optimize in ['mmff', 'mmff94', 'mmff94s']:
+        elif forcefield in ['mmff', 'mmff94', 'mmff94s']:
             if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
                 return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
             else:
@@ -374,7 +367,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         else:
             raise ValueError('RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
 
-    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize, embed, ff_iter):
+    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
 
@@ -387,7 +380,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Integer denoting the atomic number of the ion to be added
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -415,17 +408,17 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 Chem.AllChem.EmbedMolecule(mw)
             except:
                 Chem.AllChem.EmbedMolecule(mw, useRandomCoords=True)
-        if optimize:
-            tempff = self._forcefield_selector(optimize, mw)
-            if 'mmff94s' in optimize:
-                tempff(mw, mmffVariant=optimize, maxIters=ff_iter)
+        if forcefield:
+            tempff = self._forcefield_selector(forcefield, mw)
+            if 'mmff94s' in forcefield:
+                tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
         geom = isicle.geometry.Geometry(mol=mw, history=self._geom.get_history())
         geom._update_history('ionize')
         return geom
 
-    def _apply_add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter):
+    def _apply_add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
         '''
         Iteratively ionize all atoms in a supplied dictionary.
 
@@ -438,7 +431,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Integer denoting the atomic number of the ion to be added
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -455,12 +448,12 @@ class ExplicitIonizationWrapper(WrapperInterface):
 
         mol_dict = {}
         for key in atom_dict.keys():
-            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, optimize, embed, ff_iter)
+            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
             # Format {atom_base_idx:<newmol>}
             mol_dict[key] = mw
         return mol_dict
 
-    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne):
+    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne):
         '''
         Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
 
@@ -477,7 +470,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -499,21 +492,21 @@ class ExplicitIonizationWrapper(WrapperInterface):
         if index_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
-                                           ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                                           ion_atomic_num, sanitize, forcefield, embed, ff_iter)
         elif element_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
-                                           ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                                           ion_atomic_num, sanitize, forcefield, embed, ff_iter)
         elif batch == True:
             mol_dict = self._apply_add_ion(
-                init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
         else:
             raise ValueError(
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
 
         return mol_dict
 
-    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, optimize, embed, ff_iter):
+    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
         '''
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
 
@@ -526,7 +519,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Integer denoting the atomic number of the ion to be removed
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -554,17 +547,17 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 Chem.AllChem.EmbedMolecule(mw)
             except:
                 Chem.AllChem.EmbedMolecule(mw, useRandomCoords=True)
-        if optimize:
-            tempff = self._forcefield_selector(optimize, mw)
-            if 'mmff94s' in optimize:
-                tempff(mw, mmffVariant=optimize, maxIters=ff_iter)
+        if forcefield:
+            tempff = self._forcefield_selector(forcefield, mw)
+            if 'mmff94s' in forcefield:
+                tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
         geom = isicle.geometry.Geometry(mol=mw, history=self._geom.get_history())
         geom._update_history('ionize')
         return geom
 
-    def _apply_remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter):
+    def _apply_remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
         '''
         Iteratively deionize all atoms in a supplied dictionary.
 
@@ -577,7 +570,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Integer denoting the atomic number of the ion to be removed
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -595,11 +588,11 @@ class ExplicitIonizationWrapper(WrapperInterface):
         mol_dict = {}
         for key, value in atom_dict.items():
             mw = self._remove_ion(
-                init_mol, key, ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                init_mol, key, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
             mol_dict[key] = mw
         return mol_dict
 
-    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne):
+    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne):
         '''
         Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
 
@@ -616,7 +609,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -638,20 +631,20 @@ class ExplicitIonizationWrapper(WrapperInterface):
         if index_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
         elif element_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, subset_atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
         elif batch == True:
             mol_dict = self._apply_remove_ion(
-                init_mol, atom_dict, ion_atomic_num, sanitize, optimize, embed, ff_iter)
+                init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
         else:
             raise ValueError(
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
         return mol_dict
 
-    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, optimize='UFF', embed=False, ff_iter=200, include_Alkali_ne=False):
+    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, forcefield='UFF', embed=False, ff_iter=200, include_Alkali_ne=False):
         '''
         Calls positive or negative ionization modes based upon supplied ion list.
 
@@ -665,7 +658,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             list of atoms symbols denoting base atom types to be ionized (eg. ['O','N'])
         sanitize: Bool
             Kekulize, check valencies, set aromaticity, conjugation and hybridization
-        optimize: str
+        forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit (default)
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
@@ -696,14 +689,14 @@ class ExplicitIonizationWrapper(WrapperInterface):
         for ion in self._cations:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', ion)[0])
             mol_dict = self._positive_mode(self._geom.mol, ion_atomic_num,
-                                           batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
+                                           batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne)
             cation_dict[ion] = list(mol_dict.values())
             # cation_dict defined as {ion+:{base_atom_index: mol}}
         self._cations = cation_dict
         for ion in self._anions:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', ion)[0])
             mol_dict = self._negative_mode(self._geom.mol, ion_atomic_num,
-                                           batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
+                                           batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne)
             anion_dict[ion] = list(mol_dict.values())
             # anion_dict defined as {ion-:{base_atom_index: mol}}
         self._anions = anion_dict
@@ -717,10 +710,10 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 for temp_mol in temp_mols:
                     if '+' in sion:
                         mol_dict = self._positive_mode(temp_mol.mol, ion_atomic_num,
-                                                       batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
+                                                       batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne)
                     elif '-' in sion:
                         mol_dict = self._negative_mode(temp_mol.mol, ion_atomic_num,
-                                                       batch, index_list, element_list, sanitize, optimize, embed, ff_iter, include_Alkali_ne)
+                                                       batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne)
                     else:
                         raise ValueError
                     if len(temp_mols) > 1:
@@ -744,9 +737,13 @@ class ExplicitIonizationWrapper(WrapperInterface):
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
+        ion_path : str
+            Filepath to text file containing ions with charge (eg. `H+`) to be considered
+            Either ion_path or ion_list must be specified
         ion_list : list
-            List of ion str (eg. ['H+','H-'])
-            See :meth`~isicle.adducts.parse_ions`.
+            List of strings of adducts to be considered.
+            Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
+            Either ion_path or ion_list must be specified
         **kwargs
             Keyword arguments to configure how ionization is run.
             See :meth:`~isicle.adducts.ExplicitIonizationWrapper.submit`.
@@ -860,26 +857,26 @@ class CRESTIonizationWrapper(WrapperInterface):
         self._set_ions(ion_path=ion_path, ion_list=ion_list)
         self._check_valid()
 
-    def _positive_mode(self, forcefield, ewin, cation, charge, optlevel, dryrun, processes, solvation):
+    def _positive_mode(self, forcefield, ewin, cation, charge, optlevel, dryrun, processes, solvation, ignore_topology):
         '''
         Call isicle.md.md for specified geom and cation
         '''
         output = md(self._geom, program='xtb', task='protonate', forcefield=forcefield,
-                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
+                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology).result['geom']
 
         return output
 
-    def _negative_mode(self, forcefield, ewin, anion, charge, optlevel, dryrun, processes, solvation):
+    def _negative_mode(self, forcefield, ewin, anion, charge, optlevel, dryrun, processes, solvation, ignore_topology):
         '''
         Call isicle.md.md for specified geom and anion
         '''
 
         output = md(self._geom, program='xtb', task='deprotonate', forcefield=forcefield,
-                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation).result['geom']
+                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology).result['geom']
 
         return output
 
-    def submit(self, forcefield='gfn2', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None):
+    def submit(self, forcefield='gfn2', ewin=30, charge=0, optlevel='Normal', dryrun=False, processes=1, solvation=None, ignore_topology=False):
         '''
         Call positive_mode and negative_mode to ionize according to parsed ion lists
         isicle.md.md returned by both modes to self.anion, self.cation, self.complex \
@@ -897,12 +894,12 @@ class CRESTIonizationWrapper(WrapperInterface):
         for x in self._cations:
             # TODO update how MD is parsed, ensure is geometry object in memory
             cation_dict[x] = self._positive_mode(
-                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation)
+                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation, ignore_topology)
         self._cations = cation_dict
 
         for x in self._anions:
             anion_dict[x] = self._negative_mode(
-                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation)
+                forcefield, ewin, x, charge, optlevel, dryrun, processes, solvation, ignore_topology)
         self._anions = anion_dict
 
         for x in self._complex:
@@ -918,11 +915,11 @@ class CRESTIonizationWrapper(WrapperInterface):
                     chrg = int(chrg[0])
                 if ('+') in ion:
                     complex_dict[x] = self._positive_mode(
-                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation)
+                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation, ignore_topology)
                     mol_chrg += chrg
                 elif ('-') in ion:
                     complex_dict[x] = self._negative_mode(
-                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation)
+                        forcefield, ewin, ion, mol_chrg, optlevel, dryrun, processes, solvation, ignore_topology)
                     mol_chrg -= chrg
 
         self._complex = complex_dict

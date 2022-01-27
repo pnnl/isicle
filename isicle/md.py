@@ -366,7 +366,7 @@ class XTBWrapper(WrapperInterface):
         parser = XTBParser()
 
         parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
-        result = parser.parse(to_parse=['energy', 'geometry', 'timing'])
+        result = parser.parse()
 
         self.__dict__.update(result)
         for i in self.geom:
