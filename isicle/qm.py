@@ -1,3 +1,5 @@
+from posixpath import basename
+from statistics import geometric_mean
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
@@ -95,8 +97,16 @@ class NWChemWrapper(WrapperInterface):
         '''
 
         self.task_map = {'optimize': self._configure_optimize,
+                         'energy': self._configure_energy,
+                         'frequency': self._configure_frequency,
                          'shielding': self._configure_shielding,
                          'spin': self._configure_spin}
+
+        self.task_order = {'optimize': 0,
+                           'energy': 1,
+                           'frequency': 2,
+                           'shielding': 3,
+                           'spin': 4}
 
     def set_geometry(self, geom):
         '''
@@ -299,14 +309,33 @@ class NWChemWrapper(WrapperInterface):
                 ' solvent {solvent}\n'
                 'end\n').format(**d)
 
-    def _configure_frequency(self, temp=298.15):
+    def _configure_frequency(self, temp=298.15, basis_set='6-31G*', ao_basis='cartesian',
+                             functional='b3lyp', cosmo=False, solvent='H2O', gas=False,
+                             **kwargs):
         '''
         Configure frequency block of NWChem configuration.
+
+        Includes basis and DFT blocks; can include COSMO block.
 
         Parameters
         ----------
         temp : float
             Temperature for frequency calculation.
+        basis_set : str
+            Basis set selection.
+        ao_basis : str
+            Angular function selection ("spherical", "cartesian").
+        functional : str
+            Functional selection.
+        cosmo : bool
+            Indicate whether to include COSMO block.
+        solvent : str
+            Solvent selection. Only used if `cosmo` is True.
+        gas : bool
+            Indicate whether to use gas phase calculations. Only used if
+            `cosmo` is True.
+        **kwargs
+            Arbitrary additional arguments (unused).
 
         Returns
         -------
@@ -315,19 +344,78 @@ class NWChemWrapper(WrapperInterface):
 
         '''
 
-        return ('\nfreq\n'
-                ' temp 1 {}\n'
-                'end\n').format(temp)
+         # Add basis block
+        s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
+
+        # Add DFT block
+        s += self._configure_dft(functional=functional)
+
+        # Add COSMO block
+        if cosmo:
+            s += self._configure_cosmo(solvent=solvent, gas=gas)
+
+        # Add frequency block
+        s += ('\nfreq\n'
+              ' temp 1 {}\n'
+              'end\n').format(temp)
+        s += '\ntask dft freq ignore\n'
+
+        return s
+
+    def _configure_energy(self, basis_set='6-31G*', ao_basis='cartesian',
+                          functional='b3lyp', cosmo=False, solvent='H2O', gas=False,
+                          **kwargs):
+        '''
+        Configure energy block of NWChem configuration.
+
+        Includes basis and DFT blocks; can include COSMO block.
+
+        Parameters
+        ----------
+        basis_set : str
+            Basis set selection.
+        ao_basis : str
+            Angular function selection ("spherical", "cartesian").
+        functional : str
+            Functional selection.
+        cosmo : bool
+            Indicate whether to include COSMO block.
+        solvent : str
+            Solvent selection. Only used if `cosmo` is True.
+        gas : bool
+            Indicate whether to use gas phase calculations. Only used if
+            `cosmo` is True.
+        **kwargs
+            Arbitrary additional arguments (unused).
+
+        Returns
+        -------
+        str
+            Energy block of NWChem configuration.
+        '''
+
+         # Add basis block
+        s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
+
+        # Add DFT block
+        s += self._configure_dft(functional=functional)
+
+        # Add COSMO block
+        if cosmo:
+            s += self._configure_cosmo(solvent=solvent, gas=gas)
+
+        s += '\ntask dft energy ignore\n'
+
+        return s
 
     def _configure_optimize(self, basis_set='6-31G*', ao_basis='cartesian',
                             functional='b3lyp', max_iter=150,
                             cosmo=False, solvent='H2O', gas=False,
-                            frequency=True, temp=298.15, **kwargs):
+                            **kwargs):
         '''
         Generate meta optimization block of NWChem configuration.
 
-        Includes basis, DFT, and driver blocks; can include COSMO and/or
-        frequency blocks.
+        Includes basis, DFT, and driver blocks; can include COSMO block.
 
         Parameters
         ----------
@@ -346,11 +434,6 @@ class NWChemWrapper(WrapperInterface):
         gas : bool
             Indicate whether to use gas phase calculations. Only used if
             `cosmo` is True.
-        frequency : bool
-            Indicate whether to include frequency block.
-        temp : float
-            Temperature for frequency calculation. Only used if `frequency` is
-            True.
         **kwargs
             Arbitrary additional arguments (unused).
 
@@ -374,22 +457,14 @@ class NWChemWrapper(WrapperInterface):
         if cosmo:
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
-        # Add frequency block
-        if frequency:
-            s += self._configure_frequency(temp=temp)
-
         # Add optimize task
         s += '\ntask dft optimize ignore\n'
-
-        # Add frequency task
-        if frequency:
-            s += 'task dft frequency ignore\n'
 
         return s
 
     def _configure_shielding(self, basis_set='6-31G*', ao_basis='cartesian',
                              functional='b3lyp', cosmo=True, solvent='H2O',
-                             gas=False, energy=True, **kwargs):
+                             gas=False, **kwargs):
         '''
         Generate meta shielding block of NWChem configuration.
 
@@ -413,8 +488,6 @@ class NWChemWrapper(WrapperInterface):
         gas : bool
             Indicate whether to use gas phase calculations. Only used if
             `cosmo` is True.
-        energy : bool
-            Indicate whether to include single-point energy calculation block.
         **kwargs
             Arbitrary additional arguments (unused).
 
@@ -443,18 +516,14 @@ class NWChemWrapper(WrapperInterface):
               ' SHIELDING {ncount} {nuclei}\n'
               'end\n').format(**d)
 
-        # Add energy task
-        if energy:
-            s += '\ntask dft energy ignore\n'
-
         # Add property task
-        s += 'task dft property ignore\n'
+        s += '\ntask dft property ignore\n'
 
         return s
 
     def _configure_spin(self, max_pairs=30, basis_set='6-31G*',
                         ao_basis='cartesian', functional='b3lyp', cosmo=True,
-                        solvent='H2O', gas=False, energy=True, **kwargs):
+                        solvent='H2O', gas=False, **kwargs):
         '''
         Generate meta spin-spin coupling block of NWChem configuration.
 
@@ -479,8 +548,6 @@ class NWChemWrapper(WrapperInterface):
         gas : bool
             Indicate whether to use gas phase calculations. Only used if
             `cosmo` is True.
-        energy : bool
-            Indicate whether to include single-point energy calculation block.
         **kwargs
             Arbitrary additional arguments (unused).
 
@@ -509,7 +576,7 @@ class NWChemWrapper(WrapperInterface):
             if i % max_pairs == 0:
                 if i > 0:
                     s += '\nend\n'
-                    s += '\ntask dft property\n\n'
+                    s += '\ntask dft property ignore\n\n'
                 s += '\nproperty\n'
                 npairs = min(len(pairs) - i, max_pairs)
                 s += ' SPINSPIN {}'.format(npairs)
@@ -517,21 +584,16 @@ class NWChemWrapper(WrapperInterface):
 
         s += '\nend\n'
 
-        # Add energy task
-        if energy:
-            s += '\ntask dft energy ignore\n'
-
         # Add property task
-        s += 'task dft property ignore\n'
+        s += '\ntask dft property ignore\n'
 
         return s
 
-    def configure(self, tasks='optimize', functional='b3lyp',
+    def configure(self, tasks='energy', functional='b3lyp',
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
-                  atoms=['C', 'H'], energy=True, frequency=True, temp=298.15,
-                  cosmo=False, solvent='H2O', gas=False, max_iter=150,
-                  mem_global=1600, mem_heap=100, mem_stack=600,
-                  scratch_dir='/scratch'):
+                  atoms=['C', 'H'], temp=298.15, cosmo=False, solvent='H2O',
+                  gas=False, max_iter=150, mem_global=1600, mem_heap=100,
+                  mem_stack=600, scratch_dir='/scratch'):
         '''
         Configure NWChem simulation.
 
@@ -549,14 +611,10 @@ class NWChemWrapper(WrapperInterface):
         charge : int
             Nominal charge of the molecule to be optimized.
         atoms : list of str
-            Atom types of interest.
-        energy : bool
-            Indicate whether to include single-point energy calculation block.
-        frequency : bool
-            Indicate whether to include frequency block.
+            Atom types of interest. Only used for `spin` and `shielding` tasks.
         temp : float
             Temperature for frequency calculation. Only used if `frequency` is
-            True.
+            a selected task.
         cosmo : bool
             Indicate whether to include COSMO block. Supply globally or per
             task.
@@ -635,8 +693,6 @@ class NWChemWrapper(WrapperInterface):
             config += self.task_map[task](functional=f,
                                           basis_set=b,
                                           ao_basis=a,
-                                          energy=energy,
-                                          frequency=frequency,
                                           temp=temp,
                                           cosmo=c,
                                           solvent=solvent,
