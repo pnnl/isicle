@@ -86,7 +86,7 @@ class NWChemWrapper(WrapperInterface):
 
     '''
 
-    def __init__(self):
+    def __init__(self, temp_dir=None):
         '''
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
@@ -105,6 +105,10 @@ class NWChemWrapper(WrapperInterface):
                            'frequency': 2,
                            'shielding': 3,
                            'spin': 4}
+
+        # Set up temporary directory
+        self.temp_dir = tempfile.TemporaryDirectory(temp_dir)
+
 
     def set_geometry(self, geom):
         '''
@@ -132,7 +136,6 @@ class NWChemWrapper(WrapperInterface):
         '''
 
         # Path operations
-        self.temp_dir = tempfile.TemporaryDirectory()
         outfile = os.path.join(self.temp_dir.name,
                                '{}.xyz'.format(self.geom.basename))
 
