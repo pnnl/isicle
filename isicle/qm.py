@@ -1,5 +1,3 @@
-from posixpath import basename
-from statistics import geometric_mean
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
