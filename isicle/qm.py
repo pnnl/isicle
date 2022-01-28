@@ -89,8 +89,12 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
     _defaults = ('history', 'geom')
     _default_value = None
 
+<<<<<<< HEAD
 
     def __init__(self, **kwargs):
+=======
+    def __init__(self, temp_dir=None):
+>>>>>>> 809fd36308e9a0ed2b64015558b6242c5423118c
         '''
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
@@ -114,6 +118,10 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                            'frequency': 2,
                            'shielding': 3,
                            'spin': 4}
+
+        # Set up temporary directory
+        self.temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
+
 
     def set_geometry(self, geom):
         '''
@@ -141,7 +149,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         # Path operations
-        self.temp_dir = tempfile.TemporaryDirectory()
         outfile = os.path.join(self.temp_dir.name,
                                '{}.xyz'.format(self.geom.basename))
 
