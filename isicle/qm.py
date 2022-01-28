@@ -89,12 +89,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
     _defaults = ('history', 'geom')
     _default_value = None
 
-<<<<<<< HEAD
-
     def __init__(self, **kwargs):
-=======
-    def __init__(self, temp_dir=None):
->>>>>>> 809fd36308e9a0ed2b64015558b6242c5423118c
         '''
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
