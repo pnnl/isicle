@@ -124,7 +124,7 @@ class MobcalWrapper(WrapperInterface):
 
         # Update objects
         self.__dict__.update(result)
-        self.geom.add_global_properties(result)
+        self.geom.add___dict__(result)
         
         return self
 

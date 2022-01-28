@@ -4,6 +4,7 @@ from isicle.parse import XTBParser
 import subprocess
 import tempfile
 import os
+from isicle.geometry import XYZGeometry
 
 '''
 Files resulting from an xtb job always run in the same directory that the command is
@@ -59,7 +60,7 @@ def md(geom, program='xtb', **kwargs):
     return _program_selector(program).run(geom, **kwargs)
 
 
-class XTBWrapper(WrapperInterface):
+class XTBWrapper(XYZGeometry, WrapperInterface):
     '''
     Wrapper for xtb functionality.
 
@@ -81,15 +82,15 @@ class XTBWrapper(WrapperInterface):
 
     '''
 
-    def __init__(self):
-        '''
-        Initialize :obj:`XTBWrapper` instance.
+    _defaults = ('history', 'geom')
+    _default_value = None
 
-        Creates temporary directory for intermediate files, establishes aliases
-        for preconfigured tasks.
+    def __init__(self, **kwargs):
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(**kwargs)
 
-        '''
-        pass
+        if self.history is None:
+            self.history = []
 
     def set_geometry(self, geom):
         '''
@@ -369,9 +370,10 @@ class XTBWrapper(WrapperInterface):
         result = parser.parse()
 
         self.__dict__.update(result)
+        self._update_history(self.task)
         for i in self.geom:
-            i.add_global_properties({k: v for k, v in result.items() if k != 'geom'})
-        self.result = result
+            i.add___dict__({k: v for k, v in result.items() if k != 'geom'})
+        #self.result = result
         return self
 
     def run(self, geom, **kwargs):

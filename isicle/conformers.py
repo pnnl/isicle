@@ -351,7 +351,7 @@ class ConformationalEnsemble(TypedList):
 
         '''
 
-        value = [x.get_global_properties() for x in self]
+        value = [x.get___dict__() for x in self]
         for key in safelist(attr):
             if not all(key in x for x in value):
                 raise AttributeError('"{}" not found for all conformational '
@@ -392,7 +392,7 @@ class ConformationalEnsemble(TypedList):
             self._check_attributes('energy')
 
         # Extract (possibly nested) value attribute
-        value = [x.get_global_properties() for x in self]
+        value = [x.get___dict__() for x in self]
         for key in safelist(attr):
             value = [x.get(key) for x in value]
 
@@ -407,7 +407,7 @@ class ConformationalEnsemble(TypedList):
 
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array([x.get_global_properties()['energy'] * pad for x in self])
+            energy = np.array([x.get___dict__()['energy'] * pad for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method

@@ -6,6 +6,7 @@ import os
 from string import Template
 from itertools import combinations, cycle
 import subprocess
+from isicle.geometry import XYZGeometry
 
 
 def _program_selector(program):
@@ -63,7 +64,7 @@ def dft(geom, program='NWChem', template=None, **kwargs):
     return _program_selector(program).run(geom, template=template, **kwargs)
 
 
-class NWChemWrapper(WrapperInterface):
+class NWChemWrapper(XYZGeometry, WrapperInterface):
     '''
     Wrapper for NWChem functionality.
 
@@ -85,14 +86,22 @@ class NWChemWrapper(WrapperInterface):
         Configuration information for simulation.
 
     '''
+    _defaults = ('history', 'geom')
+    _default_value = None
 
-    def __init__(self):
+
+    def __init__(self, **kwargs):
         '''
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
         Establishes aliases for preconfigured tasks.
 
         '''
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(**kwargs)
+
+        if self.history is None:
+            self.history = []
 
         self.task_map = {'optimize': self._configure_optimize,
                          'energy': self._configure_energy,
@@ -697,6 +706,9 @@ class NWChemWrapper(WrapperInterface):
                                           gas=gas,
                                           max_iter=max_iter)
 
+        # Store tasks as attribute
+        self.tasks = tasks
+
         # Store as atrribute
         self.config = config
 
@@ -807,7 +819,8 @@ class NWChemWrapper(WrapperInterface):
         result = parser.parse()
 
         self.__dict__.update(result)
-        self.geom.add_global_properties({k: v for k, v in result.items() if k != 'geom'})
+        self._update_history(self.tasks)
+        self.geom.add___dict__({k: v for k, v in result.items() if k != 'geom'})
         return self
 
     def run(self, geom, template=None, **kwargs):

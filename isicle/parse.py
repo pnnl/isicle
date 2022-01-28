@@ -758,15 +758,15 @@ class XTBParser(FileParserInterface):
                         self.parse_crest = True
                         XYZ = 'crest_conformers.xyz'
 
-                    if XYZ is None:
-                        raise RuntimeError('XYZ file associated with XTB job not available,\
+                if XYZ is None:
+                    raise RuntimeError('XYZ file associated with XTB job not available,\
                                         please parse separately.')
 
-                    else:
-                        temp_dir = os.path.dirname(self.path)
-                        self.xyz_path = os.path.join(temp_dir, XYZ)
+                else:
+                    temp_dir = os.path.dirname(self.path)
+                    self.xyz_path = os.path.join(temp_dir, XYZ)
 
-                        result['geom'] = self._parse_xyz()
+                    result['geom'] = self._parse_xyz()
             except:
                 pass
 

@@ -37,16 +37,16 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'dft_optimize')
-                and callable(subclass.dft_optimize)
-                and hasattr(subclass, 'md_optimize')
-                and callable(subclass.md_optimize)
+        return (hasattr(subclass, 'dft')
+                and callable(subclass.dft)
+                and hasattr(subclass, 'md')
+                and callable(subclass.md)
                 and hasattr(subclass, 'get_natoms')
                 and callable(subclass.get_natoms)
                 and hasattr(subclass, 'get_atom_indices')
                 and callable(subclass.get_atom_indices)
-                and hasattr(subclass, 'get_global_properties')
-                and callable(subclass.get_global_properties)
+                and hasattr(subclass, 'get___dict__')
+                and callable(subclass.get___dict__)
                 and hasattr(subclass, '__copy__')
                 and callable(subclass.__copy__)
                 and hasattr(subclass, 'to_xyzblock')
@@ -60,12 +60,12 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
                 or NotImplemented)
 
     @abc.abstractmethod
-    def dft_optimize(self):
+    def dft(self):
         '''Optimize geometry using density function theory (DFT) methods.'''
         raise NotImplementedError
 
     @abc.abstractmethod
-    def md_optimize(self):
+    def md(self):
         '''Optimize geometry using molecule dynamics methods (MD).'''
         raise NotImplementedError
 
@@ -80,8 +80,8 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_global_properties(self):
-        '''Return a copy of this object's global_properties dictionary'''
+    def get___dict__(self):
+        '''Return a copy of this object's attributes dictionary'''
         raise NotImplementedError
 
     @abc.abstractmethod

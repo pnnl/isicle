@@ -1,4 +1,5 @@
 from io import StringIO
+from re import I
 from isicle.interfaces import XYZGeometryInterface, GeometryInterface
 import isicle
 import pickle
@@ -102,8 +103,8 @@ def _load_generic_geom(path: str, calling_function: str):
     '''
     geom = Geometry()
     geom.basename = os.path.splitext(os.path.basename(path))[0]
-    geom.global_properties['load'] = _gen_load_properties(path)
-    geom.path = os.path.dirname(path)
+    geom.__dict__['load'] = _gen_load_properties(path)
+    geom.path = path
     geom._update_history(calling_function)
     return geom
 
@@ -125,7 +126,7 @@ def load_xyz(path: str):
     '''
     geom = XYZGeometry()
     geom.basename = os.path.splitext(os.path.basename(path))[0]
-    geom.global_properties['load'] = _gen_load_properties(path)
+    geom.__dict__['load'] = _gen_load_properties(path)
     geom.xyz = _load_text(path)
     geom.path = os.path.dirname(path)
     geom._update_history('load_xyz')
@@ -386,16 +387,12 @@ class XYZGeometry(XYZGeometryInterface):
         example, last step of history should always match "from".
     '''
 
-    _defaults = ('global_properties', 'history', 'xyz')
+    _defaults = ('history', 'xyz')
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
-
-        # Overwrite Nones as needed
-        if self.global_properties is None:
-            self.global_properties = dict()
 
         if self.history is None:
             self.history = []
@@ -419,7 +416,6 @@ class XYZGeometry(XYZGeometryInterface):
 
         # Create dict to load in
         d = self.__dict__.copy()
-        d['global_properties'] = self.get_global_properties()
         d['history'] = self.get_history()
         d['mol'] = mol
         d.pop('xyz')
@@ -490,7 +486,7 @@ class XYZGeometry(XYZGeometryInterface):
         a copy of the full history.'''
         if event is not None:
             self.history.append(event)
-            self.global_properties['from'] = event
+            self.__dict__['from'] = event
         return self.get_history()
 
     def get_history(self):
@@ -498,35 +494,35 @@ class XYZGeometry(XYZGeometryInterface):
         current state).'''
         return self.history[:]
 
-    def add_global_properties(self, d, override=False):
+    def add___dict__(self, d, override=False):
         '''Accepts a dictionary of values and adds any non-conflicting
-        information to the global_properties dictionary'''
+        information to the attribute dictionary'''
 
         if not override:
-            # Remove keys that are already present in global_properties
-            [d.pop(k, None) for k in self.global_properties.keys()]
+            # Remove keys that are already present in attribute dictionary
+            [d.pop(k, None) for k in self.__dict__.keys()]
 
-        # Add to global_properties
-        self.global_properties.update(d)
+        # Add to attributes
+        self.__dict__.update(d)
         return
 
-    def dft_optimize(self, program='NWChem', template=None, **kwargs):
+    def dft(self, program='NWChem', template=None, **kwargs):
         '''
         Optimize geometry from XYZ, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        geom, res = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
+        geom = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
 
-        return geom, res
+        return geom
 
-    def md_optimize(self, program='xtb', **kwargs):
+    def md(self, program='xtb', **kwargs):
         '''
         Optimize geometry or generate conformers or adducts from XYZ using stated forcefield.
         Additional inputs can be energy window, optimization criteria level, charge, or ion.
         '''
-        geom, res = isicle.md.md(self.__copy__(), program=program, **kwargs)
+        geom = isicle.md.md(self.__copy__(), program=program, **kwargs)
 
-        return geom, res
+        return geom 
 
     def ionize(self, ion_path=None, ion_list=None, ion_method='explicit', save=False, write=False, path=None, fmt=None, ensembl=False, **kwargs):
         '''
@@ -578,8 +574,8 @@ class XYZGeometry(XYZGeometryInterface):
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
-        self.global_properties['natoms'] = int(self.xyz[0].strip())
-        return self.global_properties['natoms']
+        self.__dict__['natoms'] = int(self.xyz[0].strip())
+        return self.__dict__['natoms']
 
     def get_atom_indices(self, atoms=['C', 'H']):
         '''
@@ -603,17 +599,14 @@ class XYZGeometry(XYZGeometryInterface):
                 idx.append(i - 2)
         return idx
 
-    def get_global_properties(self):
-        '''Return a copy of this object's global_properties dictionary'''
-        return self.global_properties.copy()
+    def get___dict__(self):
+        '''Return a copy of this object's attribute dictionary'''
+        return self.__dict__.copy()
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
         # TODO: manage what should be passed, rather than all?
         d = self.__dict__.copy()
-        d['global_properties'] = self.get_global_properties()
-        d['history'] = self.get_history()
-        d['xyz'] = self.xyz[:]
         return type(self)(**d)
 
     def to_xyzblock(self):
@@ -634,7 +627,7 @@ class XYZGeometry(XYZGeometryInterface):
 
     def save_mfj(self, path):
         # Extract properties
-        props = self.get_global_properties()
+        props = self.get___dict__()
 
         # Check for charges in global properties
         if ('energy' not in props) or ('charge' not in props):
@@ -714,29 +707,22 @@ class Geometry(XYZGeometry, GeometryInterface):
     attributes of this class without using class functions.
 
     Attributes
-    ----------
+    ---------- =
     mol : RDKit Mol object
         Current structure.
-    global_properties : dict
-        Dictionary of properties calculated for this structure. Always at least
-        contains the "from" key, which reports the last operation performed on
-        this compound (e.g. load, dft_optimize). To generate compound
-        properties, use get_* and *_optimize functions.
+    __dict__ : dict
+        Dictionary of properties calculated for this structure. 
     history: list of str
         All steps performed on this compound since initial generation. For
         example, last step of history should always match "from".
     '''
 
-    _defaults = ('global_properties', 'history', 'mol')
+    _defaults = ('history', 'mol')
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
-
-        # Overwrite Nones as needed
-        if self.global_properties is None:
-            self.global_properties = dict()
 
         if self.history is None:
             self.history = []
@@ -760,8 +746,6 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         # Create dict to load in
         d = self.__dict__.copy()
-        d['global_properties'] = self.get_global_properties()
-        d['history'] = self.get_history()
         d['xyz'] = xyz
         d.pop('mol')
 
@@ -835,7 +819,6 @@ class Geometry(XYZGeometry, GeometryInterface):
             Chem.AllChem.UFFOptimizeMolecule(mol)
 
         geom = self._update_structure(inplace, mol=mol)
-        geom.global_properties = {}
         geom._update_history('initial_optimize')
 
         return geom
@@ -879,7 +862,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         # if relevant to future use, returns atom count post desalting
 
         geom = self._update_structure(inplace, mol=mol)
-        geom.global_properties = {}
         geom._update_history('desalt')
         # TODO: add any properties from this operation to global_props?
 
@@ -937,7 +919,6 @@ class Geometry(XYZGeometry, GeometryInterface):
                 mol = rms[0]
 
         geom = self._update_structure(inplace, mol=mol)
-        geom.global_properties = {}
         geom._update_history('neutralize')
         # TODO: add any properties from this operation to global_props?
 
@@ -985,7 +966,6 @@ class Geometry(XYZGeometry, GeometryInterface):
             return new_geoms
 
         geom = self._update_structure(inplace, mol=res[0])
-        geom.global_properties = {}
         geom._update_history('tautomerize')
         # TODO: add any properties from this operation to global_props?
 
@@ -994,8 +974,8 @@ class Geometry(XYZGeometry, GeometryInterface):
     def get_natoms(self):
         '''Calculate total number of atoms.'''
         natoms = Chem.Mol.GetNumAtoms(self.to_mol())
-        self.global_properties['natoms'] = natoms
-        return self.global_properties['natoms']
+        self.__dict__['natoms'] = natoms
+        return self.__dict__['natoms']
 
     def get_atom_indices(self, atoms=['C', 'H'], lookup={'C': 6, 'H': 1, 'N': 7,
                                                          'O': 8, 'F': 9, 'P': 15}):
@@ -1035,7 +1015,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         '''Return hard copy of this class instance.'''
         # TODO: manage what should be passed, rather than all?
         d = self.__dict__.copy()
-        d['global_properties'] = self.get_global_properties()
         d['history'] = self.get_history()
         d['mol'] = self.to_mol()
         return type(self)(**d)
