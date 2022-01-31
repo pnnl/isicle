@@ -522,11 +522,11 @@ class XYZGeometry(XYZGeometryInterface):
         '''
         geom = isicle.md.md(self.__copy__(), program=program, **kwargs)
 
-        return geom 
+        return geom
 
-    def ionize(self, ion_path=None, ion_list=None, ion_method='explicit', save=False, write=False, path=None, fmt=None, ensembl=False, **kwargs):
+    def xyz_ionize(self, ion_path=None, ion_list=None, save=False, path=None, **kwargs):
         '''
-        Ionize geometry, using specified list of ions and method of ionization.
+        Calls xtb CREST to ionize xyz geometry, using specified list of ions and method of ionization.
 
         Parameters
         ----------
@@ -537,40 +537,29 @@ class XYZGeometry(XYZGeometryInterface):
             List of strings of adducts to be considered.
             Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
             Either ion_path or ion_list must be specified
-        ion_method : str
-            Method of ionization to be used, 'explicit' or 'crest' is accepted
         save : bool
             Saves wrapper object to .pkl in specified path directory
         write : bool (optional)
             Writes all RDKit mol objects to file
         path : str (optional)
             Directory to write output files
-        fmt : str (optional)
-            Format in which to save the RDKit mol object (eg. `mol2`, `pdb`)
         ensembl : bool (optional)
             Returns instead a list of adduct geometries
-        **kwargs:
-            see :meth: `~isicle.adducts.ExplicitIonizationWrapper.submit` or
-                       `~isicle.adducts.CRESTIonizationWrapper.submit`
+        **kwargs :
+            see :meth: `~isicle.adducts.CRESTIonizationWrapper.submit`
             for more options
 
         Returns
         -------
         Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
         '''
-        iw = isicle.adducts.ionize(ion_method).run(
-            self.geom, ion_path=ion_path, ion_list=ion_list, **kwargs)
+        iw = isicle.adducts.ionize("crest")().run(
+            self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs)
 
         if save == True and path is not None:
             iw.save(path)
 
-        if write == True and path is not None and fmt is not None:
-            isicle.adducts.write(iw, path, fmt)
-
-        if ensembl == True:
-            return isicle.adducts.build_adduct_ensemble(iw.adducts)
-
-        return iw.adducts
+        return iw
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
@@ -711,7 +700,7 @@ class Geometry(XYZGeometry, GeometryInterface):
     mol : RDKit Mol object
         Current structure.
     __dict__ : dict
-        Dictionary of properties calculated for this structure. 
+        Dictionary of properties calculated for this structure.
     history: list of str
         All steps performed on this compound since initial generation. For
         example, last step of history should always match "from".
@@ -971,6 +960,52 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
+    def ionize(self, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
+        '''
+        Ionize geometry, using specified list of ions and method of ionization.
+
+        Parameters
+        ----------
+        ion_path : str
+            Filepath to text file containing ions with charge (eg. `H+`) to be considered
+            Either ion_path or ion_list must be specified
+        ion_list : list
+            List of strings of adducts to be considered.
+            Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
+            Either ion_path or ion_list must be specified
+        ion_method : str
+            Method of ionization to be used, 'explicit' or 'crest' is accepted
+        save : bool
+            Saves wrapper object to .pkl in specified path directory
+        write : bool (optional)
+            Writes all RDKit mol objects to file
+        path : str (optional)
+            Directory to write output files
+        fmt : str (optional)
+            Format in which to save the RDKit mol object (eg. `mol2`, `pdb`)
+        ensembl : bool (optional)
+            Returns instead a list of adduct geometries
+        **kwargs:
+            see :meth: `~isicle.adducts.ExplicitIonizationWrapper.submit` or
+                       `~isicle.adducts.CRESTIonizationWrapper.submit`
+            for more options
+
+        Returns
+        -------
+        Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
+        '''
+        # save=False, write=False, path=None, fmt=None,
+        iw = isicle.adducts.ionize(ion_method).run(
+            self.geom, ion_path=ion_path, ion_list=ion_list, **kwargs)
+
+        # if save == True and path is not None:
+        #    iw.save(path)
+
+        # if write == True and path is not None and fmt is not None:
+        #    isicle.adducts.write(iw, path, fmt)
+
+        return iw
+
     def get_natoms(self):
         '''Calculate total number of atoms.'''
         natoms = Chem.Mol.GetNumAtoms(self.to_mol())
@@ -1010,6 +1045,16 @@ class Geometry(XYZGeometry, GeometryInterface):
         contribs = [mol.GetAtomWithIdx(i).GetDoubleProp('_GasteigerCharge')
                     for i in range(mol.GetNumAtoms())]
         return np.nansum(contribs)
+
+    def get_formal_charge(self):
+        '''Calculate formal charge of the molecule.'''
+        mol = self.to_mol()
+        return Chem.rdmolops.GetFormalCharge(mol)
+
+    def set_formal_charge(self):
+        '''Set formal charge of the molecule to __dict__'''
+        self.__dict__.update(charge=self.get_formal_charge())
+        return self.charge
 
     def __copy__(self):
         '''Return hard copy of this class instance.'''
