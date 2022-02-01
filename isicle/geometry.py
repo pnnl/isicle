@@ -539,12 +539,8 @@ class XYZGeometry(XYZGeometryInterface):
             Either ion_path or ion_list must be specified
         save : bool
             Saves wrapper object to .pkl in specified path directory
-        write : bool (optional)
-            Writes all RDKit mol objects to file
         path : str (optional)
             Directory to write output files
-        ensembl : bool (optional)
-            Returns instead a list of adduct geometries
         **kwargs :
             see :meth: `~isicle.adducts.CRESTIonizationWrapper.submit`
             for more options
@@ -553,7 +549,7 @@ class XYZGeometry(XYZGeometryInterface):
         -------
         Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
         '''
-        iw = isicle.adducts.ionize("crest")().run(
+        iw = isicle.adducts.ionize("crest").run(
             self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs)
 
         if save == True and path is not None:
@@ -960,7 +956,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
-    def ionize(self, ion_path=None, ion_list=None, ion_method='explicit', **kwargs):
+    def ionize(self, ion_path=None, ion_list=None, method='explicit', save=False, path=None, **kwargs):
         '''
         Ionize geometry, using specified list of ions and method of ionization.
 
@@ -973,16 +969,12 @@ class Geometry(XYZGeometry, GeometryInterface):
             List of strings of adducts to be considered.
             Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
             Either ion_path or ion_list must be specified
-        ion_method : str
+        method : str
             Method of ionization to be used, 'explicit' or 'crest' is accepted
         save : bool
             Saves wrapper object to .pkl in specified path directory
-        write : bool (optional)
-            Writes all RDKit mol objects to file
         path : str (optional)
             Directory to write output files
-        fmt : str (optional)
-            Format in which to save the RDKit mol object (eg. `mol2`, `pdb`)
         ensembl : bool (optional)
             Returns instead a list of adduct geometries
         **kwargs:
@@ -994,15 +986,11 @@ class Geometry(XYZGeometry, GeometryInterface):
         -------
         Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
         '''
-        # save=False, write=False, path=None, fmt=None,
-        iw = isicle.adducts.ionize(ion_method).run(
-            self.geom, ion_path=ion_path, ion_list=ion_list, **kwargs)
+        iw = isicle.adducts.ionize(method).run(
+            self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs)
 
-        # if save == True and path is not None:
-        #    iw.save(path)
-
-        # if write == True and path is not None and fmt is not None:
-        #    isicle.adducts.write(iw, path, fmt)
+        if save == True and path is not None:
+            iw.save(path)
 
         return iw
 
