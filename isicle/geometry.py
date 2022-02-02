@@ -794,14 +794,53 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
-    def initial_optimize(self, inplace=False):
+    def initial_optimize(self, embed=False, forcefield='UFF',ff_iter=200,inplace=False):
+        '''
+        Params
+        ------
+        embed: bool
+            Try embedding molecule with eigenvalues of distance matrix
+            Except failure seeds with random coordinates
+        forcefield: str
+            Specify "UFF" for Universal Force Field optimization by RDKit
+            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
+            Specify "MMFF94s" for the MMFF94 s variant
+        inplace: bool
+            If geom.mol is modified inplace
+        Returns
+        -------
+        Geometry
+            Updated structure instance
+        '''
+        def _forcefield_selector(forcefield, mw):
+            '''
+            Checks if user specified forcefield is compatible with supplied mol
+            '''
+            forcefield = forcefield.lower()
+            if forcefield == 'uff':
+                if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
+                    return Chem.AllChem.UFFOptimizeMolecule
+                else:
+                    raise ValueError('UFF is not available for all atoms in molecule.')
+            elif forcefield in ['mmff', 'mmff94', 'mmff94s']:
+                if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
+                    return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
+                else:
+                    raise ValueError('specified MMFF is not available for all atoms in molecule.')
+            else:
+                raise ValueError('RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
+
         mol = self.to_mol()
-        try:
-            Chem.AllChem.EmbedMolecule(mol)
-            Chem.AllChem.UFFOptimizeMolecule(mol)
-        except:
-            Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
-            Chem.AllChem.UFFOptimizeMolecule(mol)
+        if embed == True:
+            try:
+                Chem.AllChem.EmbedMolecule(mol)
+            except:
+                Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+        if forcefield is not None:
+            if 'mmff94s' in forcefield.lower():
+                _forcefield_selector(forcefield, mol)(mol, mmffVariant=forcefield, maxIters=ff_iter)
+            else:
+                _forcefield_selector(forcefield, mol)(mol, maxIters=ff_iter)
 
         geom = self._update_structure(inplace, mol=mol)
         geom._update_history('initial_optimize')
