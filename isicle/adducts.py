@@ -401,7 +401,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         geom.__dict__.update(charge=geom.get_formal_charge())
 
-    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
+    def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
 
@@ -418,9 +418,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
 
@@ -437,11 +434,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
         mw.UpdatePropertyCache(strict=False)
         if sanitize is True:
             Chem.SanitizeMol(mw)
-        if embed is True:
-            try:
-                Chem.AllChem.EmbedMolecule(mw)
-            except:
-                Chem.AllChem.EmbedMolecule(mw, useRandomCoords=True)
         if forcefield:
             tempff = self._forcefield_selector(forcefield, mw)
             if 'mmff94s' in forcefield:
@@ -453,7 +445,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         self._update_geometry_charge(geom)
         return geom
 
-    def _apply_add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
+    def _apply_add_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
         Iteratively ionize all atoms in a supplied dictionary.
 
@@ -470,9 +462,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
 
@@ -483,12 +472,12 @@ class ExplicitIonizationWrapper(WrapperInterface):
 
         mol_dict = {}
         for key in atom_dict.keys():
-            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, forcefield, ff_iter)
             # Format {atom_base_idx:<newmol>}
             mol_dict[key] = mw
         return mol_dict
 
-    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne):
+    def _positive_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne):
         '''
         Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
 
@@ -509,9 +498,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
         include_Alkaline_ne: Bool
@@ -527,21 +513,21 @@ class ExplicitIonizationWrapper(WrapperInterface):
         if index_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
-                                           ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                                           ion_atomic_num, sanitize, forcefield, ff_iter)
         elif element_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
-                                           ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                                           ion_atomic_num, sanitize, forcefield, ff_iter)
         elif batch == True:
             mol_dict = self._apply_add_ion(
-                init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter)
         else:
             raise ValueError(
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
 
         return mol_dict
 
-    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
+    def _remove_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
 
@@ -558,9 +544,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
         Returns
@@ -577,11 +560,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
         mw.UpdatePropertyCache(strict=False)
         if sanitize is True:
             Chem.SanitizeMol(mw)
-        if embed is True:
-            try:
-                Chem.AllChem.EmbedMolecule(mw)
-            except:
-                Chem.AllChem.EmbedMolecule(mw, useRandomCoords=True)
         if forcefield:
             tempff = self._forcefield_selector(forcefield, mw)
             if 'mmff94s' in forcefield:
@@ -593,7 +571,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         self._update_geometry_charge(geom)
         return geom
 
-    def _apply_remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter):
+    def _apply_remove_ion(self, init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
         Iteratively deionize all atoms in a supplied dictionary.
 
@@ -610,9 +588,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
 
@@ -624,11 +599,11 @@ class ExplicitIonizationWrapper(WrapperInterface):
         mol_dict = {}
         for key, value in atom_dict.items():
             mw = self._remove_ion(
-                init_mol, key, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                init_mol, key, ion_atomic_num, sanitize, forcefield, ff_iter)
             mol_dict[key] = mw
         return mol_dict
 
-    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne):
+    def _negative_mode(self, init_mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne):
         '''
         Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
 
@@ -649,9 +624,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
             Specify "MMFF94s" for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
         include_Alkaline_ne: Bool
@@ -667,20 +639,20 @@ class ExplicitIonizationWrapper(WrapperInterface):
         if index_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter)
         elif element_list is not None:
             subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
             mol_dict = self._apply_remove_ion(
-                init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter)
         elif batch == True:
             mol_dict = self._apply_remove_ion(
-                init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, embed, ff_iter)
+                init_mol, atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter)
         else:
             raise ValueError(
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
         return mol_dict
 
-    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, forcefield='UFF', embed=False, ff_iter=200, include_Alkali_ne=False):
+    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, forcefield='UFF', ff_iter=200, include_Alkali_ne=False):
         '''
         Calls positive or negative ionization modes based upon supplied ion list.
 
@@ -698,9 +670,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify `UFF` for Universal Force Field optimization by RDKit (default)
             Specify `MMFF` or `MMFF94` for Merck Molecular Force Field 94
             Specify `MMFF94s` for the MMFF94 s variant
-        embed: Bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield (200 default)
         include_Alkaline_ne: Bool
@@ -724,11 +693,11 @@ class ExplicitIonizationWrapper(WrapperInterface):
 
         for x in self.adducts['cations']:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', x)[0])
-            mol_dict = self._positive_mode(self.geom.mol, ion_atomic_num,batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne)
+            mol_dict = self._positive_mode(self.geom.mol, ion_atomic_num,batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne)
             cation_dict[x] = list(mol_dict.values())
         for x in self.adducts['anions']:
             ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', x)[0])
-            mol_dict = self._negative_mode(self.geom.mol, ion_atomic_num,batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne)
+            mol_dict = self._negative_mode(self.geom.mol, ion_atomic_num,batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne)
             anion_dict[x] = list(mol_dict.values())
         for x in self.adducts['complex']:
             # This self-determined charge doesn't account for K(2+) or CO2- type adducts
@@ -738,11 +707,11 @@ class ExplicitIonizationWrapper(WrapperInterface):
             for ion in parsed:
                 ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+-]', ion)[0])
                 if ('+') in ion:
-                    res = list(map(lambda geom: list(self._positive_mode(geom.mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne).values()),geom_list))
+                    res = list(map(lambda geom: list(self._positive_mode(geom.mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne).values()),geom_list))
                     complex_dict[x] = functools.reduce(operator.iconcat, res, [])
 
                 elif ('-') in ion:
-                    res = list(map(lambda geom: list(self._negative_mode(geom.mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, embed, ff_iter, include_Alkali_ne).values()),geom_list))
+                    res = list(map(lambda geom: list(self._negative_mode(geom.mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne).values()),geom_list))
                     complex_dict[x] = functools.reduce(operator.iconcat, res, [])
                 geom_list = complex_dict.get(x)
         self.__dict__.update({'adducts': {**cation_dict, **anion_dict, **complex_dict}})
