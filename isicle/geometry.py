@@ -524,7 +524,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         return geom
 
-    def xyz_ionize(self, ion_path=None, ion_list=None, save=False, path=None, **kwargs):
+    def ionize(self, ion_path=None, ion_list=None, save=False, path=None, **kwargs):
         '''
         Calls xtb CREST to ionize xyz geometry, using specified list of ions and method of ionization.
 
@@ -556,6 +556,11 @@ class XYZGeometry(XYZGeometryInterface):
             iw.save(path)
 
         return iw
+
+    def set_formal_charge(self, charge=0):
+        '''Specify and set the known formal charge of the xyz molecule to __dict__'''
+        self.__dict__.update(charge=charge)
+        return self.charge
 
     def get_natoms(self):
         '''Calculate total number of atoms.'''
@@ -794,7 +799,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
-    def initial_optimize(self, embed=False, forcefield='UFF',ff_iter=200,inplace=False):
+    def initial_optimize(self, embed=False, forcefield='UFF', ff_iter=200, inplace=False):
         '''
         Params
         ------
