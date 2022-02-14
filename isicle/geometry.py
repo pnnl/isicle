@@ -527,6 +527,7 @@ class XYZGeometry(XYZGeometryInterface):
     def ionize(self, ion_path=None, ion_list=None, save=False, path=None, **kwargs):
         '''
         Calls xtb CREST to ionize xyz geometry, using specified list of ions and method of ionization.
+        WARNING: must run isicle.geometry.XYZGeometry.set_formal_charge prior to this.
 
         Parameters
         ----------
@@ -549,6 +550,8 @@ class XYZGeometry(XYZGeometryInterface):
         -------
         Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
         '''
+        if self.__dict__.get('charge') is None:
+            raise ValueError('Must first run isicle.geometry.XYZGeometry.set_formal_charge for an xyz structure')
         iw = isicle.adducts.ionize("crest").run(
             self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs)
 

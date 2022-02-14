@@ -828,12 +828,13 @@ class CRESTIonizationWrapper(WrapperInterface):
         else:
             raise ValueError('Could not find self.xyz, self.mol, or self.geom')
 
-    def set_charge(self, charge):
+    def set_charge(self):
         '''
         '''
         if self.geom.__dict__.get('charge') is None:
             if self.geom.load.get('filetype') == '.xyz':
-                self.geom.__dict__.update(charge=charge)
+                #self.geom.__dict__.update(charge=charge)
+                raise ValueError('Must first run geom.set_formal_charge for an xyz structure')
             else:
                 self.geom.__dict__.update(charge=self.geom.get_formal_charge())
 
@@ -982,7 +983,7 @@ class CRESTIonizationWrapper(WrapperInterface):
 
         self.__dict__.update({'adducts': build_adduct_ensembl(self.adducts)})
 
-    def run(self, geom, ion_path=None, ion_list=None, charge=0, **kwargs):
+    def run(self, geom, ion_path=None, ion_list=None, **kwargs):
         '''
         Ionize geometry via with supplied geometry and file containing list of ions.
         Parameters
@@ -1008,7 +1009,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         self.set_geometry(geom)
 
         # Infers charge for non xyz files, infers default neutral for xyz files
-        self.set_charge(charge)
+        self.set_charge()
 
         # Load specified ions by type
         # Validity check if negative ionization can be done
