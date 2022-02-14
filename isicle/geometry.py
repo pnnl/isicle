@@ -494,6 +494,10 @@ class XYZGeometry(XYZGeometryInterface):
         current state).'''
         return self.history[:]
 
+    def get_basename(self):
+        '''Returns a copy of this object's basename (original filename).'''
+        return self.basename
+
     def add___dict__(self, d, override=False):
         '''Accepts a dictionary of values and adds any non-conflicting
         information to the attribute dictionary'''
