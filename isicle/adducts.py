@@ -137,11 +137,37 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     return valid_list
 
 
+def _build_adduct_ensembl(adducts):
+    '''
+    Create an adduct ensemble from a dictionary of adduct geometries.
+    Parses wrapper.adducts dictionary and returns a list of adduct geometry objects.
+
+    Params
+    ------
+    adducts : {<IonCharge>: [<geomObjects>]}
+        Dictionary returned from `isicle.adducts.<IonMethod>Wrapper.run`
+
+    Returns
+    -------
+    List of adduct geometries
+
+    '''
+    ensembl = []
+
+    for k, v in adducts.items():
+        id = 1
+        for geom in v:
+            geom.__dict__.update(ion=k, adductID=id)
+            ensembl.append(geom)
+            id += 1
+
+    return ensembl
+
 def ionize(ion_method):
     '''
     Selects a supported ionization method.
 
-    Params
+    Parameters
     ----------
     ion_method : str
         Alias for ion method selection (e.g. explicit).
@@ -172,10 +198,9 @@ def write(IonizationWrapper, path, fmt):
         Format in which to save the RDKit mol object (eg. 'mol2', 'pdb')
     '''
     if path is not None and fmt is not None:
-        for key, value in IonizatinWrapper.adducts.items():
-            for key2, value2 in value.items():
-                isicle.geometry.Geometry.save(value2, os.path.join(
-                    path, '{}{}.{}'.format(key, key2, fmt)), fmt)
+        for adduct in IonizationWrapper.adducts:
+            isicle.geometry.Geometry.save(adduct.mol, os.path.join(
+                path, '{}_{}'.format(adduct.basename,adduct.ion,adduct.adductID)), fmt)
         return
     elif path is not None:
         raise(
@@ -187,31 +212,7 @@ def write(IonizationWrapper, path, fmt):
         return
 
 
-def build_adduct_ensembl(adducts):
-    '''
-    Create an adduct ensemble from a dictionary of adduct geometries.
-    Parses wrapper.adducts dictionary and returns a list of adduct geometry objects.
 
-    Params
-    ------
-    adducts : {<IonCharge>: [<geomObjects>]}
-        Dictionary returned from `isicle.adducts.<IonMethod>Wrapper.run`
-
-    Returns
-    -------
-    List of adduct geometries
-
-    '''
-    ensembl = []
-
-    for k, v in adducts.items():
-        id = 1
-        for geom in v:
-            geom.__dict__.update(ion=k, adductID=id)
-            ensembl.append(geom)
-            id += 1
-
-    return ensembl
 
 
 class ExplicitIonizationWrapper(WrapperInterface):
@@ -441,7 +442,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
-        geom = isicle.geometry.Geometry(mol=mw, history=self.geom.get_history())
+        geom = isicle.geometry.Geometry(mol=mw, history=self.geom.get_history(), basename=self.geom.get_basename())
         #geom._update_history('positive_ionize')
         self._update_geometry_charge(geom)
         return geom
@@ -567,7 +568,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
-        geom = isicle.geometry.Geometry(mol=mw, history=self.geom.get_history())
+        geom = isicle.geometry.Geometry(mol=mw, history=self.geom.get_history(), basename=self.geom.get_basename())
         #geom._update_history('negative_ionize')
         self._update_geometry_charge(geom)
         return geom
@@ -727,7 +728,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Parsed result data.
         '''
         # ion dict format {ion<charge>:mol}
-        self.__dict__.update({'adducts': build_adduct_ensembl(self.adducts)})
+        self.__dict__.update({'adducts': _build_adduct_ensembl(self.adducts)})
 
     def run(self, geom, ion_path=None, ion_list=None, **kwargs):
         '''
@@ -981,7 +982,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
         # ion dict format {ion<charge>:mol}
 
-        self.__dict__.update({'adducts': build_adduct_ensembl(self.adducts)})
+        self.__dict__.update({'adducts': _build_adduct_ensembl(self.adducts)})
 
     def run(self, geom, ion_path=None, ion_list=None, **kwargs):
         '''
