@@ -359,6 +359,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         subprocess.call(job, shell=True)
         os.chdir(owd)
 
+
     def finish(self):
         '''
         Parse results, save xtb output files, and clean temporary directory
@@ -374,6 +375,10 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != 'geom'})
         #self.result = result
+        conformerID = 1
+        for i in self.geom:
+            i.__dict__.update(conformerID=conformerID)
+            conformerID += 1
         return self
 
     def run(self, geom, **kwargs):
