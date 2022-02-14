@@ -203,10 +203,11 @@ def build_adduct_ensembl(adducts):
 
     '''
     ensembl = []
-    id = 1
+
     for k, v in adducts.items():
+        id = 1
         for geom in v:
-            geom.__dict__.update(ion=k, id=id)
+            geom.__dict__.update(ion=k, adductID=id)
             ensembl.append(geom)
             id += 1
 
