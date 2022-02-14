@@ -557,8 +557,12 @@ class XYZGeometry(XYZGeometryInterface):
 
         return iw
 
-    def set_formal_charge(self, charge=0):
+    def set_formal_charge(self, charge):
         '''Specify and set the known formal charge of the xyz molecule to __dict__'''
+        try:
+            charge = int(charge)
+        except:
+            raise TypeError('Charge specifed must be str or int')
         self.__dict__.update(charge=charge)
         return self.charge
 
