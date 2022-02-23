@@ -109,6 +109,40 @@ def _load_generic_geom(path: str, calling_function: str):
     return geom
 
 
+def _load_generic_geom_from_memory(geom_like_object, calling_function: str, data_type: str, object_basename: str):
+    '''
+    Create new Geometry instance and populate with data in memory.
+    '''
+    geom = Geometry()
+    geom.basename = object_basename
+    geom.__dict__['load'] = {'path': None, 'contents': geom_like_object, 'filetype': data_type}
+    geom.path = None
+    geom._update_history(calling_function)
+    return geom
+
+
+def load_from_memory(geom_like_object, data_type: str, object_basename: str, rdkit_func, **kwargs):
+    '''
+    This is not a suggested use, but is available for RDKit super users.
+
+    Params
+    ------
+    geom_like_object: a SMILES string, SMARTS string, mol, mol2, RDKit mol, or pdb in memory
+    data_type: a string denoting the file extension of the object passed, eg. mol, mol2, smi
+               If RDKit mol object needs to be passed, please specify `rdkit_mol`
+    object_basename: a string denoting the molecules name/identifier
+    rdkit_func: Chem is imported, pass function as Chem.function_name, eg. Chem.MolFromSmiles
+                Supply None if RDKit mol object is being passed.
+    '''
+    geom = _load_generic_geom_from_memory(
+        geom_like_object, 'load_from_memory', data_type, object_basename)
+    if rdkit_func is None and 'rdkit_mol' in data_type:
+        geom.mol = geom_like_object
+    else:
+        geom.mol = rdkit_func(geom_like_object, kwargs)
+    return geom
+
+
 def load_xyz(path: str):
     '''
     Load XYZ file and return as a Geometry instance.
@@ -555,7 +589,8 @@ class XYZGeometry(XYZGeometryInterface):
         Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
         '''
         if self.__dict__.get('charge') is None:
-            raise ValueError('Must first run isicle.geometry.XYZGeometry.set_formal_charge for an xyz structure')
+            raise ValueError(
+                'Must first run isicle.geometry.XYZGeometry.set_formal_charge for an xyz structure')
         iw = isicle.adducts.ionize("crest").run(
             self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs)
 
