@@ -19,15 +19,19 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python >=3.7,<3.10
     - pip
   run:
-    - numpy
-    - pandas
-    - python >=3.7
-    - rdkit
-    - snakemake
-    - statsmodels
+    - numpy >=1.19.4
+    - openbabel >=3.0.0
+    - pandas >=1.1.4
+    - python >=3.7,<3.10
+    - rdkit >=2019
+    - snakemake >=6.3.0
+    - statsmodels >=0.11.1
+    - xtb
+    - crest
+    - nwchem
 
 test:
   imports:
