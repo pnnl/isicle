@@ -115,7 +115,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                            'spin': 4}
 
         # Set up temporary directory
-        self.temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
+        self.temp_dir = tempfile.TemporaryDirectory()
 
 
     def set_geometry(self, geom):
@@ -441,7 +441,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         solvent : str
             Solvent selection. Only used if `cosmo` is True.
         gas : bool
-            Indicate whether to use gas phase calculations. Only used if
+            Indicate whether to u se gas phase calculations. Only used if
             `cosmo` is True.
         **kwargs
             Arbitrary additional arguments (unused).
@@ -602,7 +602,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
                   atoms=['C', 'H'], temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-                  mem_stack=600, scratch_dir='/scratch'):
+                  mem_stack=600, scratch_dir='/scratch', processes=24):
         '''
         Configure NWChem simulation.
 
@@ -711,11 +711,15 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         # Store tasks as attribute
         self.tasks = tasks
 
+        # Store number of processes as attribute
+        self.processes = processes
+
         # Store as atrribute
         self.config = config
 
         # Save
         self.save_config()
+
 
         return self.config
 
@@ -791,9 +795,10 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         infile = os.path.join(self.temp_dir.name, self.geom.basename + '.nw')
         outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
-        subprocess.call('nwchem {} > {} 2> {}'.format(infile,
-                                                      outfile,
-                                                      logfile), shell=True)
+        subprocess.call('mpirun -n {} nwchem {} > {} 2> {}'.format(self.processes,
+                                                             infile,
+                                                             outfile,
+                                                             logfile), shell=True)
 
     def finish(self):
         '''
