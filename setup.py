@@ -24,5 +24,12 @@ setup(
     author_email='sean.colby@pnnl.gov',
     license=license,
     packages=pkgs,
-    install_requires=install_requires
+    python_requires=">=3.7,<3.10",
+    install_requires=install_requires,
+    classifiers=[
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Chemistry",
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License"
+    ]
 )
