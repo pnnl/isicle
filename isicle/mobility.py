@@ -2,7 +2,6 @@ import isicle
 from isicle.interfaces import WrapperInterface
 import os
 import subprocess
-import tempfile
 from pkg_resources import resource_filename
 import shutil
 
@@ -46,13 +45,13 @@ class MobcalWrapper(WrapperInterface):
         '''
 
         # Temp directory
-        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir = isicle.utils.mkdtemp()
 
         # Files
-        self.infile = os.path.join(self.temp_dir.name,
+        self.infile = os.path.join(self.temp_dir,
                                    self.geom.basename + '.mfj')
-        self.outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
-        self.logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
+        self.outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
+        self.logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
 
         # All other formats
         self.geom.save(self.infile)
@@ -61,7 +60,7 @@ class MobcalWrapper(WrapperInterface):
         if path is None:
             path = resource_filename('isicle', 'resources/lennard_jones.txt')
 
-        self.atom_params = os.path.join(self.temp_dir.name,
+        self.atom_params = os.path.join(self.temp_dir,
                                         'atomtype_parameters.in')
 
         shutil.copy2(path, self.atom_params)
@@ -80,7 +79,7 @@ class MobcalWrapper(WrapperInterface):
              'IMP': imp,
              'NUM_THREADS': processes}
 
-        self.mobcal_params = os.path.join(self.temp_dir.name,
+        self.mobcal_params = os.path.join(self.temp_dir,
                                           'mobcal.params')
 
         with open(self.mobcal_params, 'w') as f:

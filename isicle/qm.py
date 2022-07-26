@@ -1,7 +1,7 @@
+import isicle
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
-import tempfile
 import os
 from string import Template
 from itertools import combinations, cycle
@@ -115,7 +115,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                            'spin': 4}
 
         # Set up temporary directory
-        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir = isicle.utils.mkdtemp()
 
 
     def set_geometry(self, geom):
@@ -144,7 +144,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         # Path operations
-        outfile = os.path.join(self.temp_dir.name,
+        outfile = os.path.join(self.temp_dir,
                                '{}.xyz'.format(self.geom.basename))
 
         # All other formats
@@ -174,7 +174,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         d = {'basename': self.geom.basename,
-             'dirname': self.temp_dir.name,
+             'dirname': self.temp_dir,
              'mem_global': mem_global,
              'mem_heap': mem_heap,
              'mem_stack': mem_stack,
@@ -206,7 +206,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         d = {'basename': self.geom.basename,
-             'dirname': self.temp_dir.name,
+             'dirname': self.temp_dir,
              'charge': charge}
 
         return ('\ncharge {charge}\n'
@@ -761,7 +761,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         if dirname_override is not None:
             kwargs['dirname'] = dirname_override
         else:
-            kwargs['dirname'] = self.temp_dir.name
+            kwargs['dirname'] = self.temp_dir
 
         # Open template
         with open(path, 'r') as f:
@@ -782,7 +782,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         # Write to file
-        with open(os.path.join(self.temp_dir.name,
+        with open(os.path.join(self.temp_dir,
                                self.geom.basename + '.nw'), 'w') as f:
             f.write(self.config)
 
@@ -792,9 +792,9 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         '''
 
-        infile = os.path.join(self.temp_dir.name, self.geom.basename + '.nw')
-        outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
-        logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
+        infile = os.path.join(self.temp_dir, self.geom.basename + '.nw')
+        outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
+        logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
         subprocess.call('mpirun -n {} nwchem {} > {} 2> {}'.format(self.processes,
                                                              infile,
                                                              outfile,
@@ -821,7 +821,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         parser = NWChemParser()
-        parser.load(os.path.join(self.temp_dir.name,
+        parser.load(os.path.join(self.temp_dir,
                                  self.geom.basename + '.out'))
         result = parser.parse()
 

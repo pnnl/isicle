@@ -1,4 +1,5 @@
 from codecs import ignore_errors
+import isicle
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 import subprocess
@@ -121,9 +122,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         '''
         # Path operationspyth
-        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
-        outfile = os.path.join(self.temp_dir.name,
+        outfile = os.path.join(self.temp_dir,
                                '{}.{}'.format(self.geom.basename,
                                               self.fmt.lower()))
 
@@ -218,7 +219,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s = 'crest '
 
         # Add geometry
-        s += str(os.path.join(self.temp_dir.name,
+        s += str(os.path.join(self.temp_dir,
                               '{}.{}'.format(self.geom.basename,
                                              self.fmt.lower())))
 
@@ -263,7 +264,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add output
         s += '&>' + ' '
 
-        s += os.path.join(self.temp_dir.name,
+        s += os.path.join(self.temp_dir,
                           '{}.{}'.format(self.geom.basename,
                                          "out"))
 
@@ -354,7 +355,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         Run xtb or crest simulation according to configured inputs.
         '''
         owd = os.getcwd()
-        os.chdir(self.temp_dir.name)
+        os.chdir(self.temp_dir)
         job = self.config
         subprocess.call(job, shell=True)
         os.chdir(owd)
@@ -367,7 +368,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         parser = XTBParser()
 
-        parser.load(os.path.join(self.temp_dir.name, self.geom.basename + '.out'))
+        parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
         result = parser.parse()
 
         self.__dict__.update(result)
