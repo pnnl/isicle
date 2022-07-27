@@ -1,4 +1,3 @@
-from isicle import __version__
 import numpy as np
 import os
 import pandas as pd
@@ -115,8 +114,7 @@ def gettempdir():
 
     '''
     
-    root = os.path.join(tempfile.gettempdir(),
-                        'isicle' + '-v' + __version__)
+    root = os.path.join(tempfile.gettempdir(), 'isicle')
     
     if not os.path.exists(root):
         os.makedirs(root)
