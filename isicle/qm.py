@@ -602,13 +602,14 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
                   atoms=['C', 'H'], temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-                  mem_stack=600, scratch_dir='/scratch', processes=24):
+                  mem_stack=600, scratch_dir='/scratch', processes=12, cluster=False):
         '''
         Configure NWChem simulation.
 
         Parameters
         ----------
         tasks : str or list of str
+            Tasks text.
             Tasks text.
         functional : str or list of str
             Functional selection. Supply globally or per task.
@@ -704,12 +705,14 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                                           ao_basis=a,
                                           temp=temp,
                                           cosmo=c,
-                                          solvent=solvent,
                                           gas=gas,
                                           max_iter=max_iter)
 
         # Store tasks as attribute
         self.tasks = tasks
+
+        # Store cluster as attribute
+        self.cluster = cluster
 
         # Store number of processes as attribute
         self.processes = processes
@@ -795,10 +798,23 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         infile = os.path.join(self.temp_dir.name, self.geom.basename + '.nw')
         outfile = os.path.join(self.temp_dir.name, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir.name, self.geom.basename + '.log')
-        subprocess.call('mpirun -n {} nwchem {} > {} 2> {}'.format(self.processes,
-                                                             infile,
-                                                             outfile,
-                                                             logfile), shell=True)
+
+        if self.cluster == 'constance':
+            s = 'csh /people/jyst649/opt/nwchem/nwchem-con {} {} {}'.format(self.processes,
+                                                 infile,
+                                                 outfile)
+
+        if self.cluster == 'deception':
+            s = 'csh /people/jyst649/opt/nwchem/nwchem-dec {} {} {}'.format(self.processes,
+                                                 infile,
+                                                 outfile)
+
+        else:
+            s = 'mpirun -n {} nwchem {} > {}'.format(self.processes,
+                                                 infile,
+                                                 outfile)
+
+        subprocess.call(s, shell=True)
 
     def finish(self):
         '''
