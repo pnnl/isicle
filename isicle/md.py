@@ -1,4 +1,3 @@
-from codecs import ignore_errors
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 import subprocess
@@ -337,17 +336,11 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
                                                solvation=solvation,
                                                ignore_topology=ignore_topology)
             else:
-                raise Error(
-                    'Task not assignmed properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
+                raise Error('Task not assigned properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
 
         self.task = task
 
         self.config = config
-
-    def save_config(self):
-        '''Filler function to match WrapperInterface'''
-        self = self
-        return
 
     def submit(self):
         '''
@@ -372,14 +365,16 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         self.__dict__.update(result)
         self._update_history(self.task)
+
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != 'geom'})
         #self.result = result
-        conformerID = 1
-        for i in self.geom:
-            i.__dict__.update(conformerID=conformerID)
-            conformerID += 1
-        return self
+        if self.task != 'optimize':
+            conformerID = 1
+            for i in self.geom:
+                i.__dict__.update(conformerID=conformerID)
+                conformerID += 1
+            return self
 
     def run(self, geom, **kwargs):
         '''
