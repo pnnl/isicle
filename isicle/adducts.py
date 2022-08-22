@@ -876,7 +876,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         self.adducts['anions'] = self._filter_supported_by_xtb(self.adducts['anions'])
         self.adducts['complex'] = self._filter_supported_by_xtb(self.adducts['complex'])
 
-        if self.load['filetype'] != '.xyz':
+        if self.geom.load['filetype'] != '.xyz':
             self.adducts['anions'] = _filter_by_substructure_match(
                 self.geom.mol, self.adducts['anions'])
             self.adducts['complex'] = _filter_by_substructure_match(

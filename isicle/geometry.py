@@ -183,7 +183,7 @@ def load_mol(path: str):
 
     '''
     geom = _load_generic_geom(path, 'load_mol')
-    geom.mol = Chem.MolFromMolFile(path, removeHs=False)
+    geom.mol = Chem.MolFromMolFile(path, removeHs=False, strictParsing=False)
     return geom
 
 
