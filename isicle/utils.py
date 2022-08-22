@@ -1,7 +1,10 @@
 import numpy as np
+import os
 import pandas as pd
 import collections
 from pkg_resources import resource_filename
+import shutil
+import tempfile
 
 
 def safelist(x):
@@ -98,3 +101,55 @@ class TypedList(collections.abc.MutableSequence):
 def atomic_masses():
     path = resource_filename('isicle', 'resources/atomic_masses.tsv')
     return pd.read_csv(path, delim_whitespace=True)
+
+
+def gettempdir():
+    '''
+    Return the name of the directory used for temporary files.
+
+    Returns
+    -------
+    str
+        Path to temporary directory.
+
+    '''
+    
+    root = os.path.join(tempfile.gettempdir(), 'isicle')
+    
+    if not os.path.exists(root):
+        os.makedirs(root)
+    
+    return root
+
+
+def mkdtemp(prefix=None, suffix=None):
+    '''
+    An ISiCLE-specific wrapper of :func:`~tempfile.mkdtemp` to create a 
+    temporary directory for temporary ISiCLE files. The temporary directory
+    is not automatically removed.
+
+    Parameters
+    ----------
+    prefix : str
+        If not None, temporary directory will start with `prefix`.
+    suffix : str
+        If not None, temporary directory will end with `suffix`.
+
+    Returns
+    -------
+    str
+        Path to temporary directory.
+    
+
+    '''
+        
+    return tempfile.mkdtemp(dir=gettempdir(), prefix=prefix, suffix=suffix)
+
+
+def rmdtemp():
+    '''
+    Removes all temporary directories and files created by ISiCLE.
+
+    '''
+
+    shutil.rmtree(gettempdir(), ignore_errors=True)

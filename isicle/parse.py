@@ -505,7 +505,7 @@ class XTBParser(FileParserInterface):
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
-        return self.contents
+
 
     def _crest_energy(self):
 
@@ -685,12 +685,10 @@ class XTBParser(FileParserInterface):
         '''
 
         FILE = self.xyz_path
-
         if len(list(pybel.readfile('xyz', FILE))) > 1:
             geom_list = []
             count = 1
             XYZ = FILE.split(".")[0]
-
             for geom in pybel.readfile('xyz', FILE):
                 geom.write("xyz", "%s_%d.xyz" % (XYZ, count))
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
@@ -757,6 +755,7 @@ class XTBParser(FileParserInterface):
                     else:
                         self.parse_crest = True
                         XYZ = 'crest_conformers.xyz'
+
 
                 if XYZ is None:
                     raise RuntimeError('XYZ file associated with XTB job not available,\

@@ -898,8 +898,6 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return geom
 
-    # TODO: enable multiple salts to be passed, defaulting to all possible
-    # salts
     def desalt(self, salts=None, inplace=False):
         '''
         Desalts RDKit mol object using Chem.SaltRemover module.
@@ -1044,6 +1042,17 @@ class Geometry(XYZGeometry, GeometryInterface):
         geom._update_history('tautomerize')
         # TODO: add any properties from this operation to global_props?
 
+        return geom
+
+    def kekulize(self, inplace=False):
+        '''
+        `Kekulizes the molecule if possible. Otherwise the molecule is not modified`
+        This is recommended for aromatic molecules undergoing explicit ionization.
+        Aromatic bonds are explicitly defined and aromatic flags are cleared.
+        '''
+        mol = Chem.KekulizeIfPossible(self.to_mol(), clearAromaticFlags=True)
+        geom = self._update_structure(inplace, mol=mol, event='kekulize')
+        geom._update_history('kekulize')
         return geom
 
     def ionize(self, ion_path=None, ion_list=None, method='explicit', save=False, path=None, **kwargs):
