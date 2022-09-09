@@ -517,13 +517,9 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         if cosmo:
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
-        # Add shielding block
-        d = {'ncount': len(self.idx),
-             'nuclei': ' '.join(['%s' % x for x in self.idx])}
-
         s += ('\nproperty\n'
-              ' SHIELDING {ncount} {nuclei}\n'
-              'end\n').format(**d)
+              ' SHIELDING}\n'
+              'end\n')
 
         # Add property task
         s += '\ntask dft property ignore\n'
@@ -602,7 +598,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
                   atoms=['C', 'H'], temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-                  mem_stack=600, scratch_dir='/scratch', processes=12, cluster=False):
+                  mem_stack=600, scratch_dir='/scratch', processes=12, command='nwchem'):
         '''
         Configure NWChem simulation.
 
@@ -659,6 +655,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         ao_basis = safelist(ao_basis)
         atoms = safelist(atoms)
         cosmo = safelist(cosmo)
+        solvent = safelist(solvent)
 
         # Container for final configuration script
         config = ''
@@ -677,6 +674,10 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         if not ((len(tasks) == len(cosmo)) or (len(cosmo) == 1)):
             raise ValueError('Maximum iterations must be assigned globally or'
+                             'per task.')
+        
+        if not ((len(tasks) == len(solvent)) or (len(solvent) == 1)):
+            raise ValueError('Solvents must be assigned globally or'
                              'per task.')
 
         # Extract atom index information
@@ -697,8 +698,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         config += self._configure_load(charge=charge)
 
         # Configure tasks
-        for task, f, b, a, c in zip(tasks, cycle(functional), cycle(basis_set),
-                                    cycle(ao_basis), cycle(cosmo)):
+        for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
+                                    cycle(ao_basis), cycle(cosmo), cycle(solvent)):
             # TODO: finish this
             config += self.task_map[task](functional=f,
                                           basis_set=b,
@@ -706,13 +707,14 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                                           temp=temp,
                                           cosmo=c,
                                           gas=gas,
-                                          max_iter=max_iter)
+                                          max_iter=max_iter,
+                                          solvent = so)
 
         # Store tasks as attribute
         self.tasks = tasks
 
         # Store cluster as attribute
-        self.cluster = cluster
+        self.command = command
 
         # Store number of processes as attribute
         self.processes = processes
@@ -798,10 +800,18 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         infile = os.path.join(self.temp_dir, self.geom.basename + '.nw')
         outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
-        subprocess.call('mpirun -n {} nwchem {} > {} 2> {}'.format(self.processes,
-                                                             infile,
-                                                             outfile,
-                                                             logfile), shell=True)
+
+        if self.command == 'nwchem': 
+            s = 'mpirun -n {} nwchem {} > {}'.format(self.processes,
+                                                     infile,
+                                                     outfile)
+        else:
+            s = '{} {} {} {}'.format(self.command,
+                                     self.processes,
+                                     self.infile,
+                                     self.outfile)
+
+        subprocess.call(s, shell=True)
 
     def finish(self):
         '''

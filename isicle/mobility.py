@@ -88,7 +88,7 @@ class MobcalWrapper(WrapperInterface):
 
     def configure(self, lennard_jones='default', i2=5013489,
                   buffer_gas='helium', buffer_gas_mass=4.0026, temp=300,
-                  ipr=1000, itn=10, inp=48, imp=1024, processes=24):
+                  ipr=1000, itn=10, inp=48, imp=1024, processes=24, command='mobcal'):
 
         # Handle default case
         if lennard_jones == 'default':
@@ -103,13 +103,17 @@ class MobcalWrapper(WrapperInterface):
                                temp=temp, ipr=ipr, itn=itn, inp=inp, imp=imp,
                                processes=processes)
 
+        # Set command to access mobcal as attribute
+        self.command = command
+
     def submit(self):
-        subprocess.call('mobcal {} {} {} {} &> {}'.format(self.mobcal_params,
-                                                          self.atom_params,
-                                                          self.infile,
-                                                          self.outfile,
-                                                          self.logfile),
-                        shell=True)
+        subprocess.call('{} {} {} {} {} &> {}'.format(self.command,
+                                                      self.mobcal_params,
+                                                      self.atom_params,
+                                                      self.infile,
+                                                      self.outfile,
+                                                      self.logfile),
+                                                      shell=True)
 
     def finish(self):
         # Initialize parser
