@@ -1,0 +1,213 @@
+import isicle
+import pickle
+import glob
+import numpy as np
+from os.path import *
+import pandas as pd
+import os
+from rdkit import Chem
+
+configfile: 'config.yaml'
+clusterfile: 'cluster.yaml'
+
+# infer wildcards from inputs
+fns = [basename(x) for x in glob.glob(join('input', '*.*'))]
+IDS = [splitext(splitext(x)[0])[0] for x in fns]
+lookup = {k: v for k, v in zip(IDS, fns)}
+
+rule all:
+    input:
+        expand(join('output', 'compiled', '{id}', '{adduct}.pkl'),
+               id=IDS, adduct=config['adducts']['ion_list'])
+
+checkpoint adducts:
+    input:
+        lambda wildcards: join('input', lookup[wildcards.id.split('/')[0]]),
+    output:
+        directory(join('output', 'adducts', '{id}', '{adduct}'))
+    resources:
+        name = 'adduct',
+        runtime = 60,
+        nodes = 1,
+        ntasks = 2,
+        account = 'RAHR',
+        partition = 'shared,slurm,short'
+    run:
+        geom = isicle.geometry.load(input[0])
+        mol = geom.to_mol()
+        Chem.KekulizeIfPossible(mol, clearAromaticFlags=True)
+        geom = geom._update_structure(False, mol=mol, event='kekulize')
+        adducts = geom.ionize(ion_list=config['adducts']['ion_list'],
+                              element_list=config['adducts']['element_list'],
+                              method=config['adducts']['method'])
+
+        if not os.path.exists(output[0]):
+            os.mkdir(output[0])
+        for add in adducts.adducts:
+            output_path = join(output[0], '{}.pkl'.format(add.adductID))
+            with open(output_path, 'wb+') as f:
+                pickle.dump(add, f)
+
+checkpoint conformers:
+    input:
+        join('output', 'adducts', '{id}', '{adduct}', '{adduct_site}.pkl')
+    output:
+        directory(join('output', 'conformers', '{id}',
+                  '{adduct}', '{adduct_site}'))
+    resources:
+        name =	 'conformers',
+        runtime = '12:00:00',
+        nodes = 1,
+        ntasks = 10,
+        account = 'RAHR',
+        partition = 'shared,slurm'
+    run:
+        add = isicle.geometry.load(input[0])
+        charge = add.get_formal_charge()
+        conformers = add.md(forcefield=config['md']['forcefield'],
+                            ewin=config['md']['energywindow'],
+                            task=config['md']['task'],
+                            charge=charge,
+                            processes=resources.ntasks)
+        if not os.path.exists(output[0]):
+            os.mkdir(output[0])
+        for conformer in conformers.geom:
+            conformer.set_formal_charge(charge)
+            output_path = join(output[0], '{}.pkl'.format(conformer.conformerID))
+            with open(output_path, 'wb+') as f:
+                pickle.dump(conformer, f)
+
+
+checkpoint dft:
+    input:
+        join('output', 'conformers', '{id}', '{adduct}',
+             '{adduct_site}', '{conformer}.pkl')
+    output:
+        join('output', 'dft', '{id}', '{adduct}', '{adduct_site}', '{conformer}.pkl')
+    resources:
+        name = 'dft',
+        runtime = '12:00:00',
+        nodes = 1,
+        ntasks = 5,
+        account = 'RAHR',
+        partition = 'slurm'
+    run:
+        with open(input[0], 'rb') as f:
+            geom = pickle.load(f)
+
+        dft = isicle.qm.dft(geom, tasks=config['dft']['tasks'],
+                      functional=config['dft']['functional'],
+                      basis_set=config['dft']['basis_set'],
+                      ao_basis=config['dft']['ao_basis'],
+                      charge=geom.charge,
+                      atoms=config['dft']['atoms'],
+                      temp=config['dft']['temp'],
+                      cosmo=config['dft']['cosmo'],
+                      solvent=config['dft']['solvent'],
+                      gas=config['dft']['gas'],
+                      max_iter=config['dft']['max_iter'],
+                      mem_global=config['dft']['mem_global'],
+                      mem_heap=config['dft']['mem_heap'],
+                      mem_stack=config['dft']['mem_stack'],
+                      scratch_dir=config['dft']['scratch_dir'],
+                      processes=resources.ntasks,
+                      command=config['dft']['command'])
+
+        if not os.path.exists(output[0].rsplit('/')[0]):
+            os.mkdir(output[0].rsplit('/')[0])
+
+        with open(output[0], 'wb+') as f:
+            pickle.dump(dft, f)
+
+rule mobility:
+    input:
+        join('output', 'dft', '{id}', '{adduct}', '{adduct_site}', '{conformer}.pkl')
+    output:
+        join('output', 'mobility', '{id}', '{adduct}', '{adduct_site}', '{conformer}.pkl')
+    resources:
+        name = 'mobility',
+        runtime = '5:00:00',
+        nodes = 1,
+        ntasks = 5,
+        account = 'RAHR',
+        partition = 'slurm'
+    
+    run:
+        with open(input[0], 'rb') as f:
+            dft_object = pickle.load(f) 
+
+        mw = isicle.mobility.calculate_ccs(dft_object.geom, lennard_jones='default',
+                                           i2=config['mobility']['i2'],
+                                           buffer_gas=config['mobility']['buffer_gas'],
+                                           buffer_gas_mass=config['mobility']['buffer_gas_mass'],
+                                           temp=config['mobility']['temp'],
+                                           ipr=config['mobility']['ipr'],
+                                           itn=config['mobility']['itn'],
+                                           inp=config['mobility']['inp'],
+                                           imp=config['mobility']['imp'],
+                                           processes=resources.ntasks,
+                                           command=config['mobility']['command'])
+
+        if not os.path.exists(output[0].rsplit('/')[0]):
+            os.mkdir(output[0].rsplit('/')[0])
+        with open(output[0], 'wb+') as f:
+            pickle.dump(mw, f)
+
+rule finalize:
+    input:
+        join('output', 'mobility', '{id}', '{adduct}', '{adduct_site}', '{conformer}.pkl')
+    output:
+        join('output', 'finalize', '{id}', '{adduct}', '{adduct_site}', '{conformer}.pkl')
+    resources:
+        name = 'adduct',
+        runtime = 60,
+        nodes = 1,
+        ntasks = 2,
+        account = 'RAHR',
+        partition = 'shared,slurm,short'
+    run:
+        """
+        cp -f {input} {output}
+        """
+
+def aggregate_input(wildcards):
+    output_site = glob.glob(
+        f"{checkpoints.adducts.get(**wildcards).output}/*.pkl")
+    output_site = [output.split('/')[-1].split('.')[0] for output in output_site]
+    split_files = []
+    for site in output_site:
+        output_conf = glob.glob(
+            f"{checkpoints.conformers.get(id=wildcards.id,adduct=wildcards.adduct,adduct_site=site).output}/*.pkl")
+        output_conf = [output.split('/')[-1].split('.')[0] for output in output_conf]
+        for conf in output_conf:
+            output_dft = glob.glob(
+                f"{checkpoints.dft.get(id=wildcards.id,adduct=wildcards.adduct,adduct_site=site, conformer=conf)}.pkl")
+            split_files.append(
+                f"output/finalize/{wildcards.id}/{wildcards.adduct}/{site}/{conf}.pkl")
+    return split_files
+
+
+rule aggregate_output:
+    input:
+        aggregate_input
+    output:
+        join('output', 'compiled', '{id}', '{adduct}.pkl')
+    resources:
+        name = 'adduct',
+        runtime = 60,
+        nodes = 1,
+        ntasks = 2,
+        account = 'RAHR',
+        partition = 'shared,slurm,short'
+    run:
+        dir_path = 'output/compiled/{}/'.format(wildcards.id)
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+        output_path = dir_path + '{}.pkl'.format(wildcards.adduct)
+        all_dft = []
+        for fi in input:
+            with open(fi, 'rb') as f:
+                contents = pickle.load(f)
+            all_dft.append(contents)
+        with open(output_path, 'wb+') as f:
+            pickle.dump(all_dft, f)
