@@ -369,7 +369,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != 'geom'})
-        #self.result = result
+        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
+        
         if self.task != 'optimize':
             conformerID = 1
             for i in self.geom:

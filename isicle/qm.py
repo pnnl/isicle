@@ -841,6 +841,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         self.__dict__.update(result)
         self._update_history(self.tasks)
         self.geom.add___dict__({k: v for k, v in result.items() if k != 'geom'})
+        self.contents = parser.load(os.path.join(self.temp_dir,
+                                                 self.geom.basename + '.out'))
         return self
 
     def run(self, geom, template=None, **kwargs):

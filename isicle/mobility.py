@@ -120,7 +120,7 @@ class MobcalWrapper(WrapperInterface):
         parser = isicle.parse.MobcalParser()
 
         # Load output file
-        parser.load(self.outfile)
+        parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
 
         # Extract result
         result = parser.parse()
@@ -128,6 +128,7 @@ class MobcalWrapper(WrapperInterface):
         # Update objects
         self.__dict__.update(result)
         self.geom.add___dict__(result)
+        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
         
         return self
 
