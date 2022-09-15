@@ -311,6 +311,27 @@ class NWChemParser(FileParserInterface):
         return {'functional': functional, 'basis set': basis_set,
                   'solvation': solvation, 'tasks': tasks}
 
+    def _parse_connectivity(self):
+        coor_substr = 'internuclear distances'
+
+        # Extracting Atoms & Coordinates
+        ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
+        ii.sort()
+
+        g = ii[0]+4
+        connectivity = []
+        while g <= len(self.contents)-1:
+            if '-' not in self.contents[g]:
+                line = self.contents[g].split()
+                pair = [line[1], line[4],int(line[0]), int(line[3])]
+                connectivity.append(pair)
+
+            else:
+                break
+            g += 1
+
+        return connectivity
+
     def parse(self):
         '''
         Extract relevant information from NWChem output
@@ -381,6 +402,11 @@ class NWChemParser(FileParserInterface):
         except:
             pass
 
+        try:
+             result['connectivity'] = self._parse_connectivity()
+        except:
+            pass
+        
         return result
 
     def save(self, path):
