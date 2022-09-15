@@ -149,10 +149,15 @@ class NWChemParser(FileParserInterface):
 
         if has_frequency is True:
             freq = np.array([float(x.split()[1]) for x in self.contents[freq_start:freq_stop + 1]])
-            
-            return {'frequencies': freq, 'correction to enthalpy': enthalpies,
-                    'total entropy': entropies, 'constant volume heat capacity': capacities,
-                    'zero-point correction': zpe}
+            intensity_au = np.array([float(x.split()[3]) for x in self.contents[freq_start:freq_stop + 1]])
+            intensity_debyeangs = np.array([float(x.split()[4]) for x in self.contents[freq_start:freq_stop + 1]])
+            intensity_KMmol = np.array([float(x.split()[5]) for x in self.contents[freq_start:freq_stop + 1]])
+            intensity_arbitrary = np.array([float(x.split()[6]) for x in self.contents[freq_start:freq_stop + 1]])
+
+            return {'frequencies': freq, 'intensity atomic units': intensity_au, 'intensity (debye/angs)**2': intensity_debyeangs,
+                    'intensity (KM/mol)': intensity_KMmol, 'intensity arbitrary': intensity_arbitrary,
+                    'correction to enthalpy': enthalpies, 'total entropy': entropies,
+                    'constant volume heat capacity': capacities, 'zero-point correction': zpe}
         
         raise Exception
 
