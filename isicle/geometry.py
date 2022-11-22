@@ -1151,24 +1151,17 @@ class Geometry(XYZGeometry, GeometryInterface):
         d['mol'] = self.to_mol()
         return type(self)(**d)
 
-    def to_mol(self, hard_copy=True):
+    def to_mol(self):
         '''
         Returns RDKit Mol object for this Geometry.
-
-        Parameters
-        ----------
-        hard_copy : boolean
-            Return a hard copy of the mol object. If false, returns pointer to
-            this instance's mol object (not recommended). Default: True.
 
         Returns
         -------
         RDKit Mol object
-            Current structure
+            Copy of structure
 
         '''
-        if not hard_copy:
-            return self.mol
+
         return self.mol.__copy__()
 
     def to_smiles(self):
