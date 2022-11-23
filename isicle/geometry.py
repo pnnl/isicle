@@ -1,404 +1,14 @@
-from io import StringIO
-from re import I
-from isicle.interfaces import XYZGeometryInterface, GeometryInterface
-import isicle
+import os
 import pickle
+from io import StringIO
+
+import isicle
+import numpy as np
+import pandas as pd
+from isicle.interfaces import GeometryInterface, XYZGeometryInterface
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
-import pandas as pd
-import os
-import numpy as np
-
-
-def load_pickle(path: str):
-    '''
-    Load pickled file.
-
-    Parameters
-    ----------
-    path : type
-        Path to pickle.
-
-    Returns
-    -------
-    Geometry, MDOptimizedGeometry, or DFTOptimizedGeometry
-        Previously pickled *Geometry instance.
-
-    '''
-
-    # Load file
-    with open(path, 'rb') as f:
-        try:
-            geom = pickle.load(f)
-        except pickle.UnpicklingError:
-            raise IOError('Could not read file as pickle: {}'.format(path))
-
-    # TODO: should "load_pickle" be added to history?
-
-    # Check for valid Geometry class type
-    if isinstance(geom, (Geometry, MDOptimizedGeometry, DFTOptimizedGeometry)):
-        return geom
-
-    # Failure. This is not a *Geometry instance
-    raise TypeError('Unsupported geometry format: {}.'.format(geom.__class__))
-
-
-def _load_text(path: str):
-    '''
-    Grab all text from given file.
-
-    Parameters
-    ----------
-    path : str
-        Path to text file.
-
-    Returns
-    -------
-    list
-        List of lines from given text file.
-
-    '''
-    with open(path, 'r') as f:
-        contents = f.readlines()
-    return [x.strip() for x in contents]
-
-
-def _gen_load_properties(path: str):
-    '''
-    Create dictionary storing all load information.
-
-    Parameters
-    ----------
-    path : str
-        Path to text file.
-
-    Returns
-    -------
-    dict
-        Dictionary containing path, filetype, and contents of the file loaded.
-
-    '''
-    d = {}
-    d['path'] = path
-    d['contents'] = _load_text(path)
-    d['filetype'] = os.path.splitext(path)[-1].lower().strip()
-    return d
-
-
-def _load_generic_geom(path: str, calling_function: str):
-    '''
-    Create new Geometry instance and populate file information.
-
-    Parameters
-    ----------
-    path : str
-        Path to geometry text file (.mol, .smi, etc.)
-
-    Returns
-    -------
-    Geometry
-        Basic Geometry class with only file information populated.
-
-    '''
-    geom = Geometry()
-    geom.basename = os.path.splitext(os.path.basename(path))[0]
-    geom.__dict__['load'] = _gen_load_properties(path)
-    geom.path = path
-    geom._update_history(calling_function)
-    return geom
-
-
-def _load_generic_geom_from_memory(geom_like_object, calling_function: str, data_type: str, object_basename: str):
-    '''
-    Create new Geometry instance and populate with data in memory.
-    '''
-    geom = Geometry()
-    geom.basename = object_basename
-    geom.__dict__['load'] = {'path': None, 'contents': geom_like_object, 'filetype': data_type}
-    geom.path = None
-    geom._update_history(calling_function)
-    return geom
-
-
-def load_from_memory(geom_like_object, data_type: str, object_basename: str, rdkit_func, **kwargs):
-    '''
-    This is not a suggested use, but is available for RDKit super users.
-
-    Params
-    ------
-    geom_like_object: a SMILES string, SMARTS string, mol, mol2, RDKit mol, or pdb in memory
-    data_type: a string denoting the file extension of the object passed, eg. mol, mol2, smi
-               If RDKit mol object needs to be passed, please specify `rdkit_mol`
-    object_basename: a string denoting the molecules name/identifier
-    rdkit_func: Chem is imported, pass function as Chem.function_name, eg. Chem.MolFromSmiles
-                Supply None if RDKit mol object is being passed.
-    '''
-    geom = _load_generic_geom_from_memory(
-        geom_like_object, 'load_from_memory', data_type, object_basename)
-    if rdkit_func is None and 'rdkit_mol' in data_type:
-        geom.mol = geom_like_object
-    else:
-        geom.mol = rdkit_func(geom_like_object, kwargs)
-    return geom
-
-
-def load_xyz(path: str):
-    '''
-    Load XYZ file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to XYZ file
-
-    Return
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = XYZGeometry()
-    geom.basename = os.path.splitext(os.path.basename(path))[0]
-    geom.__dict__['load'] = _gen_load_properties(path)
-    geom.xyz = _load_text(path)
-    geom.path = os.path.dirname(path)
-    geom._update_history('load_xyz')
-    return geom
-
-
-def load_mol(path: str):
-    '''
-    Load mol file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to mol file
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, 'load_mol')
-    geom.mol = Chem.MolFromMolFile(path, removeHs=False, strictParsing=False)
-    return geom
-
-
-def load_mol2(path: str):
-    '''
-    Load mol2 file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to mol2 file
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, 'load_mol2')
-    geom.mol = Chem.MolFromMol2File(path, removeHs=False)
-    return geom
-
-
-def load_pdb(path: str):
-    '''
-    Load PDB file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to PDB file
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, 'load_pdb')
-    geom.mol = Chem.MolFromPDBFile(path, removeHs=False)
-    return geom
-
-
-def _force_load_2D(string_struct, convert_fxn):
-    '''
-    TODO write idea behind force loading
-    '''
-    mol = convert_fxn(string_struct, sanitize=False)
-    mol.UpdatePropertyCache(strict=False)
-    return mol
-
-
-def _check_mol(mol, string_struct):
-    '''
-    Check if mol failed to generate. If so, throw error.
-
-    Parameters
-    ----------
-    mol : RDKit Mol object
-        RDKit representation of compound structure
-    string_struct : str
-        Input used to initialize Mol object
-    '''
-    if mol is None:
-        raise ValueError('Could not convert structure to mol: {}'.format(string_struct))
-
-
-def load_smiles(path: str, force=False):
-    '''
-    Load SMILES file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to SMILES file
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, 'load_smiles')
-    string_struct = _load_text(path)[0].strip()
-    mol = Chem.MolFromSmiles(string_struct)
-
-    if force:
-        mol = _force_load_2D(string_struct, Chem.MolFromSmiles)
-    _check_mol(mol, string_struct)
-
-    # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
-    _check_mol(mol, string_struct)
-
-    # Gen 3d coord
-    Chem.AllChem.EmbedMolecule(mol)
-    _check_mol(mol, string_struct)
-    Chem.AllChem.MMFFOptimizeMolecule(mol)
-    _check_mol(mol, string_struct)
-
-    geom.mol = mol
-
-    return geom
-
-
-def load_inchi(path: str, force=False):
-    '''
-    Load InChI file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to InChI file
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, 'load_inchi')
-    string_struct = _load_text(path)[0].strip()
-    mol = Chem.MolFromInchi(string_struct)
-    if force:
-        mol = _force_load_2D(string_struct, Chem.MolFromInchi)
-    _check_mol(mol, string_struct)
-
-    # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
-    _check_mol(mol, string_struct)
-
-    # Gen 3d coord
-    Chem.AllChem.EmbedMolecule(mol)
-    _check_mol(mol, string_struct)
-    Chem.AllChem.MMFFOptimizeMolecule(mol)
-    _check_mol(mol, string_struct)
-
-    geom.mol = mol
-
-    return geom
-
-
-def load_smarts(path: str):
-    '''
-    Load SMARTS file and return as a Geometry instance.
-
-    Parameters
-    ----------
-    path : str
-        Path to SMARTS file
-
-    Returns
-    -------
-    Geometry
-        Provided file and molecule information
-
-    '''
-    geom = _load_generic_geom(path, 'load_smarts')
-    string_struct = _load_text(path)[0].strip()
-    mol = Chem.MolFromSmarts(string_struct)
-    _check_mol(mol, string_struct)
-    geom.mol = mol
-
-    return geom
-
-
-def load(path: str, force=False):
-    '''
-    Reads in molecule information of the following supported file types:
-    .smi, .inchi, .xyz, .mol, .mol2, .pkl, .pdb. Direct loaders can also
-    be used, see load_* functions for more information.
-
-    Parameters
-    ----------
-    path : str
-        Path to file with molecule information.
-    force
-        TODO describe if it's for 2D only, or 3D objects too
-
-    Returns
-    -------
-    Geometry
-        Molecule information.
-
-    '''
-
-    # TODO: update doc to reflect possible return of xyzgeom
-    path = path.strip()
-    extension = os.path.splitext(path)[-1].lower()
-
-    if extension == '.pkl':
-        return load_pickle(path)
-
-    if 'mol2' in extension:
-        return load_mol2(path)
-
-    if 'mol' in extension:
-        return load_mol(path)
-
-    if extension == '.xyz':
-        return load_xyz(path)
-
-    if extension == '.pdb':
-        return load_pdb(path)
-
-    if 'smi' in extension:
-        return load_smiles(path, force=force)
-
-    if extension == '.inchi':
-        return load_inchi(path, force=force)
-
-    if extension == '.smarts':
-        return load_smarts(path)
-
-    raise IOError('Extension {} not recognized.'.format(extension))
 
 
 class XYZGeometry(XYZGeometryInterface):
@@ -425,7 +35,8 @@ class XYZGeometry(XYZGeometryInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
         if self.history is None:
@@ -549,7 +160,8 @@ class XYZGeometry(XYZGeometryInterface):
         Optimize geometry from XYZ, using stated functional and basis set.
         Additional inputs can be grid size, optimization criteria level,
         '''
-        geom = isicle.qm.dft(self.__copy__(), program=program, template=template, **kwargs)
+        geom = isicle.qm.dft(self.__copy__(), program=program,
+                             template=template, **kwargs)
 
         return geom
 
@@ -733,7 +345,8 @@ class XYZGeometry(XYZGeometryInterface):
         if 'mfj' in fmt:
             return self.save_mfj(path)
 
-        raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
+        raise TypeError(
+            'Input format {} not supported for {}.'.format(fmt, self.__class__))
 
 
 class Geometry(XYZGeometry, GeometryInterface):
@@ -757,7 +370,8 @@ class Geometry(XYZGeometry, GeometryInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
         if self.history is None:
@@ -872,14 +486,17 @@ class Geometry(XYZGeometry, GeometryInterface):
                 if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
                     return Chem.AllChem.UFFOptimizeMolecule
                 else:
-                    raise ValueError('UFF is not available for all atoms in molecule.')
+                    raise ValueError(
+                        'UFF is not available for all atoms in molecule.')
             elif forcefield in ['mmff', 'mmff94', 'mmff94s']:
                 if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
                     return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
                 else:
-                    raise ValueError('specified MMFF is not available for all atoms in molecule.')
+                    raise ValueError(
+                        'specified MMFF is not available for all atoms in molecule.')
             else:
-                raise ValueError('RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
+                raise ValueError(
+                    'RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
 
         mol = self.to_mol()
         if embed == True:
@@ -889,7 +506,8 @@ class Geometry(XYZGeometry, GeometryInterface):
                 Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
         if forcefield is not None:
             if 'mmff94s' in forcefield.lower():
-                _forcefield_selector(forcefield, mol)(mol, mmffVariant=forcefield, maxIters=ff_iter)
+                _forcefield_selector(forcefield, mol)(
+                    mol, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 _forcefield_selector(forcefield, mol)(mol, maxIters=ff_iter)
 
@@ -1034,7 +652,8 @@ class Geometry(XYZGeometry, GeometryInterface):
         if return_all:
             new_geoms = []
             for r in res:
-                geom = self._update_structure(False, mol=r, event='tautomerize')
+                geom = self._update_structure(
+                    False, mol=r, event='tautomerize')
                 new_geoms.append(geom)
             return new_geoms
 
@@ -1274,7 +893,8 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         # TODO: enable Compute2DCoords, https://www.rdkit.org/docs/source/rdkit.Chem.rdDepictor.html
 
-        raise TypeError('Input format {} not supported for {}.'.format(fmt, self.__class__))
+        raise TypeError(
+            'Input format {} not supported for {}.'.format(fmt, self.__class__))
 
 
 class MDOptimizedGeometry(Geometry):
