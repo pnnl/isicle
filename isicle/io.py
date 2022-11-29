@@ -533,28 +533,6 @@ def save_mol(path, geom):
     Chem.MolToMolFile(geom.mol, path)
 
 
-def save_mol2(path, geom):
-    '''
-    Save molecule geometry as MOL2 file.
-
-    Parameters
-    ----------
-    path : str
-        Path to output file.
-    geom : :obj:`~isicle.geometry.Geometry`
-        Molecule representation.
-
-    '''
-
-    # Check instance type
-    if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            'Must be `isicle.geometry.Geometry` to save in MOL2 format.')
-
-    # Write
-    Chem.MolToMol2File(geom.mol, path)
-
-
 def save_pdb(path, geom):
     '''
     Save molecule geometry as PDB file.
@@ -584,7 +562,8 @@ def save(path, data):
     Parameters
     ----------
     path : str
-        Path to save file. Supported extensions include .pkl, .xyz, and .mfj.
+        Path to save file. Supported extensions include .pkl, .mfj, .xyz, .mol,
+        .pdb, .inchi, .smi, .smarts.
     data : obj
         Object instance. Must be :obj:`~isicle.geometry.Geometry` or
         :obj:`~isicle.geometry.XYZGeometry` for .xyz and .mfj.
@@ -600,9 +579,6 @@ def save(path, data):
 
     if extension == '.mfj':
         return save_mfj(path, data)
-
-    if 'mol2' in extension:
-        return save_mol2(path, data)
 
     if 'mol' in extension:
         return save_mol(path, data)
