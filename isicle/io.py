@@ -254,7 +254,7 @@ def load_inchi(path, force=False):
     return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
 
 
-def load_smarts(path, force=False):
+def load_smarts(path):
     '''
     Load SMARTS from file.
 
@@ -262,8 +262,6 @@ def load_smarts(path, force=False):
     ----------
     path : str
         Path to file.
-    force : bool
-        Indicate whether to force load input, ignoring errors.
 
     Returns
     -------
@@ -272,7 +270,7 @@ def load_smarts(path, force=False):
 
     '''
 
-    return _load_line_notation(path, func=Chem.MolFromSmarts, force=force)
+    return _load_line_notation(path, func=Chem.MolFromSmarts, force=False)
 
 
 def load_pickle(path):
@@ -293,7 +291,7 @@ def load_pickle(path):
 
     # Load file
     with open(path, 'rb') as f:
-        return pickle.loads(f)
+        return pickle.load(f)
 
 
 def load(path, force=False):
