@@ -161,7 +161,7 @@ def load_pdb(path):
 
     '''
 
-    return _load_mol_from_file(path, func=Chem.MolFromPdbFile)
+    return _load_mol_from_file(path, func=Chem.MolFromPDBFile)
 
 
 def _load_line_notation(path, func=None, force=False):
