@@ -65,7 +65,20 @@ def test_load_mol(geometry):
 
 
 def test_load_mol2():
-    raise NotImplementedError
+    # Path to file
+    path = localfile('resources/geom_test.mol2')
+
+    # Load
+    geom = isicle.load(path)
+
+    # Check instance is correct type
+    assert isinstance(geom, isicle.geometry.Geometry)
+
+    # Check xyz attribute exists
+    assert hasattr(geom, 'mol')
+
+    # Check xyz attribute is populated
+    assert geom.mol is not None
 
 
 def test_load_pdb(geometry):
@@ -163,10 +176,11 @@ def test_load_pickle(geometry):
 @pytest.mark.parametrize('path,instance',
                          [(localfile('resources/test_load.xyz'), isicle.geometry.XYZGeometry),
                           (localfile('resources/test_load.pkl'), isicle.geometry.Geometry),
-                          # (localfile('resources/test_save.mfj'), isicle.geometry.XYZGeometry),
+                          # (localfile('resources/test_load.mfj'), isicle.geometry.XYZGeometry),
                           (localfile('resources/test_load.smi'), isicle.geometry.Geometry),
                           (localfile('resources/test_load.inchi'), isicle.geometry.Geometry),
                           (localfile('resources/test_load.mol'), isicle.geometry.Geometry),
+                          # (localfile('resources/test_load.mol2'), isicle.geometry.Geometry),
                           (localfile('resources/test_load.pdb'), isicle.geometry.Geometry)
                          ])
 def test_load(geometry, path, instance):
@@ -220,8 +234,24 @@ def test_save_pickle(geometry):
     os.remove(path)
 
 
-def test_save_mfj():
-    raise NotImplementedError
+# def test_save_mfj():
+#     # Output path
+#     path = localfile('resources/test_save.mfj')
+
+#     # Load optimized geometry
+#     geom = isicle.load(localfile('resources/nwchem_output/methane.pkl'))
+
+#     # Save
+#     isicle.io.save_mfj(path, geom)
+
+#     # Check path exists
+#     assert os.path.exists(path)
+
+#     # Check not empty
+#     assert os.path.getsize(path) > 0
+
+#     # Clean up
+#     os.remove(path)
 
 
 def test_save_smiles(geometry):
