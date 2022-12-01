@@ -100,10 +100,10 @@ def _load_mol_from_file(path, func=None):
     geom.basename = os.path.splitext(os.path.basename(path))[0]
 
     # Load mol representation
-    if func == Chem.MolFromPDBFile:
-        mol = func(path, removeHs=False)
-    else:
+    if func == Chem.MolFromMolFile:
         mol = func(path, removeHs=False, strictParsing=False)
+    else:
+        mol = func(path, removeHs=False)
 
     # Check result
     _check_mol(mol, path)
