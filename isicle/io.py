@@ -100,8 +100,15 @@ def _load_mol_from_file(path, func=None):
     geom.basename = os.path.splitext(os.path.basename(path))[0]
 
     # Load mol representation
-    mol = func(path, removeHs=False, strictParsing=False)
+    if func == Chem.MolFromPDBFile:
+        mol = func(path, removeHs=False)
+    else:
+        mol = func(path, removeHs=False, strictParsing=False)
+
+    # Check result
     _check_mol(mol, path)
+
+    # Assign to instance attribute
     geom.mol = mol
 
     return geom
@@ -166,7 +173,7 @@ def load_pdb(path):
 
 def _load_line_notation(path, func=None, force=False):
     '''
-    Load line notation representation (InChI, SMILES, SMARTS) from file.
+    Load line notation representation (InChI, SMILES) from file.
 
     Parameters
     ----------
@@ -254,25 +261,6 @@ def load_inchi(path, force=False):
     return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
 
 
-def load_smarts(path):
-    '''
-    Load SMARTS from file.
-
-    Parameters
-    ----------
-    path : str
-        Path to file.
-
-    Returns
-    -------
-    :obj:`~isicle.geometry.Geometry`
-        Molecule representation.
-
-    '''
-
-    return _load_line_notation(path, func=Chem.MolFromSmarts, force=False)
-
-
 def load_pickle(path):
     '''
     Load pickled file.
@@ -337,9 +325,6 @@ def load(path, force=False):
 
     if extension == '.inchi':
         return load_inchi(path, force=force)
-
-    if extension == '.smarts':
-        return load_smarts(path)
 
     raise IOError('Extension {} not recognized.'.format(extension))
 
@@ -486,29 +471,6 @@ def save_inchi(path, geom):
         f.write(geom.to_inchi())
 
 
-def save_smarts(path, geom):
-    '''
-    Save molecule geometry as SMARTS file.
-
-    Parameters
-    ----------
-    path : str
-        Path to output file.
-    geom : :obj:`~isicle.geometry.Geometry`
-        Molecule representation.
-
-    '''
-
-    # Check instance type
-    if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            'Must be `isicle.geometry.Geometry` to save in SMARTS format.')
-
-    # Write
-    with open(path, 'w') as f:
-        f.write(geom.to_smarts())
-
-
 def save_mol(path, geom):
     '''
     Save molecule geometry as MOL file.
@@ -561,7 +523,7 @@ def save(path, data):
     ----------
     path : str
         Path to save file. Supported extensions include .pkl, .mfj, .xyz, .mol,
-        .pdb, .inchi, .smi, .smarts.
+        .pdb, .inchi, .smi.
     data : obj
         Object instance. Must be :obj:`~isicle.geometry.Geometry` or
         :obj:`~isicle.geometry.XYZGeometry` for .xyz and .mfj.
@@ -592,8 +554,5 @@ def save(path, data):
 
     if extension == '.inchi':
         return save_inchi(path, data)
-
-    if extension == '.smarts':
-        return save_smarts(path, data)
 
     raise IOError('Extension {} not recognized.'.format(extension))
