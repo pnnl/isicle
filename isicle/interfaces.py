@@ -94,21 +94,6 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
         '''Get XYZ text for this structure.'''
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def save_xyz(self):
-        '''Save molecule as XYZ file'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def save_pickle(self):
-        '''Pickle this class instance.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def save(self, path: str):
-        '''Write 3D molecule to file'''
-        raise NotImplementedError
-
 
 class GeometryInterface(XYZGeometryInterface):
 
