@@ -170,7 +170,7 @@ def load_pdb(path):
     return _load_mol_from_file(path, func=Chem.MolFromPDBFile)
 
 
-def _load_line_notation(path, func=None, force=False):
+def _load_line_notation(path, func=None, force=False, string=False):
     """
     Load line notation representation (InChI, SMILES) from file.
 
@@ -191,11 +191,18 @@ def _load_line_notation(path, func=None, force=False):
     # Initialize geometry instance
     geom = isicle.geometry.Geometry()
 
-    # Populate basename
-    geom.basename = os.path.splitext(os.path.basename(path))[0]
+    if string:
+        # Populate basename
+        geom.basename = None
 
-    # Load text
-    text = _load_text(path)[0].strip()
+        # Load text
+        text = path
+    else:
+        # Populate basename
+        geom.basename = os.path.splitext(os.path.basename(path))[0]
+
+        # Load text
+        text = _load_text(path)[0].strip()
 
     # Load without sanitization, downstream checks
     if force is True:
@@ -235,8 +242,13 @@ def load_smiles(path, force=False):
         Molecule representation.
 
     """
-
-    return _load_line_notation(path, func=Chem.MolFromSmiles, force=force)
+    extension = os.path.splitext(path)[-1].lower()
+    if "smi" in extension:
+        return _load_line_notation(path, func=Chem.MolFromSmiles, force=force)
+    else:
+        return _load_line_notation(
+            path, func=Chem.MolFromSmiles, force=force, string=True
+        )
 
 
 def load_inchi(path, force=False):
@@ -256,8 +268,12 @@ def load_inchi(path, force=False):
         Molecule representation.
 
     """
-
-    return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
+    if "inchi=" in path.lower():
+        return _load_line_notation(
+            path, func=Chem.MolFromInchi, force=force, string=True
+        )
+    else:
+        return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
 
 
 def load_pickle(path):
@@ -319,13 +335,13 @@ def load(path, force=False):
     if extension == ".pdb":
         return load_pdb(path)
 
-    if "smi" in extension:
-        return load_smiles(path, force=force)
-
-    if extension == ".inchi":
+    if extension == ".inchi" or "inchi=" in path.lower():
         return load_inchi(path, force=force)
 
-    raise IOError("Extension {} not recognized.".format(extension))
+    try:
+        return load_smiles(path, force=force)
+    except:
+        raise IOError("Extension {} not recognized.".format(extension))
 
 
 def save_xyz(path, geom):
