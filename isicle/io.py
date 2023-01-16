@@ -8,7 +8,7 @@ from rdkit import Chem
 
 
 def _load_text(path: str):
-    '''
+    """
     Load text from file.
 
     Parameters
@@ -21,10 +21,10 @@ def _load_text(path: str):
     list
         Lines from given text file.
 
-    '''
+    """
 
     # Read file contents
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         contents = f.readlines()
 
     # Strip each line
@@ -32,7 +32,7 @@ def _load_text(path: str):
 
 
 def load_xyz(path):
-    '''
+    """
     Load XYZ from file.
 
     Parameters
@@ -45,7 +45,7 @@ def load_xyz(path):
     :obj:`~isicle.geometry.XYZGeometry`
         Molecule representation.
 
-    '''
+    """
 
     # Initialize XYZGeometry instance
     geom = isicle.geometry.XYZGeometry()
@@ -60,7 +60,7 @@ def load_xyz(path):
 
 
 def _check_mol(mol, string_struct):
-    '''
+    """
     Check if mol failed to generate. If so, throw error.
 
     Parameters
@@ -70,15 +70,14 @@ def _check_mol(mol, string_struct):
     string_struct : str
         Input used to initialize Mol object.
 
-    '''
+    """
 
     if mol is None:
-        raise ValueError(
-            'Could not convert structure to mol: {}'.format(string_struct))
+        raise ValueError("Could not convert structure to mol: {}".format(string_struct))
 
 
 def _load_mol_from_file(path, func=None):
-    '''
+    """
     Load RDKit mol representation from file (pdb, mol, mol2).
 
     Parameters
@@ -91,7 +90,7 @@ def _load_mol_from_file(path, func=None):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     # Initialize geometry instance
     geom = isicle.geometry.Geometry()
@@ -115,7 +114,7 @@ def _load_mol_from_file(path, func=None):
 
 
 def load_mol(path):
-    '''
+    """
     Load mol from file.
 
     Parameters
@@ -128,13 +127,13 @@ def load_mol(path):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     return _load_mol_from_file(path, func=Chem.MolFromMolFile)
 
 
 def load_mol2(path: str):
-    '''
+    """
     Load mol2 from file.
 
     Parameters
@@ -147,13 +146,13 @@ def load_mol2(path: str):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     return _load_mol_from_file(path, func=Chem.MolFromMol2File)
 
 
 def load_pdb(path):
-    '''
+    """
     Load PDB from file.
 
     Parameters
@@ -166,13 +165,13 @@ def load_pdb(path):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     return _load_mol_from_file(path, func=Chem.MolFromPDBFile)
 
 
 def _load_line_notation(path, func=None, force=False):
-    '''
+    """
     Load line notation representation (InChI, SMILES) from file.
 
     Parameters
@@ -187,7 +186,7 @@ def _load_line_notation(path, func=None, force=False):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     # Initialize geometry instance
     geom = isicle.geometry.Geometry()
@@ -220,7 +219,7 @@ def _load_line_notation(path, func=None, force=False):
 
 
 def load_smiles(path, force=False):
-    '''
+    """
     Load SMILES from file.
 
     Parameters
@@ -235,13 +234,13 @@ def load_smiles(path, force=False):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     return _load_line_notation(path, func=Chem.MolFromSmiles, force=force)
 
 
 def load_inchi(path, force=False):
-    '''
+    """
     Load InChI from file.
 
     Parameters
@@ -256,13 +255,13 @@ def load_inchi(path, force=False):
     :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
 
 
 def load_pickle(path):
-    '''
+    """
     Load pickled file.
 
     Parameters
@@ -275,15 +274,15 @@ def load_pickle(path):
     data
         Previously pickled object instance.
 
-    '''
+    """
 
     # Load file
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         return pickle.load(f)
 
 
 def load(path, force=False):
-    '''
+    """
     Reads in molecule information of the following supported file types:
     .smi, .inchi, .xyz, .mol, .mol2, .pkl, .pdb. Direct loaders can also
     be used, see load_* functions for more information.
@@ -300,37 +299,37 @@ def load(path, force=False):
     :obj:`~isicle.geometry.Geometry` or :obj:`~isicle.geometry.XYZGeometry`
         Molecule representation.
 
-    '''
+    """
 
     path = path.strip()
     extension = os.path.splitext(path)[-1].lower()
 
-    if extension == '.pkl':
+    if extension == ".pkl":
         return load_pickle(path)
 
-    if 'mol2' in extension:
+    if "mol2" in extension:
         return load_mol2(path)
 
-    if 'mol' in extension:
+    if "mol" in extension:
         return load_mol(path)
 
-    if extension == '.xyz':
+    if extension == ".xyz":
         return load_xyz(path)
 
-    if extension == '.pdb':
+    if extension == ".pdb":
         return load_pdb(path)
 
-    if 'smi' in extension:
+    if "smi" in extension:
         return load_smiles(path, force=force)
 
-    if extension == '.inchi':
+    if extension == ".inchi":
         return load_inchi(path, force=force)
 
-    raise IOError('Extension {} not recognized.'.format(extension))
+    raise IOError("Extension {} not recognized.".format(extension))
 
 
 def save_xyz(path, geom):
-    '''
+    """
     Save molecule geometry as XYZ file.
 
     Parameters
@@ -341,21 +340,22 @@ def save_xyz(path, geom):
             or :obj:`~isicle.geometry.XYZGeometry`
         Molecule representation.
 
-    '''
+    """
 
     # Check instance type
-    if not isinstance(geom, (isicle.geometry.Geometry,
-                             isicle.geometry.XYZGeometry)):
-        raise TypeError('Must be `isicle.geometry.Geometry` or \
-                        `isicle.geometry.XYZGeometry` to save in XYZ format.')
+    if not isinstance(geom, (isicle.geometry.Geometry, isicle.geometry.XYZGeometry)):
+        raise TypeError(
+            "Must be `isicle.geometry.Geometry` or \
+                        `isicle.geometry.XYZGeometry` to save in XYZ format."
+        )
 
     # Write to file
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         f.write(geom.to_xyzblock())
 
 
 def save_pickle(path, data):
-    '''
+    """
     Save object as pickle file.
 
     Parameters
@@ -365,14 +365,14 @@ def save_pickle(path, data):
     data : object
         Aribtrary object instance.
 
-    '''
+    """
 
-    with open(path, 'wb') as f:
+    with open(path, "wb") as f:
         pickle.dump(data, f)
 
 
 def save_mfj(path, geom):
-    '''
+    """
     Save molecule geometry as MFJ file. Must have energy and charge information.
 
     Parameters
@@ -383,50 +383,53 @@ def save_mfj(path, geom):
             or :obj:`~isicle.geometry.XYZGeometry`
         Molecule representation.
 
-    '''
+    """
 
     # Check instance type
-    if not isinstance(geom, (isicle.geometry.Geometry,
-                             isicle.geometry.XYZGeometry)):
-        raise TypeError('Must be `isicle.geometry.Geometry` or \
-                        `isicle.geometry.XYZGeometry` to save in XYZ format.')
+    if not isinstance(geom, (isicle.geometry.Geometry, isicle.geometry.XYZGeometry)):
+        raise TypeError(
+            "Must be `isicle.geometry.Geometry` or \
+                        `isicle.geometry.XYZGeometry` to save in XYZ format."
+        )
 
     # Check for charges in global properties
-    if ('energy' not in geom.__dict__) or ('charge' not in geom.__dict__):
-        raise KeyError('DFT energy optimization required. '
-                       'See isicle.qm.dft.')
+    if ("energy" not in geom.__dict__) or ("charge" not in geom.__dict__):
+        raise KeyError("DFT energy optimization required. " "See isicle.qm.dft.")
 
     # Get XYZ coordinates
-    xyz = pd.read_csv(StringIO(geom.to_xyzblock()),
-                      skiprows=2, header=None,
-                      delim_whitespace=True,
-                      names=['Atom', 'x', 'y', 'z'])
+    xyz = pd.read_csv(
+        StringIO(geom.to_xyzblock()),
+        skiprows=2,
+        header=None,
+        delim_whitespace=True,
+        names=["Atom", "x", "y", "z"],
+    )
 
     # Extract and append charges
-    xyz['Charge'] = geom.charge
+    xyz["Charge"] = geom.charge
 
     # Load masses and merge
-    masses = isicle.utils.atomic_masses()[['Symbol', 'Mass']]
-    mfj = pd.merge(xyz, masses, left_on='Atom', right_on='Symbol')
+    masses = isicle.utils.atomic_masses()[["Symbol", "Mass"]]
+    mfj = pd.merge(xyz, masses, left_on="Atom", right_on="Symbol")
 
     # Rename columns
-    mfj = mfj[['x', 'y', 'z', 'Mass', 'Charge']].astype(float)
+    mfj = mfj[["x", "y", "z", "Mass", "Charge"]].astype(float)
 
     # Write to file
-    with open(path, 'w') as f:
-        f.write(os.path.splitext(os.path.basename(path))[0] + '\n')
-        f.write('1\n')
-        f.write(str(len(mfj.index)) + '\n')
-        f.write('ang\n')
-        f.write('calc\n')
-        f.write('1.000\n')
+    with open(path, "w") as f:
+        f.write(os.path.splitext(os.path.basename(path))[0] + "\n")
+        f.write("1\n")
+        f.write(str(len(mfj.index)) + "\n")
+        f.write("ang\n")
+        f.write("calc\n")
+        f.write("1.000\n")
 
         for row in mfj.values:
-            f.write('\t'.join([str(x) for x in row]) + '\n')
+            f.write("\t".join([str(x) for x in row]) + "\n")
 
 
 def save_smiles(path, geom):
-    '''
+    """
     Save molecule geometry as SMILES file.
 
     Parameters
@@ -436,20 +439,19 @@ def save_smiles(path, geom):
     geom : :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     # Check instance type
     if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            'Must be `isicle.geometry.Geometry` to save in SMILES format.')
+        raise TypeError("Must be `isicle.geometry.Geometry` to save in SMILES format.")
 
     # Write
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         f.write(geom.to_smiles())
 
 
 def save_inchi(path, geom):
-    '''
+    """
     Save molecule geometry as InChI file.
 
     Parameters
@@ -459,20 +461,19 @@ def save_inchi(path, geom):
     geom : :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     # Check instance type
     if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            'Must be `isicle.geometry.Geometry` to save in InChI format.')
+        raise TypeError("Must be `isicle.geometry.Geometry` to save in InChI format.")
 
     # Write
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         f.write(geom.to_inchi())
 
 
 def save_mol(path, geom):
-    '''
+    """
     Save molecule geometry as MOL file.
 
     Parameters
@@ -482,19 +483,18 @@ def save_mol(path, geom):
     geom : :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     # Check instance type
     if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            'Must be `isicle.geometry.Geometry` to save in MOL format.')
+        raise TypeError("Must be `isicle.geometry.Geometry` to save in MOL format.")
 
     # Write
     Chem.MolToMolFile(geom.mol, path)
 
 
 def save_pdb(path, geom):
-    '''
+    """
     Save molecule geometry as PDB file.
 
     Parameters
@@ -504,19 +504,18 @@ def save_pdb(path, geom):
     geom : :obj:`~isicle.geometry.Geometry`
         Molecule representation.
 
-    '''
+    """
 
     # Check instance type
     if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            'Must be `isicle.geometry.Geometry` to save in PDB format.')
+        raise TypeError("Must be `isicle.geometry.Geometry` to save in PDB format.")
 
     # Write
     Chem.MolToPDBFile(geom.mol, path)
 
 
 def save(path, data):
-    '''
+    """
     Save molecule, format detected by path extension.
 
     Parameters
@@ -528,31 +527,31 @@ def save(path, data):
         Object instance. Must be :obj:`~isicle.geometry.Geometry` or
         :obj:`~isicle.geometry.XYZGeometry` for .xyz and .mfj.
 
-    '''
+    """
 
     # Determine format from extension
     extension = os.path.splitext(path)[-1].lower()
 
     # Extension checks
-    if extension == '.pkl':
+    if extension == ".pkl":
         return save_pickle(path, data)
 
-    if extension == '.mfj':
+    if extension == ".mfj":
         return save_mfj(path, data)
 
-    if 'mol' in extension:
+    if "mol" in extension:
         return save_mol(path, data)
 
-    if extension == '.xyz':
+    if extension == ".xyz":
         return save_xyz(path, data)
 
-    if extension == '.pdb':
+    if extension == ".pdb":
         return save_pdb(path, data)
 
-    if 'smi' in extension:
+    if "smi" in extension:
         return save_smiles(path, data)
 
-    if extension == '.inchi':
+    if extension == ".inchi":
         return save_inchi(path, data)
 
-    raise IOError('Extension {} not recognized.'.format(extension))
+    raise IOError("Extension {} not recognized.".format(extension))
