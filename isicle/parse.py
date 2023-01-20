@@ -29,7 +29,7 @@ class NWChemParser(FileParserInterface):
         geoms = sorted(glob.glob(os.path.join(search, '*.xyz')))
         
         if len(geoms) > 0:
-            return isicle.geometry.load(geoms[-1])
+            return isicle.io.load(geoms[-1])
 
         raise Exception
 
@@ -536,7 +536,7 @@ class XTBParser(FileParserInterface):
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
-
+        return self.contents
 
     def _crest_energy(self):
 
@@ -725,10 +725,10 @@ class XTBParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
-            x = [isicle.geometry.load(i) for i in geom_list]
+            x = [isicle.io.load(i) for i in geom_list]
 
         else:
-            x = [isicle.geometry.load(self.xyz_path)]
+            x = [isicle.io.load(self.xyz_path)]
 
         return isicle.conformers.ConformationalEnsemble(x)
 
