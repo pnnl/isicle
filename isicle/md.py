@@ -2,7 +2,6 @@ import isicle
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 import subprocess
-import tempfile
 import os
 from isicle.geometry import XYZGeometry
 
@@ -64,7 +63,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
     '''
     Wrapper for xtb functionality.
 
-    Implements :class:`~isicle.interfaces.MDWrapperInterface` to ensure required methods are exposed.
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
 
     Attributes
     ----------
@@ -123,13 +122,13 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Path operationspyth
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
-        outfile = os.path.join(self.temp_dir,
+        geomfile = os.path.join(self.temp_dir,
                                '{}.{}'.format(self.geom.basename,
                                               self.fmt.lower()))
 
         # All other formats
-        self.geom.save(outfile)
-        self.geom.path = outfile
+        isicle.io.save(geomfile, self.geom)
+        self.geom.path = geomfile
 
     def _configure_xtb(self, forcefield='gfn2', optlevel='normal', charge=None, solvation=None):
         '''
@@ -352,7 +351,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         job = self.config
         subprocess.call(job, shell=True)
         os.chdir(owd)
-
 
     def finish(self):
         '''

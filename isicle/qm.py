@@ -1,3 +1,4 @@
+isicle.io.save(geomfile, self.geom)
 import isicle
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
@@ -144,11 +145,12 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
 
         # Path operations
-        outfile = os.path.join(self.temp_dir,
-                               '{}.xyz'.format(self.geom.basename))
+       geomfile = os.path.join(self.temp_dir,
+                               '{}.{}'.format(self.geom.basename,
+                                              self.fmt.lower())) 
 
         # All other formats
-        self.geom.save(outfile)
+        isicle.io.save(geomfile, self.geom)
 
     def _configure_header(self, scratch_dir='/scratch', mem_global=1600,
                           mem_heap=100, mem_stack=600):
