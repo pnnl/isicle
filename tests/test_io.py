@@ -9,8 +9,8 @@ from tests import localfile
 @pytest.fixture
 def geometry():
     geom = isicle.geometry.Geometry()
-    geom.basename = 'test'
-    mol = Chem.MolFromSmiles('CCCC')
+    geom.basename = "test"
+    mol = Chem.MolFromSmiles("CCCC")
     mol = Chem.AddHs(mol)
     Chem.AllChem.EmbedMolecule(mol)
     geom.mol = mol
@@ -20,7 +20,7 @@ def geometry():
 
 def test_load_xyz(geometry):
     # Path to file
-    path = localfile('resources/test_load.xyz')
+    path = localfile("resources/test_load.xyz")
 
     # Save to file
     isicle.save(path, geometry)
@@ -32,7 +32,7 @@ def test_load_xyz(geometry):
     assert isinstance(geom, isicle.geometry.XYZGeometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'xyz')
+    assert hasattr(geom, "xyz")
 
     # Check xyz attribute is populated
     assert geom.xyz is not None
@@ -43,7 +43,7 @@ def test_load_xyz(geometry):
 
 def test_load_mol(geometry):
     # Path to file
-    path = localfile('resources/test_load.mol')
+    path = localfile("resources/test_load.mol")
 
     # Save to file
     isicle.save(path, geometry)
@@ -55,7 +55,7 @@ def test_load_mol(geometry):
     assert isinstance(geom, isicle.geometry.Geometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'mol')
+    assert hasattr(geom, "mol")
 
     # Check xyz attribute is populated
     assert geom.mol is not None
@@ -66,7 +66,7 @@ def test_load_mol(geometry):
 
 def test_load_mol2():
     # Path to file
-    path = localfile('resources/geom_test.mol2')
+    path = localfile("resources/geom_test.mol2")
 
     # Load
     geom = isicle.load(path)
@@ -75,7 +75,7 @@ def test_load_mol2():
     assert isinstance(geom, isicle.geometry.Geometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'mol')
+    assert hasattr(geom, "mol")
 
     # Check xyz attribute is populated
     assert geom.mol is not None
@@ -83,7 +83,7 @@ def test_load_mol2():
 
 def test_load_pdb(geometry):
     # Path to file
-    path = localfile('resources/test_load.pdb')
+    path = localfile("resources/test_load.pdb")
 
     # Save to file
     isicle.save(path, geometry)
@@ -95,7 +95,7 @@ def test_load_pdb(geometry):
     assert isinstance(geom, isicle.geometry.Geometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'mol')
+    assert hasattr(geom, "mol")
 
     # Check xyz attribute is populated
     assert geom.mol is not None
@@ -104,9 +104,9 @@ def test_load_pdb(geometry):
     os.remove(path)
 
 
-def test_load_smiles(geometry):
+def test_load_smiles_file(geometry):
     # Path to file
-    path = localfile('resources/test_load.smi')
+    path = localfile("resources/test_load.smi")
 
     # Save to file
     isicle.save(path, geometry)
@@ -118,7 +118,7 @@ def test_load_smiles(geometry):
     assert isinstance(geom, isicle.geometry.Geometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'mol')
+    assert hasattr(geom, "mol")
 
     # Check xyz attribute is populated
     assert geom.mol is not None
@@ -127,9 +127,23 @@ def test_load_smiles(geometry):
     os.remove(path)
 
 
-def test_load_inchi(geometry):
+def test_load_smiles_string():
+    # Load
+    geom = isicle.io.load_smiles("CCCC")
+
+    # Check instance is correct type
+    assert isinstance(geom, isicle.geometry.Geometry)
+
+    # Check xyz attribute exists
+    assert hasattr(geom, "mol")
+
+    # Check xyz attribute is populated
+    assert geom.mol is not None
+
+
+def test_load_inchi_file(geometry):
     # Path to file
-    path = localfile('resources/test_load.inchi')
+    path = localfile("resources/test_load.inchi")
 
     # Save to file
     isicle.save(path, geometry)
@@ -141,7 +155,7 @@ def test_load_inchi(geometry):
     assert isinstance(geom, isicle.geometry.Geometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'mol')
+    assert hasattr(geom, "mol")
 
     # Check xyz attribute is populated
     assert geom.mol is not None
@@ -150,9 +164,23 @@ def test_load_inchi(geometry):
     os.remove(path)
 
 
+def test_load_inchi_string():
+    # Load
+    geom = isicle.io.load_inchi("InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3")
+
+    # Check instance is correct type
+    assert isinstance(geom, isicle.geometry.Geometry)
+
+    # Check xyz attribute exists
+    assert hasattr(geom, "mol")
+
+    # Check xyz attribute is populated
+    assert geom.mol is not None
+
+
 def test_load_pickle(geometry):
     # Path to file
-    path = localfile('resources/test_load.pkl')
+    path = localfile("resources/test_load.pkl")
 
     # Save to file
     isicle.save(path, geometry)
@@ -164,7 +192,7 @@ def test_load_pickle(geometry):
     assert isinstance(geom, isicle.geometry.Geometry)
 
     # Check xyz attribute exists
-    assert hasattr(geom, 'mol')
+    assert hasattr(geom, "mol")
 
     # Check xyz attribute is populated
     assert geom.mol is not None
@@ -173,16 +201,19 @@ def test_load_pickle(geometry):
     os.remove(path)
 
 
-@pytest.mark.parametrize('path,instance',
-                         [(localfile('resources/test_load.xyz'), isicle.geometry.XYZGeometry),
-                          (localfile('resources/test_load.pkl'), isicle.geometry.Geometry),
-                          # (localfile('resources/test_load.mfj'), isicle.geometry.XYZGeometry),
-                          (localfile('resources/test_load.smi'), isicle.geometry.Geometry),
-                          (localfile('resources/test_load.inchi'), isicle.geometry.Geometry),
-                          (localfile('resources/test_load.mol'), isicle.geometry.Geometry),
-                          # (localfile('resources/test_load.mol2'), isicle.geometry.Geometry),
-                          (localfile('resources/test_load.pdb'), isicle.geometry.Geometry)
-                         ])
+@pytest.mark.parametrize(
+    "path,instance",
+    [
+        (localfile("resources/test_load.xyz"), isicle.geometry.XYZGeometry),
+        (localfile("resources/test_load.pkl"), isicle.geometry.Geometry),
+        # (localfile('resources/test_load.mfj'), isicle.geometry.XYZGeometry),
+        (localfile("resources/test_load.smi"), isicle.geometry.Geometry),
+        (localfile("resources/test_load.inchi"), isicle.geometry.Geometry),
+        (localfile("resources/test_load.mol"), isicle.geometry.Geometry),
+        # (localfile('resources/test_load.mol2'), isicle.geometry.Geometry),
+        (localfile("resources/test_load.pdb"), isicle.geometry.Geometry),
+    ],
+)
 def test_load(geometry, path, instance):
     # Save
     isicle.save(path, geometry)
@@ -202,7 +233,7 @@ def test_load(geometry, path, instance):
 
 def test_save_xyz(geometry):
     # Output path
-    path = localfile('resources/test_save.xyz')
+    path = localfile("resources/test_save.xyz")
 
     # Save to xyz
     isicle.io.save_xyz(path, geometry)
@@ -219,7 +250,7 @@ def test_save_xyz(geometry):
 
 def test_save_pickle(geometry):
     # Output path
-    path = localfile('resources/test_save.pkl')
+    path = localfile("resources/test_save.pkl")
 
     # Save to xyz
     isicle.io.save_pickle(path, geometry)
@@ -256,7 +287,7 @@ def test_save_pickle(geometry):
 
 def test_save_smiles(geometry):
     # Output path
-    path = localfile('resources/test_save.smi')
+    path = localfile("resources/test_save.smi")
 
     # Save to xyz
     isicle.io.save_smiles(path, geometry)
@@ -273,7 +304,7 @@ def test_save_smiles(geometry):
 
 def test_save_inchi(geometry):
     # Output path
-    path = localfile('resources/test_save.inchi')
+    path = localfile("resources/test_save.inchi")
 
     # Save to xyz
     isicle.io.save_inchi(path, geometry)
@@ -290,7 +321,7 @@ def test_save_inchi(geometry):
 
 def test_save_mol(geometry):
     # Output path
-    path = localfile('resources/test_save.mol')
+    path = localfile("resources/test_save.mol")
 
     # Save to xyz
     isicle.io.save_mol(path, geometry)
@@ -307,7 +338,7 @@ def test_save_mol(geometry):
 
 def test_save_pdb(geometry):
     # Output path
-    path = localfile('resources/test_save.pdb')
+    path = localfile("resources/test_save.pdb")
 
     # Save to xyz
     isicle.io.save_pdb(path, geometry)
@@ -322,15 +353,18 @@ def test_save_pdb(geometry):
     os.remove(path)
 
 
-@pytest.mark.parametrize('path',
-                         [(localfile('resources/test_save.xyz')),
-                          (localfile('resources/test_save.pkl')),
-                          # (localfile('resources/test_save.mfj')),
-                          (localfile('resources/test_save.smi')),
-                          (localfile('resources/test_save.inchi')),
-                          (localfile('resources/test_save.mol')),
-                          (localfile('resources/test_save.pdb'))
-                         ])
+@pytest.mark.parametrize(
+    "path",
+    [
+        (localfile("resources/test_save.xyz")),
+        (localfile("resources/test_save.pkl")),
+        # (localfile('resources/test_save.mfj')),
+        (localfile("resources/test_save.smi")),
+        (localfile("resources/test_save.inchi")),
+        (localfile("resources/test_save.mol")),
+        (localfile("resources/test_save.pdb")),
+    ],
+)
 def test_save(geometry, path):
     # Save
     isicle.save(path, geometry)
