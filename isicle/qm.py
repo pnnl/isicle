@@ -1,4 +1,3 @@
-isicle.io.save(geomfile, self.geom)
 import isicle
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
@@ -136,21 +135,27 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         # Save
         self.save_geometry()
 
-    def save_geometry(self):
+    def save_geometry(self, fmt='xyz'):
         '''
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
-        Creates temporary directory for intermediate files.
+        Parameters
+        ----------
+        fmt : str
+            Filetype used by xtb. Must be "xyz", "smi", ".inchi", ".mol", ".xyz",
+            ".pdb", ".pkl".
 
         '''
-
-        # Path operations
-       geomfile = os.path.join(self.temp_dir,
+        # Path operationspyth
+        self.temp_dir = isicle.utils.mkdtemp()
+        self.fmt = fmt.lower()
+        geomfile = os.path.join(self.temp_dir,
                                '{}.{}'.format(self.geom.basename,
-                                              self.fmt.lower())) 
+                                              self.fmt.lower()))
 
         # All other formats
         isicle.io.save(geomfile, self.geom)
+        self.geom.path = geomfile
 
     def _configure_header(self, scratch_dir='/scratch', mem_global=1600,
                           mem_heap=100, mem_stack=600):
@@ -810,8 +815,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         else:
             s = '{} {} {} {}'.format(self.command,
                                      self.processes,
-                                     self.infile,
-                                     self.outfile)
+                                     infile,
+                                     outfile)
 
         subprocess.call(s, shell=True)
 
@@ -843,7 +848,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         self.__dict__.update(result)
         self._update_history(self.tasks)
         self.geom.add___dict__({k: v for k, v in result.items() if k != 'geom'})
-        self.contents = parser.load(os.path.join(self.temp_dir,
+        self.output = parser.load(os.path.join(self.temp_dir,
                                                  self.geom.basename + '.out'))
         return self
 
