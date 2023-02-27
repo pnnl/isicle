@@ -5,7 +5,7 @@ from io import StringIO
 import isicle
 import pandas as pd
 from rdkit import Chem
-
+from openbabel import pybel
 
 def _load_text(path: str):
     """
@@ -55,6 +55,12 @@ def load_xyz(path):
 
     # Load xyz file contents
     geom.xyz = _load_text(path)
+
+    # Create mol object
+    mols = list(pybel.readfile("xyz", path))
+    mo = mols[0]
+    mo_block = mo.write("mol")
+    geom.mol = Chem.MolFromMolBlock(mo_block, removeHs=False)
 
     return geom
 
