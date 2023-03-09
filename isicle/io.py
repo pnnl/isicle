@@ -1,5 +1,6 @@
 import os
 import pickle
+import joblib
 from io import StringIO
 
 import isicle
@@ -302,6 +303,25 @@ def load_pickle(path):
     with open(path, "rb") as f:
         return pickle.load(f)
 
+def load_joblib(path):
+    """
+    Load joblib file.
+
+    Parameters
+    ----------
+    path : str
+        Path to pickle.
+
+    Returns
+    -------
+    data
+        Previously pickled object instance.
+
+    """
+
+    # Load file
+    with open(path, "rb") as f:
+        return joblib.load(f)
 
 def load(path, force=False):
     """
@@ -328,6 +348,9 @@ def load(path, force=False):
 
     if extension == ".pkl":
         return load_pickle(path)
+
+    if extention == ".joblib":
+        return load_joblib(path)
 
     if "mol2" in extension:
         return load_mol2(path)
@@ -374,6 +397,23 @@ def save_xyz(path, geom):
     # Write to file
     with open(path, "w") as f:
         f.write(geom.to_xyzblock())
+
+
+def save_joblib(path, data):
+    """
+    Save object as joblib file.
+
+    Parameters
+    ----------
+    path : str
+        Path to output file.
+    data : object
+        Aribtrary object instance.
+
+    """
+
+    with open(path, "wb") as f:
+        joblib.dump(data, f)
 
 
 def save_pickle(path, data):
