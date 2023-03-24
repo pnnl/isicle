@@ -185,7 +185,10 @@ def addAtomToMol(mol, atom, idx, covalent=True):
     """
 
     logger = logging.getLogger(__name__)
-    etab = openbabel.OBElementTable()  # element object
+    # openbabel 2.3.1 approach
+    # etab = openbabel.OBElementTable()  # element object
+    # openbabel 3.0.1 approach
+    # etab functions moved to openbabel.openbabel namespace
 
     atoms_radius = []
     xyzr = []
@@ -194,23 +197,23 @@ def addAtomToMol(mol, atom, idx, covalent=True):
         atomic_num = x.atomicnum  # get atomic number of each atom
         if covalent is True:
             # use covalent radius
-            atom_rad = etab.GetCovalentRad(atomic_num)
+            atom_rad = openbabel.GetCovalentRad(atomic_num)
 
         else:
             # use van der Waals radius (but for now use covalent)
-            atom_rad = etab.GetVdwRad(atomic_num)
+            atom_rad = openbabel.GetVdwRad(atomic_num)
         atoms_radius.append(atom_rad)
 
         a = x.coords + (atom_rad,)  # create x,y,z,radius array
         xyzr.append(a)
 
     # get the atomic number and covalent radius of the new atom to be added
-    newatom_atomic_num = etab.GetAtomicNum(atom)
+    newatom_atomic_num = openbabel.__dict__[atom]
 
     if covalent is True:
-        newatom_rad = etab.GetVdwRad(newatom_atomic_num)
+        newatom_rad = openbabel.GetVdwRad(newatom_atomic_num)
     else:
-        newatom_rad = etab.GetVdwRad(1)
+        newatom_rad = openbabel.GetVdwRad(1)
     newatom_xyzr = [0, 0, 0, newatom_rad]
 
     # set box dimensions based on molecule size
@@ -316,8 +319,8 @@ def addAtomToMol(mol, atom, idx, covalent=True):
 
         if covalent is True:
             new_atomnum = len(mol.atoms)
-
-            mol.OBMol.AddBond(idx + 1, new_atomnum, 1)
+            mol.OBMol.AddBond(idx, new_atomnum, 1)
+            # mol.OBMol.AddBond(idx + 1, new_atomnum, 1)
 
             # good for single bonds. For double and triple bonds, we have to
             # the appropriate covalent radius. For our purposes, we only need
@@ -332,8 +335,8 @@ def removeAtomFromMol(mol, idx):
     """
 
     # mol should contain the atom coordinates
-    atom = mol.OBMol.GetAtomById(idx)
-
+    # atom = mol.OBMol.GetAtomById(idx)
+    atom = mol.OBMol.GetAtom(idx)
     # delete the atom
     mol.OBMol.DeleteAtom(atom)
 
@@ -342,16 +345,16 @@ def removeAtomFromMol(mol, idx):
 
 def nearestHydrogen(mol, idx):
     logger = logging.getLogger(__name__)
-
-    iatom = mol.atoms[idx]
-    logger.debug("Starting atom: %s, type %s", idx, iatom.atomicnum)
+    # iatom = mol.atoms[idx]
+    iatom = mol.OBMol.GetAtom(idx)
+    logger.debug("Starting atom: %s, type %s", idx, iatom.GetAtomicNum())
 
     # get the neighboring atoms of the selected atom
-    nbatoms = openbabel.OBAtomAtomIter(iatom.OBAtom)
+    nbatoms = openbabel.OBAtomAtomIter(iatom)
     for nb in nbatoms:
         logger.debug("Connected to: %s, type %s", nb.GetId(), nb.GetAtomicNum())
         # if the neighboring atom is hydrogen
         if nb.GetAtomicNum() == 1:
-            return nb.GetId()
+            return nb.GetIdx()
 
     raise Exception("Hydrogen not found.")
