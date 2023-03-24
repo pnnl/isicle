@@ -1,5 +1,5 @@
-import pybel
-import openbabel
+from openbabel import pybel
+from openbabel import openbabel
 import numpy as np
 import logging
 
@@ -86,16 +86,20 @@ class Box:
 
     # Function to determine the box length dimension along an axis direction
     def getBoxEdges(self, index):
-          # Determine the edge positions of the box along the axis
+        # Determine the edge positions of the box along the axis
         natoms = len(self.xyzr)
         patom_min = self.xyzr[0][index] - self.xyzr[0][3] - self.ext
         patom_max = self.xyzr[0][index] + self.xyzr[0][3] + self.ext
 
         for i in range(1, natoms):  # i:1, 2, ...,natoms - 1
-            tmp = self.xyzr[i][index] + self.xyzr[i][3] + self.ext  # tmp = p + rad + ext
+            tmp = (
+                self.xyzr[i][index] + self.xyzr[i][3] + self.ext
+            )  # tmp = p + rad + ext
             if patom_max < tmp:
                 patom_max = tmp
-            tmp = self.xyzr[i][index] - self.xyzr[i][3] - self.ext  # tmp = p - rad - ext
+            tmp = (
+                self.xyzr[i][index] - self.xyzr[i][3] - self.ext
+            )  # tmp = p - rad - ext
             if patom_min > tmp:
                 patom_min = tmp
 
@@ -154,7 +158,6 @@ class Box:
             for ix in range(ix1, ix2 + 1):
                 for iy in range(iy1, iy2 + 1):
                     for iz in range(iz1, iz2 + 1):
-
                         xdist = self.x[ix] - atom_x
                         ydist = self.y[iy] - atom_y
                         zdist = self.z[iz] - atom_z
@@ -182,7 +185,7 @@ def addAtomToMol(mol, atom, idx, covalent=True):
     """
 
     logger = logging.getLogger(__name__)
-    etab = openbabel.OBElementTable()     # element object
+    etab = openbabel.OBElementTable()  # element object
 
     atoms_radius = []
     xyzr = []
@@ -233,9 +236,14 @@ def addAtomToMol(mol, atom, idx, covalent=True):
     ndist = 50
     count = 0
 
-    logger.info("Selecting a position for the new atom near the atom located at: (%s, %s, %s)", xc, yc, zc)
+    logger.info(
+        "Selecting a position for the new atom near the atom located at: (%s, %s, %s)",
+        xc,
+        yc,
+        zc,
+    )
 
-    while (found == 0 and count < ndist):
+    while found == 0 and count < ndist:
         logger.debug("count #%s", count)
         rdist = rdist + delr
         ntrials = 5000
@@ -283,8 +291,11 @@ def addAtomToMol(mol, atom, idx, covalent=True):
                 newatom_xyzr[2] = rand_z
                 found = 1
                 logger.info("Found a site: (%s, %s, %s)", rand_x, rand_y, rand_z)
-                rd = np.sqrt((rand_x - xc) * (rand_x - xc) + (rand_y - yc) * (rand_y - yc) +
-                             (rand_z - zc) * (rand_z - zc))
+                rd = np.sqrt(
+                    (rand_x - xc) * (rand_x - xc)
+                    + (rand_y - yc) * (rand_y - yc)
+                    + (rand_z - zc) * (rand_z - zc)
+                )
                 logger.info("inter-atom distance (A): %s", rd)
 
             else:
@@ -333,14 +344,14 @@ def nearestHydrogen(mol, idx):
     logger = logging.getLogger(__name__)
 
     iatom = mol.atoms[idx]
-    logger.debug('Starting atom: %s, type %s', idx, iatom.atomicnum)
+    logger.debug("Starting atom: %s, type %s", idx, iatom.atomicnum)
 
     # get the neighboring atoms of the selected atom
     nbatoms = openbabel.OBAtomAtomIter(iatom.OBAtom)
     for nb in nbatoms:
-        logger.debug('Connected to: %s, type %s', nb.GetId(), nb.GetAtomicNum())
+        logger.debug("Connected to: %s, type %s", nb.GetId(), nb.GetAtomicNum())
         # if the neighboring atom is hydrogen
         if nb.GetAtomicNum() == 1:
             return nb.GetId()
 
-    raise Exception('Hydrogen not found.')
+    raise Exception("Hydrogen not found.")
