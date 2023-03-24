@@ -77,8 +77,6 @@ rule tautomerize:
         rules.neutralize.output
     output:
         abspath(join('output', 'adducts', 'tautomer', '{id}.smi'))
-    version:
-        "cxcalc --help | grep 'version ' | awk '{print $2}'"
     log:
         abspath(join('output', 'adducts', 'tautomer', 'logs', '{id}.log'))
     benchmark:
@@ -86,7 +84,7 @@ rule tautomerize:
     # group:
     #     'adducts'
     shell:
-        'cxcalc majortautomer -f smiles {input} > {output} 2> {log}'
+        'obtautomer -c {input} > {output} 2> {log}'
 
 
 rule calculateFormula:
@@ -95,7 +93,7 @@ rule calculateFormula:
     output:
         abspath(join('output', 'adducts', 'formula', '{id}.formula'))
     version:
-        "cxcalc --help | grep 'version ' | awk '{print $2}'"
+        "obabel 2> /dev/null | grep 'Open Babel' | awk '{print $3}'"
     log:
         abspath(join('output', 'adducts', 'formula', 'logs', '{id}.log'))
     benchmark:
@@ -103,7 +101,7 @@ rule calculateFormula:
     # group:
     #     'adducts'
     shell:
-        "cxcalc formula {input} | tail -n1 | awk '{{print $2}}' > {output} 2> {log}"
+       'obabel {input} -o smiles --append "formula" | cut -f2 > {output} 2> {log}'
 
 
 rule calculateMass:
