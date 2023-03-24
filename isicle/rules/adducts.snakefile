@@ -142,23 +142,6 @@ rule generateGeometry:
          --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
 
 
-rule calculatepKa:
-    input:
-        rules.generateGeometry.output.mol2
-    output:
-        abspath(join('output', 'adducts', 'pKa', '{id}.pka'))
-    version:
-        "cxcalc --help | grep 'version ' | awk '{print $2}'"
-    log:
-        abspath(join('output', 'adducts', 'pKa', 'logs', '{id}.log'))
-    benchmark:
-        abspath(join('output', 'adducts', 'pKa', 'benchmarks', '{id}.benchmark'))
-    # group:
-    #     'adducts'
-    shell:
-        'cxcalc pka -i -40 -x 40 -d large {input} > {output} 2> {log}'
-
-
 rule generateAdduct:
     input:
         mol2 = rules.generateGeometry.output.mol2,
