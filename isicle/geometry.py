@@ -7,7 +7,7 @@ from isicle.interfaces import GeometryInterface, XYZGeometryInterface
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
-
+from openbabel import pybel
 
 class XYZGeometry(XYZGeometryInterface):
     """
@@ -56,6 +56,8 @@ class XYZGeometry(XYZGeometryInterface):
 
         """
 
+        if mol is None:
+            mol = self.mol
         # Create dict to load in
         d = self.__dict__.copy()
         d["history"] = self.get_history()
@@ -262,6 +264,19 @@ class XYZGeometry(XYZGeometryInterface):
         """Get XYZ text for this structure."""
         return "\n".join(self.xyz)
 
+    def to_mol(self):
+        self.temp_dir = isicle.utils.mkdtemp()
+
+        geomfile = os.path.join(self.temp_dir,
+                               '{}.{}'.format(self.basename,
+                                              "xyz"))
+        isicle.io.save(geomfile, self)
+
+        mols = list(pybel.readfile("xyz", geomfile))
+        mo = mols[0]
+        mo_block = mo.write("mol")
+        return Chem.MolFromMolBlock(mo_block, removeHs=False)
+
 
 class Geometry(XYZGeometry, GeometryInterface):
     """
@@ -310,7 +325,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         # Create dict to load in
         d = self.__dict__.copy()
         d["xyz"] = xyz
-        d.pop("mol")
 
         return XYZGeometry(**d)
 
