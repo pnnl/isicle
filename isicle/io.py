@@ -349,7 +349,7 @@ def load(path, force=False):
     if extension == ".pkl":
         return load_pickle(path)
 
-    if extention == ".joblib":
+    if extension == ".joblib":
         return load_joblib(path)
 
     if "mol2" in extension:
@@ -598,6 +598,9 @@ def save(path, data):
     if extension == ".pkl":
         return save_pickle(path, data)
 
+    if extension == ".joblib":
+        return save_joblib(path, data)
+    
     if extension == ".mfj":
         return save_mfj(path, data)
 
@@ -615,5 +618,6 @@ def save(path, data):
 
     if extension == ".inchi":
         return save_inchi(path, data)
+    
 
     raise IOError("Extension {} not recognized.".format(extension))
