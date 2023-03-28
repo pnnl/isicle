@@ -104,6 +104,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         # Assign geometry
         self.geom = geom
+        self.basename = self.geom.basename
 
         # Save geometry
         self.save_geometry()
@@ -123,7 +124,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
         geomfile = os.path.join(self.temp_dir,
-                               '{}.{}'.format(self.geom.basename,
+                               '{}.{}'.format(self.basename,
                                               self.fmt.lower()))
 
         # All other formats
@@ -154,7 +155,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s = 'xtb '
 
         # Add geometry
-        s += '{}.{}'.format(self.geom.basename, self.fmt.lower())
+        s += '{}.{}'.format(self.basename, self.fmt.lower())
 
         # Add optimize tag
         s += ' --opt ' + optlevel + ' '
@@ -173,7 +174,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add output
         s += '&>' + ' '
 
-        s += '{}.{}'.format(self.geom.basename, "out")
+        s += '{}.{}'.format(self.basename, "out")
         return s
 
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gfn2',
@@ -218,7 +219,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         # Add geometry
         s += str(os.path.join(self.temp_dir,
-                              '{}.{}'.format(self.geom.basename,
+                              '{}.{}'.format(self.basename,
                                              self.fmt.lower())))
 
         s += ' '
@@ -263,7 +264,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s += '&>' + ' '
 
         s += os.path.join(self.temp_dir,
-                          '{}.{}'.format(self.geom.basename,
+                          '{}.{}'.format(self.basename,
                                          "out"))
 
         return s
@@ -359,8 +360,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         parser = XTBParser()
 
-        parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
-        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
+        parser.load(os.path.join(self.temp_dir, self.basename + '.out'))
+        self.output = parser.load(os.path.join(self.temp_dir, self.basename + '.out'))
 
         result = parser.parse()
 
@@ -373,6 +374,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         if self.task != 'optimize':
             conformerID = 1
             for i in self.geom:
+                i.__dict__.update(basename=self.basename)
                 i.__dict__.update(conformerID=conformerID)
                 conformerID += 1
             return self

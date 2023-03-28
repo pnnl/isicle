@@ -131,6 +131,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         # Assign geometry
         self.geom = geom
+        self.basename = self.geom.basename
 
         # Save
         self.save_geometry()
@@ -537,7 +538,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
         s += ('\nproperty\n'
-              ' SHIELDING}\n'
+              ' SHIELDING\n'
               'end\n')
 
         # Add property task
@@ -596,7 +597,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                 neighbors = [i for i, x in enumerate(atom) if x==1]
         
                 for n in neighbors:
-            
+                    # Check if pair in pair_list, add one to index to match NWChem numbering.
                     if [idx+1, n+1] not in pair_list and [n+1, idx+1] not in pair_list:
                         pair_list.append([idx+1, n+1])
             
@@ -610,7 +611,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                                 if [idx+1, n_n+1] not in pair_list and [n_n+1, idx+1] not in pair_list:
                                     pair_list.append([idx+1, n_n+1])
                                 atom[n_n] += 2
-                    
+
+                            # Third line of neighbors
                             nn_neighbors = [i for i, x in enumerate(matrix[n_n]) if x==1]
                 
                             if bonds >= 3:
@@ -623,6 +625,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                                 continue
                         else:
                             continue
+
+            # Build string of pairs for input
             s = ""
             for pair in pair_list:
                 s += str(pair[0]) + " " + str(pair[1]) + " "
@@ -890,14 +894,14 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         parser = NWChemParser()
         parser.load(os.path.join(self.temp_dir,
-                                 self.geom.basename + '.out'))
+                                 self.basename + '.out'))
         result = parser.parse()
 
         self.__dict__.update(result)
         self._update_history(self.tasks)
         self.geom.add___dict__({k: v for k, v in result.items() if k != 'geom'})
         self.output = parser.load(os.path.join(self.temp_dir,
-                                                 self.geom.basename + '.out'))
+                                                 self.basename + '.out'))
         return self
 
     def run(self, geom, template=None, **kwargs):
