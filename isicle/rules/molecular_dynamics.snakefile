@@ -203,17 +203,17 @@ rule sander0:
         prmtop = rules.tleap.output.prmtop,
         config = rules.sander0config.output
     output:
-        rst = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.rst')),
-        crd = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.crd')),
-        out = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.out'))
+        rst = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}_{addID}.rst')),
+        crd = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}_{addID}.crd')),
+        out = abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}_{addID}.out'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        a = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log')),
-        b = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.sander.log2'))
+        a = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{addID}_000.sander.log')),
+        b = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{addID}_000.sander.log2'))
     benchmark:
-        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.sander.benchmark'))
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{addID}_000.sander.benchmark'))
     # group:
     #     'md'
     shell:
