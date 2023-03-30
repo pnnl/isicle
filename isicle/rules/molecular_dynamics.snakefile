@@ -342,19 +342,19 @@ rule calculate_rmsd:
 
 rule downselect:
     input:
-        xyz = expand(abspath(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz')),
+        xyz = expand(abspath(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{addID}}_{{cycle}}_{frame}.xyz')),
                      frame=frames(config['amber']['nframes'])),
-        rmsd = expand(abspath(join('output', 'md', 'rmsd', '{{id}}_{{adduct}}_{{cycle}}_{frame}.rmsd')),
+        rmsd = expand(abspath(join('output', 'md', 'rmsd', '{{id}}_{{adduct}}_{{addID}}_{{cycle}}_{frame}.rmsd')),
                       frame=frames(config['amber']['nframes']))
     output:
-        expand(abspath(join('output', 'md', 'downselected', '{{id}}_{{adduct}}_{{cycle}}_{selected}.xyz')),
+        expand(abspath(join('output', 'md', 'downselected', '{{id}}_{{adduct}}_{{addID}}_{{cycle}}_{selected}.xyz')),
                selected=['s', 'd1', 'd2'])
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'downselected', 'logs', '{id}_{adduct}_{cycle}.log'))
+        abspath(join('output', 'md', 'downselected', 'logs', '{id}_{adduct}_{addID}_{cycle}.log'))
     benchmark:
-        abspath(join('output', 'md', 'downselected', 'benchmarks', '{id}_{adduct}_{cycle}.benchmark'))
+        abspath(join('output', 'md', 'downselected', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}.benchmark'))
     # group:
     #     'md'
     run:
