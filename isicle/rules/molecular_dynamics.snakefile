@@ -267,17 +267,17 @@ rule sander:
 
 rule selectFrames:
     input:
-        out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out')),
-        crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd'))
+        out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}_{addID}.out')),
+        crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}_{addID}.crd'))
     output:
-        expand(abspath(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.trajin')),
+        expand(abspath(join('output', 'md', 'extracted', '{{id}}_{{adduct}}_{{addID}}_{{cycle}}_{frame}.trajin')),
                frame=frames(config['amber']['nframes']))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}.select.log'))
+        abspath(join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{addID}_{cycle}.select.log'))
     benchmark:
-        abspath(join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}.select.benchmark'))
+        abspath(join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}.select.benchmark'))
     # group:
     #     'md'
     shell:
