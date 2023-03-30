@@ -46,18 +46,18 @@ rule mobcal:
 # parse mobcal output
 rule parseMobcal:
     input:
-        geom = expand(abspath(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.out')),
+        geom = expand(abspath(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{{addID}}_{cycle}_{selected}.out')),
                       cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2']),
-        energy = expand(abspath(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{cycle}_{selected}.energy')),
+        energy = expand(abspath(join('output', 'mobility', 'mobcal', 'runs', '{{id}}_{{adduct}}_{{addID}}_{cycle}_{selected}.energy')),
                         cycle=cycles(config['amber']['cycles']), selected=['s', 'd1', 'd2'])
     output:
-        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}.tsv'))
+        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', '{id}_{adduct}_{addID}.tsv'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}.log'))
+        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', 'logs', '{id}_{adduct}_{addID}.log'))
     benchmark:
-        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
+        abspath(join('output', 'mobility', 'mobcal', 'conformer_ccs', 'benchmarks', '{id}_{adduct}_{addID}.benchmark'))
     # group:
     #     'mobility'
     shell:
