@@ -37,21 +37,21 @@ rule antechamber:
     input:
         mol2 = rules.prepare.output.mol2,
         pdb = rules.prepare.output.pdb,
-        charge = rules.generateAdduct.output.charge
+        charge = rules.touchAdducts.output.charge
     output:
-        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.output.mol2')),
-        ac = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', 'ANTECHAMBER_AC.AC'))
+        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.output.mol2')),
+        ac = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', 'ANTECHAMBER_AC.AC'))
     version:
         "antechamber | grep 'Welcome to antechamber' | awk '{print substr($4, 0, length($4) - 1)}'"
     log:
-        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.antechamber.log'))
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}_{addID}.antechamber.log'))
     benchmark:
-        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.antechamber.benchmark'))
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}_{addID}.antechamber.benchmark'))
     # group:
     #     'md'
     run:
         cwd = os.getcwd()
-        os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s')) % (wildcards.id, wildcards.adduct))
+        os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s_%s')) % (wildcards.id, wildcards.adduct, wildcards.addID))
 
         if wildcards.adduct == '+Na':
             shell('antechamber -i {input.mol2} -fi mol2 -o {output.mol2} -fo mol2 -c bcc -s -du -j 5 -nc 0.0 &> {log}')
