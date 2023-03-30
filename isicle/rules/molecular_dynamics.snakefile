@@ -242,22 +242,22 @@ rule sander:
     input:
         # s0 required to disambiguate, but not used
         rst0 = rules.sander0.output.rst,
-        rst = lambda wildcards: abspath(join('output', 'md', 'anneal', 'cycle_%03d', '%s_%s.rst')) % \
-                                (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct),
+        rst = lambda wildcards: abspath(join('output', 'md', 'anneal', 'cycle_%03d', '%s_%s_%s.rst')) % \
+                                (int(wildcards.cycle) - 1, wildcards.id, wildcards.adduct, wildcards.addID),
         prmtop = rules.tleap.output.prmtop,
         config = rules.sanderConfig.output
     output:
-        rst = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.rst')),
-        crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.crd')),
-        out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}.out'))
+        rst = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}_{addID}.rst')),
+        crd = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}_{addID}.crd')),
+        out = abspath(join('output', 'md', 'anneal', 'cycle_{cycle}', '{id}_{adduct}_{addID}.out'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        a = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log')),
-        b = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{cycle}.sander.log2'))
+        a = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{addID}_{cycle}.sander.log')),
+        b = abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{addID}_{cycle}.sander.log2'))
     benchmark:
-        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{cycle}.sander.benchmark'))
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}.sander.benchmark'))
     # group:
     #     'md'
     shell:
