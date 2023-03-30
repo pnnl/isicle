@@ -142,23 +142,31 @@ rule generateGeometry:
          --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
 
 
-rule generateAdduct:
+checkpoint generateAdducts:
     input:
-        mol2 = rules.generateGeometry.output.mol2,
-        pka = rules.calculatepKa.output
+        mol2 = rules.generateGeometry.output.mol2
     output:
-        xyz = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.xyz')),
-        mol2 = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.mol2')),
-        pdb = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.pdb')),
-        charge = abspath(join('output', 'adducts', 'geometry_{adduct}', '{id}_{adduct}.charge'))
-    version:
-        'isicle --version'
-    log:
-        abspath(join('output', 'adducts', 'geometry_{adduct}', 'logs', '{id}_{adduct}.log'))
-    benchmark:
-        abspath(join('output', 'adducts', 'geometry_{adduct}', 'benchmarks', '{id}_{adduct}.benchmark'))
-    # group:
-    #     'adducts'
+        directory(join('output', 'adducts', 'geometry_{adduct}','{id}'))
     shell:
-        'python -m isicle.scripts.generate_adduct {input.mol2} {input.pka} [{wildcards.adduct}] {output.mol2} {output.xyz} \
-         {output.pdb} {output.charge} --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]} &> {log}'
+        'python -m isicle.scripts.generate_adduct {input.mol2} [{wildcards.adduct}] \
+        --forcefield {config[forcefield][type]} --steps {config[forcefield][steps]}' # &> {log}'
+
+
+rule touchAdducts:
+    input:
+        xyz = abspath(join('output', 'adducts', 'geometry_{adduct}','{id}', '{addID}.xyz')),
+        mol2 = abspath(join('output', 'adducts', 'geometry_{adduct}','{id}', '{addID}.mol2')),
+        pdb = abspath(join('output', 'adducts', 'geometry_{adduct}','{id}', '{addID}.pdb')),
+        charge = abspath(join('output', 'adducts', 'geometry_{adduct}','{id}', '{addID}.charge'))
+    output:
+        xyz = abspath(join('output', 'touch', 'geometry_{adduct}', '{id}_{adduct}_{addID}.xyz')),
+        mol2 = abspath(join('output', 'touch', 'geometry_{adduct}', '{id}_{adduct}_{addID}.mol2')),
+        pdb = abspath(join('output', 'touch', 'geometry_{adduct}', '{id}_{adduct}_{addID}.pdb')),
+        charge = abspath(join('output', 'touch', 'geometry_{adduct}', '{id}_{adduct}_{addID}.charge'))
+    shell:
+        """
+        cp -f {input.xyz} {output.xyz}
+        cp -f {input.mol2} {output.mol2}
+        obabel -ipdb {input.pdb} -opdb -O{output.pdb} -xn
+        cp -f {input.charge} {output.charge}
+        """
