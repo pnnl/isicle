@@ -184,13 +184,13 @@ rule sander0config:
     input:
         rules.restore.output.mol2
     output:
-        abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}.mdin'))
+        abspath(join('output', 'md', 'anneal', 'cycle_000', '{id}_{adduct}_{addID}.mdin'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_000.config.log'))
+        abspath(join('output', 'md', 'anneal', 'logs', '{id}_{adduct}_{addID}_000.config.log'))
     benchmark:
-        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_000.config.benchmark'))
+        abspath(join('output', 'md', 'anneal', 'benchmarks', '{id}_{adduct}_{addID}_000.config.benchmark'))
     # group:
     #     'md'
     shell:
