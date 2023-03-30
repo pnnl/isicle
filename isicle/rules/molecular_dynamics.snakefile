@@ -323,17 +323,17 @@ rule convert:
 
 rule calculate_rmsd:
     input:
-        ref = abspath(join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz')),
-        xyzs = expand(abspath(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{cycle}}_{frame}.xyz')),
+        ref = abspath(join('output', 'md', 'converted', '{id}_{adduct}_{addID}_{cycle}_{frame}.xyz')),
+        xyzs = expand(abspath(join('output', 'md', 'converted', '{{id}}_{{adduct}}_{{addID}}_{{cycle}}_{frame}.xyz')),
                       frame=frames(config['amber']['nframes']))
     output:
-        rmsd = abspath(join('output', 'md', 'rmsd', '{id}_{adduct}_{cycle}_{frame}.rmsd'))
+        rmsd = abspath(join('output', 'md', 'rmsd', '{id}_{adduct}_{addID}_{cycle}_{frame}.rmsd'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{cycle}_{frame}.log'))
+        abspath(join('output', 'md', 'rmsd', 'logs', '{id}_{adduct}_{addID}_{cycle}_{frame}.log'))
     benchmark:
-        abspath(join('output', 'md', 'rmsd', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark'))
+        abspath(join('output', 'md', 'rmsd', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{frame}.benchmark'))
     # group:
     #     'md'
     shell:
