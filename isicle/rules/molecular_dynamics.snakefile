@@ -288,15 +288,15 @@ rule selectFrames:
 rule extractFrames:
     input:
         prmtop = rules.tleap.output.prmtop,
-        trajin = abspath(join('output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.trajin'))
+        trajin = abspath(join('output', 'md', 'extracted', '{id}_{adduct}_{addID}_{cycle}_{frame}.trajin'))
     output:
-        abspath(join('output', 'md', 'extracted', '{id}_{adduct}_{cycle}_{frame}.mol2'))
+        abspath(join('output', 'md', 'extracted', '{id}_{adduct}_{addID}_{cycle}_{frame}.mol2'))
     version:
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        abspath(join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{cycle}_{frame}.extract.log'))
+        abspath(join('output', 'md', 'extracted', 'logs', '{id}_{adduct}_{addID}_{cycle}_{frame}.extract.log'))
     benchmark:
-        abspath(join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.extract.benchmark'))
+        abspath(join('output', 'md', 'extracted', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{frame}.extract.benchmark'))
     # group:
     #     'md'
     shell:
