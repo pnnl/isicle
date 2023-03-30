@@ -45,15 +45,16 @@ rule dft:
     input:
         rules.createDFTConfig.output
     output:
-        abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.out'))
+        abspath(join('output', 'dft', '{id}_{adduct}_{addID}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{addID}_{cycle}_{selected}.out'))
     version:
         "nwchem /dev/null | grep '(NWChem)' | awk '{print $6}'"
     log:
-        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.nwchem.log'))
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{addID}_{cycle}_{selected}.nwchem.log'))
     benchmark:
-        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.nwchem.benchmark'))
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{selected}.nwchem.benchmark'))
     # group:
     #     'dft'
+    threads: 8
     shell:
         'nwchem {input} > {output} 2> {log}'
 
