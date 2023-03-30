@@ -163,16 +163,16 @@ rule sanderEM:
         inpcrd = rules.tleap.output.inpcrd,
         config = rules.sanderEMconfig.output
     output:
-        rst = abspath(join('output', 'md', 'em', '{id}_{adduct}.rst')),
-        out = abspath(join('output', 'md', 'em', '{id}_{adduct}.out'))
+        rst = abspath(join('output', 'md', 'em', '{id}_{adduct}_{addID}.rst')),
+        out = abspath(join('output', 'md', 'em', '{id}_{adduct}_{addID}.out'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        a = abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log')),
-        b = abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}.sander.log2'))
+        a = abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}_{addID}.sander.log')),
+        b = abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}_{addID}.sander.log2'))
     benchmark:
-        abspath(join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}.sander.benchmark'))
+        abspath(join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}_{addID}.sander.benchmark'))
     # group:
     #     'md'
     shell:
