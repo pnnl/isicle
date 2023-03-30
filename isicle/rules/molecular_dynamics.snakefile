@@ -90,13 +90,13 @@ rule restore:
         idx = rules.prepare.output.idx,
         content = rules.prepare.output.content
     output:
-        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.mol2'))
+        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.mol2'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.restore.log'))
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}_{addID}.restore.log'))
     benchmark:
-        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.restore.benchmark'))
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}_{addID}.restore.benchmark'))
     # group:
     #     'md'
     shell:
@@ -108,13 +108,13 @@ rule tleapConfig:
         mol2 = rules.restore.output.mol2,
         frcmod = rules.parmchk2.output.frcmod
     output:
-        abspath(join('output', 'md', 'tleap', '{id}_{adduct}.config'))
+        abspath(join('output', 'md', 'tleap', '{id}_{adduct}_{addID}.config'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.config.log'))
+        abspath(join('output', 'md', 'tleap', 'logs', '{id}_{adduct}_{addID}.config.log'))
     benchmark:
-        abspath(join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.config.benchmark'))
+        abspath(join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}_{addID}.config.benchmark'))
     # group:
     #     'md'
     shell:
