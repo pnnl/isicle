@@ -10,19 +10,19 @@ ruleorder: sander0 > sander
 
 rule prepare:
     input:
-        mol2 = rules.generateAdduct.output.mol2,
-        pdb = rules.generateAdduct.output.pdb
+        mol2 = rules.touchAdducts.output.mol2,
+        pdb = rules.touchAdducts.output.pdb
     output:
-        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.input.mol2')),
-        idx = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.idx.npy')),
-        content = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.content.npy')),
-        pdb = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.pdb'))
+        mol2 = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.input.mol2')),
+        idx = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.idx.npy')),
+        content = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.content.npy')),
+        pdb = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.pdb'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.prepare.log'))
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}_{addID}.prepare.log'))
     benchmark:
-        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.prepare.benchmark'))
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}_{addID}.prepare.benchmark'))
     # group:
     #     'md'
     run:
