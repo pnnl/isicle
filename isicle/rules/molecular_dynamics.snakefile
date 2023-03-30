@@ -65,19 +65,19 @@ rule parmchk2:
     input:
         rules.antechamber.output.ac
     output:
-        frcmod = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}', '{id}_{adduct}.frcmod'))
+        frcmod = abspath(join('output', 'md', 'antechamber', '{id}_{adduct}_{addID}', '{id}_{adduct}_{addID}.frcmod'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}.parmchk2.log'))
+        abspath(join('output', 'md', 'antechamber', 'logs', '{id}_{adduct}_{addID}.parmchk2.log'))
     benchmark:
-        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}.parmchk2.benchmark'))
+        abspath(join('output', 'md', 'antechamber', 'benchmarks', '{id}_{adduct}_{addID}.parmchk2.benchmark'))
     # group:
     #     'md'
     run:
         cwd = os.getcwd()
-        os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s')) % (wildcards.id, wildcards.adduct))
+        os.chdir(abspath(join('output', 'md', 'antechamber', '%s_%s_%s')) % (wildcards.id, wildcards.adduct,wildcards.addID))
 
         shell('parmchk2 -i ANTECHAMBER_AC.AC -f ac -o {output.frcmod} &> {log}')
 
