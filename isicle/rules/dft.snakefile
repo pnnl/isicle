@@ -24,21 +24,21 @@ rule copyOver:
 rule createDFTConfig:
     input:
         xyz = rules.copyOver.output,
-        charge = rules.generateAdduct.output.charge
+        charge = rules.touchAdducts.output.charge
     output:
-        abspath(join('output', 'dft', '{id}_{adduct}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{cycle}_{selected}.nw'))
+        abspath(join('output', 'dft', '{id}_{adduct}_{addID}', 'cycle_{cycle}_{selected}', '{id}_{adduct}_{addID}_{cycle}_{selected}.nw'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.create.log'))
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{addID}_{cycle}_{selected}.create.log'))
     benchmark:
-        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.create.benchmark'))
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{selected}.create.benchmark'))
     # group:
     #     'dft'
     shell:
         'python -m isicle.scripts.generateNW {input.xyz} --dft --charge `cat {input.charge}` \
          --template {config[nwchem][dft_template]} &> {log}'
-
+         
 
 # run NWChem
 rule dft:
