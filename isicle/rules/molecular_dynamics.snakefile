@@ -144,13 +144,13 @@ rule sanderEMconfig:
     input:
         rules.restore.output.mol2
     output:
-        abspath(join('output', 'md', 'em', '{id}_{adduct}.mdin'))
+        abspath(join('output', 'md', 'em', '{id}_{adduct}_{addID}.mdin'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}.config.log'))
+        abspath(join('output', 'md', 'em', 'logs', '{id}_{adduct}_{addID}.config.log'))
     benchmark:
-        abspath(join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}.config.benchmark'))
+        abspath(join('output', 'md', 'em', 'benchmarks', '{id}_{adduct}_{addID}.config.benchmark'))
     # group:
     #     'md'
     shell:
