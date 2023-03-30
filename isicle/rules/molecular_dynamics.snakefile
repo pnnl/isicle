@@ -308,13 +308,13 @@ rule convert:
         mol2a = rules.extractFrames.output,
         mol2b = rules.prepare.input.mol2
     output:
-        abspath(join('output', 'md', 'converted', '{id}_{adduct}_{cycle}_{frame}.xyz'))
+        abspath(join('output', 'md', 'converted', '{id}_{adduct}_{addID}_{cycle}_{frame}.xyz'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'md', 'converted', 'logs', '{id}_{adduct}_{cycle}_{frame}.log'))
+        abspath(join('output', 'md', 'converted', 'logs', '{id}_{adduct}_{addID}_{cycle}_{frame}.log'))
     benchmark:
-        abspath(join('output', 'md', 'converted', 'benchmarks', '{id}_{adduct}_{cycle}_{frame}.benchmark'))
+        abspath(join('output', 'md', 'converted', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{frame}.benchmark'))
     # group:
     #     'md'
     shell:
