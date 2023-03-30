@@ -64,14 +64,14 @@ rule parseDFT:
     input:
         rules.dft.output
     output:
-        mfj = abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.mfj')),
-        energy = abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.energy'))
+        mfj = abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{addID}_{cycle}_{selected}.mfj')),
+        energy = abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{addID}_{cycle}_{selected}.energy'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{cycle}_{selected}.parse.log'))
+        abspath(join('output', 'dft', 'logs', '{id}_{adduct}_{addID}_{cycle}_{selected}.parse.log'))
     benchmark:
-        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.parse.benchmark'))
+        abspath(join('output', 'dft', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{selected}.parse.benchmark'))
     # group:
     #     'dft'
     shell:
