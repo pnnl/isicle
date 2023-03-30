@@ -125,15 +125,15 @@ rule tleap:
     input:
         rules.tleapConfig.output
     output:
-        prmtop = abspath(join('output', 'md', 'tleap', '{id}_{adduct}.top')),
-        inpcrd = abspath(join('output', 'md', 'tleap', '{id}_{adduct}.crd'))
+        prmtop = abspath(join('output', 'md', 'tleap', '{id}_{adduct}_{addID}.top')),
+        inpcrd = abspath(join('output', 'md', 'tleap', '{id}_{adduct}_{addID}.crd'))
     version:
         # using cpptraj as proxy for version
         "cpptraj --version | awk '{print substr($3, 2, length($3))}'"
     log:
-        abspath(join('output', 'md', 'tleap', 'logs', '{id}_{adduct}.log'))
+        abspath(join('output', 'md', 'tleap', 'logs', '{id}_{adduct}_{addID}.log'))
     benchmark:
-        abspath(join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}.benchmark'))
+        abspath(join('output', 'md', 'tleap', 'benchmarks', '{id}_{adduct}_{addID}.benchmark'))
     # group:
     #     'md'
     shell:
