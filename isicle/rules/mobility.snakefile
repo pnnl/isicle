@@ -69,18 +69,18 @@ rule boltzmannAverage:
     input:
         rules.parseMobcal.output
     output:
-        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}.tsv'))
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', '{id}_{adduct}_{addID}.tsv'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}.log'))
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'logs', '{id}_{adduct}_{addID}.log'))
     benchmark:
-        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
+        abspath(join('output', 'mobility', 'mobcal', 'boltzmann_ccs', 'benchmarks', '{id}_{adduct}_{addID}.benchmark'))
     # group:
     #     'mobility'
     shell:
         'python -m isicle.scripts.boltzmann {input} {output} --ccs &> {log}'
-
+        
 
 rule calibrate:
     input:
