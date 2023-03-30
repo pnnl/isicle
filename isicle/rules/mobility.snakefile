@@ -29,15 +29,16 @@ rule mobcal:
     input:
         rules.parseDFT.output.mfj
     output:
-        abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{cycle}_{selected}.out'))
+        abspath(join('output', 'mobility', 'mobcal', 'runs', '{id}_{adduct}_{addID}_{cycle}_{selected}.out'))
     version:
         '0.1.0'
     log:
-        abspath(join('output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{cycle}_{selected}.log'))
+        abspath(join('output', 'mobility', 'mobcal', 'runs', 'logs', '{id}_{adduct}_{addID}_{cycle}_{selected}.log'))
     benchmark:
-        abspath(join('output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{cycle}_{selected}.benchmark'))
+        abspath(join('output', 'mobility', 'mobcal', 'runs', 'benchmarks', '{id}_{adduct}_{addID}_{cycle}_{selected}.benchmark'))
     # group:
     #     'mobility'
+    threads: 96
     shell:
         '{MOBCAL} {PARAMS} {ATOMS} {input} {output} &> {log}'
 
