@@ -86,13 +86,13 @@ rule calibrate:
     input:
         rules.boltzmannAverage.output
     output:
-        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}.tsv'))
+        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', '{id}_{adduct}_{addID}.tsv'))
     version:
         'isicle --version'
     log:
-        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}.log'))
+        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'logs', '{id}_{adduct}_{addID}.log'))
     benchmark:
-        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}.benchmark'))
+        abspath(join('output', 'mobility', 'mobcal', 'calibrated_ccs', 'benchmarks', '{id}_{adduct}_{addID}.benchmark'))
     # group:
     #     'mobility'
     run:
