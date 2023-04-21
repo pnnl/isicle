@@ -297,6 +297,46 @@ def load_pickle(path):
         return pickle.load(f)
 
 
+def _check_mol_obj(mol_obj):
+    """ """
+    try:
+        Chem.MolToMolBlock(mol_obj)
+    except ValueError:
+        print("Invalid RDKit mol object")
+        raise
+
+
+def load_mol_obj(mol_obj):
+    """
+    Load RDKit mol object into geometry instance
+
+    Parameters
+    ----------
+    mol_obj : mol
+        RDKit mol object
+
+    Returns
+    -------
+    :obj:`~isicle.geometry.Geometry`
+        Molecule representation.
+
+    """
+
+    # Initialize geometry instance
+    geom = isicle.geometry.Geometry()
+
+    # Populate basename
+    geom.basename = None
+
+    # Validate mol object
+    _check_mol_obj(mol_obj)
+
+    # Populate rdkit mol instance attribute
+    geom.mol = mol_obj
+
+    return geom
+
+
 def load(path, force=False):
     """
     Reads in molecule information of the following supported file types:
@@ -316,32 +356,38 @@ def load(path, force=False):
         Molecule representation.
 
     """
+    if (type(path)) == str:
+        path = path.strip()
+        extension = os.path.splitext(path)[-1].lower()
 
-    path = path.strip()
-    extension = os.path.splitext(path)[-1].lower()
+        if extension == ".pkl":
+            return load_pickle(path)
 
-    if extension == ".pkl":
-        return load_pickle(path)
+        if "mol2" in extension:
+            return load_mol2(path)
 
-    if "mol2" in extension:
-        return load_mol2(path)
+        if "mol" in extension:
+            return load_mol(path)
 
-    if "mol" in extension:
-        return load_mol(path)
+        if extension == ".xyz":
+            return load_xyz(path)
 
-    if extension == ".xyz":
-        return load_xyz(path)
+        if extension == ".pdb":
+            return load_pdb(path)
 
-    if extension == ".pdb":
-        return load_pdb(path)
+        if extension == ".inchi" or "inchi=" in path.lower():
+            return load_inchi(path, force=force)
 
-    if extension == ".inchi" or "inchi=" in path.lower():
-        return load_inchi(path, force=force)
+        try:
+            return load_smiles(path, force=force)
+        except:
+            raise IOError("Extension {} not recognized.".format(extension))
 
-    try:
-        return load_smiles(path, force=force)
-    except:
-        raise IOError("Extension {} not recognized.".format(extension))
+    else:
+        try:
+            return load_mol_obj(path)
+        except:
+            raise IOError("Not a valid RDKit mol object passed.")
 
 
 def save_xyz(path, geom):
