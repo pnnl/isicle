@@ -24,7 +24,7 @@ setup(
     author_email='sean.colby@pnnl.gov',
     license=license,
     packages=pkgs,
-    python_requires=">=3.7,<3.10",
+    python_requires="==3.9.*",
     install_requires=install_requires,
     classifiers=[
         "Intended Audience :: Science/Research",
