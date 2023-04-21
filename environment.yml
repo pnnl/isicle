@@ -3,8 +3,10 @@ channels:
   - conda-forge
   - bioconda
   - smcolby
+  - anaconda
 dependencies:
   - crest >=2.12
+  - joblib
   - mobcal-shm
   - numpy >=1.19.4
   - nwchem >=7.0.2

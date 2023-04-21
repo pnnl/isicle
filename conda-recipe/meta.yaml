@@ -13,6 +13,7 @@ extra:
     - conda-forge
     - bioconda
     - smcolby
+    - anaconda
 
 build:
   number: 0
@@ -24,6 +25,7 @@ requirements:
     - python
   run:
     - crest >=2.12
+    - joblib
     - mobcal-shm
     - numpy >=1.19.4
     - nwchem >=7.0.2
