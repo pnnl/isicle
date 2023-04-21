@@ -201,6 +201,22 @@ def test_load_pickle(geometry):
     os.remove(path)
 
 
+def test_load_mol_obj():
+    mol = Chem.MolFromSmiles("CCCC")
+
+    # Load
+    geom = isicle.io.load_mol_obj(mol)
+
+    # Check instance is correct type
+    assert isinstance(geom, isicle.geometry.Geometry)
+
+    # Check mol attribute exists
+    assert hasattr(geom, "mol")
+
+    # Check mol attribute is populated
+    assert geom.mol is not None
+
+
 @pytest.mark.parametrize(
     "path,instance",
     [
