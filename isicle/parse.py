@@ -8,7 +8,6 @@ import numpy as np
 from openbabel import pybel
 import isicle
 
-
 class NWChemParser(FileParserInterface):
     '''Extract text from an NWChem simulation output file.'''
 
@@ -29,7 +28,7 @@ class NWChemParser(FileParserInterface):
         geoms = sorted(glob.glob(os.path.join(search, '*.xyz')))
         
         if len(geoms) > 0:
-            return isicle.geometry.load(geoms[-1])
+            return isicle.io.load(geoms[-1])
 
         raise Exception
 
@@ -57,16 +56,22 @@ class NWChemParser(FileParserInterface):
         shields = []
 
         for line in self.contents:
+            if " SHIELDING" in line:
+                shield_idxs = [int(x) for x in line.split()[2:]]
+                if len(shield_idxs) == 0:
+                    collect_idx = True
+
             if "Atom:" in line:
-                idx = int(line.split()[1])
                 atom = line.split()[2]
+                idx = line.split()[1]
                 ready = True
+
             elif "isotropic" in line and ready is True:
                 shield = float(line.split()[-1])
-                shield_idxs.append(idx)
                 shield_atoms.append(atom)
                 shields.append(shield)
-                ready = False
+                if collect_idx is True:
+                    shield_idxs.append(int(idx))
 
         if len(shields) > 1:
             return {'index': shield_idxs,
@@ -205,7 +210,6 @@ class NWChemParser(FileParserInterface):
             df.Number = df.Number.astype('int')
             df.Charge = df.Number - df.Charge.astype('float')
 
-            # TODO: is this how we want to return?
             return df.Charge.values
 
         raise Exception
@@ -414,7 +418,6 @@ class NWChemParser(FileParserInterface):
             pickle.dump(self, f)
         return
 
-
 class ImpactParser(FileParserInterface):
     '''Extract text from an Impact mobility calculation output file.'''
 
@@ -471,7 +474,6 @@ class ImpactParser(FileParserInterface):
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
-
 class MobcalParser(FileParserInterface):
     '''Extract text from a MOBCAL mobility calculation output file.'''
 
@@ -508,7 +510,6 @@ class MobcalParser(FileParserInterface):
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
-
 class SanderParser(FileParserInterface):
     '''Extract text from an Sander simulated annealing simulation output file.'''
 
@@ -524,7 +525,6 @@ class SanderParser(FileParserInterface):
         '''Write parsed object to file'''
         raise NotImplementedError
 
-
 class XTBParser(FileParserInterface):
     def __init__(self):
         self.contents = None
@@ -536,7 +536,7 @@ class XTBParser(FileParserInterface):
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
-
+        return self.contents
 
     def _crest_energy(self):
 
@@ -725,10 +725,10 @@ class XTBParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
-            x = [isicle.geometry.load(i) for i in geom_list]
+            x = [isicle.io.load(i) for i in geom_list]
 
         else:
-            x = [isicle.geometry.load(self.xyz_path)]
+            x = [isicle.io.load(self.xyz_path)]
 
         return isicle.conformers.ConformationalEnsemble(x)
 

@@ -54,7 +54,7 @@ class MobcalWrapper(WrapperInterface):
         self.logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
 
         # All other formats
-        self.geom.save(self.infile)
+        isicle.io.save(self.infile, self.geom)
 
     def _configure_lennard_jones(self, path=None):
         if path is None:

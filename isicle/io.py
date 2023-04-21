@@ -1,10 +1,12 @@
 import os
 import pickle
+import joblib
 from io import StringIO
 
 import isicle
 import pandas as pd
 from rdkit import Chem
+from openbabel import pybel
 
 
 def _load_text(path: str):
@@ -55,6 +57,12 @@ def load_xyz(path):
 
     # Load xyz file contents
     geom.xyz = _load_text(path)
+
+    # Create mol object
+    mols = list(pybel.readfile("xyz", path))
+    mo = mols[0]
+    mo_block = mo.write("mol")
+    geom.mol = Chem.MolFromMolBlock(mo_block, removeHs=False)
 
     return geom
 
@@ -297,6 +305,27 @@ def load_pickle(path):
         return pickle.load(f)
 
 
+def load_joblib(path):
+    """
+    Load joblib file.
+
+    Parameters
+    ----------
+    path : str
+        Path to pickle.
+
+    Returns
+    -------
+    data
+        Previously pickled object instance.
+
+    """
+
+    # Load file
+    with open(path, "rb") as f:
+        return joblib.load(f)
+
+
 def _check_mol_obj(mol_obj):
     """ """
     try:
@@ -369,6 +398,9 @@ def load(path, force=False):
         if "mol" in extension:
             return load_mol(path)
 
+        if extension == ".joblib":
+            return load_joblib(path)
+
         if extension == ".xyz":
             return load_xyz(path)
 
@@ -414,6 +446,23 @@ def save_xyz(path, geom):
     # Write to file
     with open(path, "w") as f:
         f.write(geom.to_xyzblock())
+
+
+def save_joblib(path, data):
+    """
+    Save object as joblib file.
+
+    Parameters
+    ----------
+    path : str
+        Path to output file.
+    data : object
+        Aribtrary object instance.
+
+    """
+
+    with open(path, "wb") as f:
+        joblib.dump(data, f)
 
 
 def save_pickle(path, data):
@@ -597,6 +646,9 @@ def save(path, data):
     # Extension checks
     if extension == ".pkl":
         return save_pickle(path, data)
+
+    if extension == ".joblib":
+        return save_joblib(path, data)
 
     if extension == ".mfj":
         return save_mfj(path, data)

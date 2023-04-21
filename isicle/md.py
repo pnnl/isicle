@@ -2,7 +2,6 @@ import isicle
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 import subprocess
-import tempfile
 import os
 from isicle.geometry import XYZGeometry
 
@@ -64,7 +63,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
     '''
     Wrapper for xtb functionality.
 
-    Implements :class:`~isicle.interfaces.MDWrapperInterface` to ensure required methods are exposed.
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
 
     Attributes
     ----------
@@ -105,6 +104,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         # Assign geometry
         self.geom = geom
+        self.basename = self.geom.basename
 
         # Save geometry
         self.save_geometry()
@@ -123,13 +123,13 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Path operationspyth
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
-        outfile = os.path.join(self.temp_dir,
-                               '{}.{}'.format(self.geom.basename,
+        geomfile = os.path.join(self.temp_dir,
+                               '{}.{}'.format(self.basename,
                                               self.fmt.lower()))
 
         # All other formats
-        self.geom.save(outfile)
-        self.geom.path = outfile
+        isicle.io.save(geomfile, self.geom)
+        self.geom.path = geomfile
 
     def _configure_xtb(self, forcefield='gfn2', optlevel='normal', charge=None, solvation=None):
         '''
@@ -155,7 +155,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s = 'xtb '
 
         # Add geometry
-        s += '{}.{}'.format(self.geom.basename, self.fmt.lower())
+        s += '{}.{}'.format(self.basename, self.fmt.lower())
 
         # Add optimize tag
         s += ' --opt ' + optlevel + ' '
@@ -174,7 +174,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add output
         s += '&>' + ' '
 
-        s += '{}.{}'.format(self.geom.basename, "out")
+        s += '{}.{}'.format(self.basename, "out")
         return s
 
     def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gfn2',
@@ -219,7 +219,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         # Add geometry
         s += str(os.path.join(self.temp_dir,
-                              '{}.{}'.format(self.geom.basename,
+                              '{}.{}'.format(self.basename,
                                              self.fmt.lower())))
 
         s += ' '
@@ -264,7 +264,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s += '&>' + ' '
 
         s += os.path.join(self.temp_dir,
-                          '{}.{}'.format(self.geom.basename,
+                          '{}.{}'.format(self.basename,
                                          "out"))
 
         return s
@@ -353,7 +353,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         subprocess.call(job, shell=True)
         os.chdir(owd)
 
-
     def finish(self):
         '''
         Parse results, save xtb output files, and clean temporary directory
@@ -361,7 +360,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         parser = XTBParser()
 
-        parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
+        parser.load(os.path.join(self.temp_dir, self.basename + '.out'))
+        self.output = parser.load(os.path.join(self.temp_dir, self.basename + '.out'))
+
         result = parser.parse()
 
         self.__dict__.update(result)
@@ -369,11 +370,11 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != 'geom'})
-        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
         
         if self.task != 'optimize':
             conformerID = 1
             for i in self.geom:
+                i.__dict__.update(basename=self.basename)
                 i.__dict__.update(conformerID=conformerID)
                 conformerID += 1
             return self

@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 from isicle.geometry import Geometry, XYZGeometry
 from isicle.utils import TypedList, safelist
+from isicle import io
 
 
 def _function_selector(func):
@@ -108,7 +109,7 @@ def boltzmann(value, energy, index=None):
 
     '''
 
-    df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
+    df = pd.DataFrame.from_dict({'value': value, 'energy': energy, 'index': -1})
 
     if index is not None:
         df['index'] = index
@@ -540,4 +541,4 @@ class ConformationalEnsemble(TypedList):
 
         '''
 
-        self.save_pickle(path)
+        io.save(path, self)
