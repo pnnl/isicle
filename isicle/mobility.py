@@ -2,7 +2,7 @@ import isicle
 from isicle.interfaces import WrapperInterface
 import os
 import subprocess
-from pkg_resources import resource_filename
+from importlib import resources
 import shutil
 
 
@@ -58,7 +58,7 @@ class MobcalWrapper(WrapperInterface):
 
     def _configure_lennard_jones(self, path=None):
         if path is None:
-            path = resource_filename('isicle', 'resources/lennard_jones.txt')
+            path = resources.files('isicle') / 'resources/lennard_jones.txt'
 
         self.atom_params = os.path.join(self.temp_dir,
                                         'atomtype_parameters.in')

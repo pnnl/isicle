@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 import collections
-from pkg_resources import resource_filename
+from importlib import resources
 import shutil
 import tempfile
 
@@ -99,7 +99,7 @@ class TypedList(collections.abc.MutableSequence):
 
 
 def atomic_masses():
-    path = resource_filename('isicle', 'resources/atomic_masses.tsv')
+    path = resources.files('isicle') / 'resources/atomic_masses.tsv'
     return pd.read_csv(path, delim_whitespace=True)
 
 
