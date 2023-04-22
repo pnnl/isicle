@@ -1,7 +1,10 @@
+import os
 from setuptools import setup, find_packages
+import sys
 
-with open('isicle/__init__.py') as f:
-    exec([x for x in f.readlines() if '__version__' in x][0])
+sys.path.append(os.path.dirname(__file__))
+
+import isicle
 
 with open('README.md') as f:
     readme = f.read()
@@ -16,7 +19,7 @@ pkgs = find_packages(exclude=('examples', 'docs', 'resources'))
 
 setup(
     name='isicle',
-    version=__version__,  # TODO: switch to versioneer.get_version() or alternate method
+    version=isicle.__version__,  # TODO: switch to versioneer.get_version() or alternate method
     description='ISiCLE: in silico chemical library engine',
     long_description=readme,
     long_description_content_type='text/markdown',
