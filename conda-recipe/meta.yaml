@@ -28,7 +28,7 @@ requirements:
     - joblib
     - mobcal-shm # [linux64]
     - numpy >=1.19.4
-    - nwchem >=7.0.2 # [not win]
+    - nwchem >=7.0.2
     - openbabel >=3.0.0
     - openmpi
     - pandas >=1.1.4
