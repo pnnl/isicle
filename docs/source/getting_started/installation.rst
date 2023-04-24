@@ -32,7 +32,7 @@ Activate the virtual environment:
 
 .. code-block:: console
   
-  $ conda activate deimos
+  $ conda activate isicle
 
 Install ISiCLE using `pip <https://pypi.org/project/pip/>`_:
 
