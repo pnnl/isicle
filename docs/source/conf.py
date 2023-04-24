@@ -10,6 +10,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from datetime import datetime
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
@@ -18,11 +19,19 @@ import isicle
 # -- Project information -----------------------------------------------------
 
 project = 'isicle'
-copyright = '2018-2021, Pacific Northwest National Laboratory'
+version = isicle.__version__
+current_year = datetime.today().year
+copyright = '2018-{}, Pacific Northwest National Laboratory'.format(
+    current_year)
 author = 'Sean M. Colby'
+rst_prolog = """
+.. |current_year| replace:: {}
+""".format(current_year)
 
 
 # -- General configuration ---------------------------------------------------
+
+master_doc = 'index'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -32,7 +41,8 @@ extensions = ["sphinx.ext.autodoc",
               "sphinx.ext.intersphinx",
               "sphinx.ext.todo",
               "sphinx.ext.viewcode",
-              "sphinx.ext.napoleon"]
+              "sphinx.ext.napoleon",
+              "nbsphinx"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -40,8 +50,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -49,6 +58,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
+html_logo = 'assets/logo.svg'
+html_theme_options = {
+    'logo_only': True,
+    'display_version': False,
+    'collapse_navigation': True,
+    'navigation_depth': 1
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
