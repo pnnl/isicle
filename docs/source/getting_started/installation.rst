@@ -26,7 +26,7 @@ On Linux:
   
   $ conda env create -f envs/linux.yml
   or
-  $ mamba env create -f envs/linx.yml
+  $ mamba env create -f envs/linux.yml
 
 Activate the virtual environment:
 
