@@ -1,6 +1,7 @@
+joblib
 numpy>=1.19.4
 # openbabel>=3.0.0
 pandas>=1.1.4
-rdkit>=2019
+# rdkit<=2022.09.1
 snakemake>=6.3.0
 statsmodels>=0.11.1

@@ -1,7 +1,9 @@
 sphinx >=3
 sphinxcontrib-napoleon
 sphinx_rtd_theme
+joblib
 numpy>=1.19.4
 pandas>=1.1.4
+rdkit<=2022.09.1
 snakemake>=6.3.0
 statsmodels>=0.12.1
