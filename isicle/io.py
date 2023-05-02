@@ -33,7 +33,7 @@ def _load_text(path: str):
     return [x.strip() for x in contents]
 
 
-def load_xyz(path):
+def load_xyz(path, basename=None):
     """
     Load XYZ from file.
 
@@ -41,6 +41,8 @@ def load_xyz(path):
     ----------
     path : str
         Path to XYZ file.
+    basename : str
+        Basename to save files as, if none default to inchikey
 
     Return
     -------
@@ -52,9 +54,6 @@ def load_xyz(path):
     # Initialize XYZGeometry instance
     geom = isicle.geometry.XYZGeometry()
 
-    # Populate basename
-    geom.basename = os.path.splitext(os.path.basename(path))[0]
-
     # Load xyz file contents
     geom.xyz = _load_text(path)
 
@@ -63,6 +62,15 @@ def load_xyz(path):
     mo = mols[0]
     mo_block = mo.write("mol")
     geom.mol = Chem.MolFromMolBlock(mo_block, removeHs=False)
+
+    # Populate basename
+    if basename is None:
+        try:
+            geom.basename = os.path.splitext(os.path.basename(path))[0]
+        except:
+            geom.basename = Chem.MolToInchiKey(mol)
+    else:
+        geom.basename = basename
 
     return geom
 
@@ -84,7 +92,7 @@ def _check_mol(mol, string_struct):
         raise ValueError("Could not convert structure to mol: {}".format(string_struct))
 
 
-def _load_mol_from_file(path, func=None):
+def _load_mol_from_file(path, func=None, basename=None):
     """
     Load RDKit mol representation from file (pdb, mol, mol2).
 
@@ -92,6 +100,8 @@ def _load_mol_from_file(path, func=None):
     ----------
     path : str
         Path to supported file.
+    func : onj
+    basename : str
 
     Returns
     -------
@@ -102,9 +112,6 @@ def _load_mol_from_file(path, func=None):
 
     # Initialize geometry instance
     geom = isicle.geometry.Geometry()
-
-    # Populate basename
-    geom.basename = os.path.splitext(os.path.basename(path))[0]
 
     # Load mol representation
     if func == Chem.MolFromMolFile:
@@ -117,6 +124,15 @@ def _load_mol_from_file(path, func=None):
 
     # Assign to instance attribute
     geom.mol = mol
+
+    # Populate basename
+    if basename is None:
+        try:
+            geom.basename = os.path.splitext(os.path.basename(path))[0]
+        except:
+            geom.basename = Chem.MolToInchiKey(mol)
+    else:
+        geom.basename = basename
 
     return geom
 
@@ -178,7 +194,7 @@ def load_pdb(path):
     return _load_mol_from_file(path, func=Chem.MolFromPDBFile)
 
 
-def _load_line_notation(path, func=None, force=False, string=False):
+def _load_line_notation(path, func=None, force=False, string=False, basename=None):
     """
     Load line notation representation (InChI, SMILES) from file.
 
@@ -200,15 +216,9 @@ def _load_line_notation(path, func=None, force=False, string=False):
     geom = isicle.geometry.Geometry()
 
     if string:
-        # Populate basename
-        geom.basename = None
-
         # Load text
         text = path
     else:
-        # Populate basename
-        geom.basename = os.path.splitext(os.path.basename(path))[0]
-
         # Load text
         text = _load_text(path)[0].strip()
 
@@ -230,10 +240,16 @@ def _load_line_notation(path, func=None, force=False, string=False):
     # Populate rdkit mol instance attribute
     geom.mol = mol
 
+    # Populate basename
+    if basename is None:
+        geom.basename = Chem.MolToInchiKey(mol)
+    else:
+        geom.basename = basename
+
     return geom
 
 
-def load_smiles(path, force=False):
+def load_smiles(path, force=False, basename=None):
     """
     Load SMILES from file.
 
@@ -252,14 +268,14 @@ def load_smiles(path, force=False):
     """
     extension = os.path.splitext(path)[-1].lower()
     if "smi" in extension:
-        return _load_line_notation(path, func=Chem.MolFromSmiles, force=force)
+        return _load_line_notation(path, func=Chem.MolFromSmiles, force=force, basename=basename)
     else:
         return _load_line_notation(
-            path, func=Chem.MolFromSmiles, force=force, string=True
+            path, func=Chem.MolFromSmiles, force=force, string=True, basename=basename
         )
 
 
-def load_inchi(path, force=False):
+def load_inchi(path, force=False, basename=None):
     """
     Load InChI from file.
 
@@ -278,10 +294,10 @@ def load_inchi(path, force=False):
     """
     if "inchi=" in path.lower():
         return _load_line_notation(
-            path, func=Chem.MolFromInchi, force=force, string=True
+            path, func=Chem.MolFromInchi, force=force, string=True, basename=basename
         )
     else:
-        return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
+        return _load_line_notation(path, func=Chem.MolFromInchi, force=force, basename=basename)
 
 
 def load_pickle(path):
@@ -335,7 +351,7 @@ def _check_mol_obj(mol_obj):
         raise
 
 
-def load_mol_obj(mol_obj):
+def load_mol_obj(mol_obj, basename=None):
     """
     Load RDKit mol object into geometry instance
 
@@ -354,19 +370,22 @@ def load_mol_obj(mol_obj):
     # Initialize geometry instance
     geom = isicle.geometry.Geometry()
 
-    # Populate basename
-    geom.basename = None
-
     # Validate mol object
     _check_mol_obj(mol_obj)
 
     # Populate rdkit mol instance attribute
     geom.mol = mol_obj
 
+    # Populate basename
+    if basename is None:
+        geom.basename = Chem.MolToInchiKey(mol)
+    else:
+        geom.basename = basename
+
     return geom
 
 
-def load(path, force=False):
+def load(path, force=False, basename=None):
     """
     Reads in molecule information of the following supported file types:
     .smi, .inchi, .xyz, .mol, .mol2, .pkl, .pdb. Direct loaders can also
@@ -393,33 +412,35 @@ def load(path, force=False):
             return load_pickle(path)
 
         if "mol2" in extension:
-            return load_mol2(path)
+            return load_mol2(path, basename=basename)
 
         if "mol" in extension:
-            return load_mol(path)
+            return load_mol(path, basename=basename)
 
         if extension == ".joblib":
             return load_joblib(path)
 
         if extension == ".xyz":
-            return load_xyz(path)
+            return load_xyz(path, basename=basename)
 
         if extension == ".pdb":
-            return load_pdb(path)
+            return load_pdb(path, basename=basename)
 
         if extension == ".inchi" or "inchi=" in path.lower():
-            return load_inchi(path, force=force)
+            return load_inchi(path, force=force, basename=basename)
 
         try:
-            return load_smiles(path, force=force)
+            return load_smiles(path, force=force, basename=basename)
         except:
             raise IOError("Extension {} not recognized.".format(extension))
 
     else:
         try:
-            return load_mol_obj(path)
+            return load_mol_obj(path, basename=basename)
         except:
             raise IOError("Not a valid RDKit mol object passed.")
+        
+
 
 
 def save_xyz(path, geom):
