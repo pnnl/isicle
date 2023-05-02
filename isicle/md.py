@@ -3,7 +3,7 @@ from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 import subprocess
 import os
-from isicle.geometry import XYZGeometry
+from isicle.geometry import XYZGeometry, Geometry
 
 '''
 Files resulting from an xtb job always run in the same directory that the command is
@@ -29,7 +29,7 @@ def _program_selector(program):
 
     '''
 
-    program_map = {'xtb': XTBWrapper}
+    program_map = {'xtb': XTBWrapper, 'rdkit': RDKitWrapper}
 
     if program.lower() in program_map.keys():
         return program_map[program.lower()]()
@@ -81,15 +81,12 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
     '''
 
-    _defaults = ('history', 'geom')
+    _defaults = ['geom']
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
-
-        if self.history is None:
-            self.history = []
 
     def set_geometry(self, geom):
         '''
@@ -366,18 +363,19 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         result = parser.parse()
 
         self.__dict__.update(result)
-        self._update_history(self.task)
 
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != 'geom'})
-        
+            i.__dict__.update(basename=self.basename)
+
         if self.task != 'optimize':
             conformerID = 1
             for i in self.geom:
-                i.__dict__.update(basename=self.basename)
                 i.__dict__.update(conformerID=conformerID)
                 conformerID += 1
             return self
+        else:
+            self.geom = self.geom[0]
 
     def run(self, geom, **kwargs):
         '''
@@ -415,6 +413,49 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.finish()
 
         return self
+
+
+class RDKitWrapper(Geometry, WrapperInterface):
+
+    '''
+    Wrapper for rdkit functionality.
+
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
+
+    Attributes
+    ----------
+    temp_dir : str
+        Path to temporary directory used for simulation.
+    task_map : dict
+        Alias mapper for supported molecular dynamic presets. Includes
+        "optimize", "conformer", "nmr", "protonate", "deprotonate", and "tautomer".
+    geom : :obj:`isicle.geometry.Geometry`
+        Internal molecule representation.
+    fmt : str
+        File extension indicator.
+    job_list : str
+        List of commands for simulation.
+
+    '''
+
+    _defaults = ['geom']
+    _default_value = None
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(**kwargs)
+
+
+    def set_geometry(self):
+        return
+    def configure(self):
+        return
+    def submit(self):
+        return
+    def run(self):
+        return
+    def finish(self):
+        return
 
 
 def amber():
