@@ -86,7 +86,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         Configuration information for simulation.
 
     '''
-    _defaults = ('history', 'geom')
+    _defaults = ['geom']
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -98,9 +98,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         '''
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
-
-        if self.history is None:
-            self.history = []
 
         self.task_map = {'optimize': self._configure_optimize,
                          'energy': self._configure_energy,
@@ -898,7 +895,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         result = parser.parse()
 
         self.__dict__.update(result)
-        self._update_history(self.tasks)
         self.geom.add___dict__({k: v for k, v in result.items() if k != 'geom'})
         self.output = parser.load(os.path.join(self.temp_dir,
                                                  self.basename + '.out'))

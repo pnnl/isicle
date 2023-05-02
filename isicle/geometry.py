@@ -24,20 +24,14 @@ class XYZGeometry(XYZGeometryInterface):
         contains the "from" key, which reports the last operation performed on
         this compound (e.g. load, dft_optimize). To generate compound
         properties, use get_* and *_optimize functions.
-    history: list of str
-        All steps performed on this compound since initial generation. For
-        example, last step of history should always match "from".
     """
 
-    _defaults = ("history", "xyz")
+    _defaults = ["xyz"]
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
-
-        if self.history is None:
-            self.history = []
 
     def _upgrade_to_Geometry(self, mol):
         """
@@ -60,7 +54,6 @@ class XYZGeometry(XYZGeometryInterface):
             mol = self.mol
         # Create dict to load in
         d = self.__dict__.copy()
-        d["history"] = self.get_history()
         d["mol"] = mol
         d.pop("xyz")
 
@@ -90,9 +83,6 @@ class XYZGeometry(XYZGeometryInterface):
             Path to file to load in xyz from
         xyz: list of str (optional)
             Lines from xyz block to use as structure representation.
-        event: str (optional)
-            Operation that led to this structure change, for history-tracking
-            purposes within the instance returned.
 
         Returns
         -------
@@ -119,25 +109,7 @@ class XYZGeometry(XYZGeometryInterface):
             elif xyz is not None:
                 geom.xyz = xyz
 
-        # Add event that led to this change in structure
-        # If event is None, nothing will happen
-        geom._update_history(event)
-
         return geom
-
-    def _update_history(self, event):
-        """Add event to this instance's history and update 'from' in the
-        global properties dictionary. If none, nothing is updated. Returns
-        a copy of the full history."""
-        if event is not None:
-            self.history.append(event)
-            self.__dict__["from"] = event
-        return self.get_history()
-
-    def get_history(self):
-        """Returns a copy of this object's history (events that led to its
-        current state)."""
-        return self.history[:]
 
     def get_basename(self):
         """Returns a copy of this object's basename (original filename)."""
@@ -290,20 +262,15 @@ class Geometry(XYZGeometry, GeometryInterface):
         Current structure.
     __dict__ : dict
         Dictionary of properties calculated for this structure.
-    history: list of str
-        All steps performed on this compound since initial generation. For
-        example, last step of history should always match "from".
     """
 
-    _defaults = ("history", "mol")
+    _defaults = ["mol"]
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
-        if self.history is None:
-            self.history = []
 
     def _downgrade_to_XYZGeometry(self, xyz):
         """
@@ -329,8 +296,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         return XYZGeometry(**d)
 
     def _update_structure(
-        self, inplace, mol=None, xyz=None, xyz_filename=None, event=None
-    ):
+        self, inplace, mol=None, xyz=None, xyz_filename=None):
         """
         Return object with given structure. If inplace and a mol structure is
         provided, manipulates the current instance. Otherwise, a new
@@ -352,9 +318,6 @@ class Geometry(XYZGeometry, GeometryInterface):
             Path to file to load in xyz from
         xyz: list of str (optional)
             Lines from xyz block to use as structure representation.
-        event: str (optional)
-            Operation that led to this structure change, for history-tracking
-            purposes within the instance returned.
 
         Returns
         -------
@@ -383,7 +346,6 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         # Add event that led to this change in structure
         # If event is None, nothing will happen
-        geom._update_history(event)
 
         return geom
 
@@ -445,7 +407,6 @@ class Geometry(XYZGeometry, GeometryInterface):
                 _forcefield_selector(forcefield, mol)(mol, maxIters=ff_iter)
 
         geom = self._update_structure(inplace, mol=mol)
-        geom._update_history("initial_optimize")
 
         return geom
 
@@ -486,7 +447,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         # if relevant to future use, returns atom count post desalting
 
         geom = self._update_structure(inplace, mol=mol)
-        geom._update_history("desalt")
         # TODO: add any properties from this operation to global_props?
 
         return geom
@@ -543,7 +503,6 @@ class Geometry(XYZGeometry, GeometryInterface):
                 mol = rms[0]
 
         geom = self._update_structure(inplace, mol=mol)
-        geom._update_history("neutralize")
         # TODO: add any properties from this operation to global_props?
 
         return geom
@@ -589,7 +548,6 @@ class Geometry(XYZGeometry, GeometryInterface):
             return new_geoms
 
         geom = self._update_structure(inplace, mol=res[0])
-        geom._update_history("tautomerize")
         # TODO: add any properties from this operation to global_props?
 
         return geom
@@ -602,7 +560,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         """
         mol = Chem.KekulizeIfPossible(self.to_mol(), clearAromaticFlags=True)
         geom = self._update_structure(inplace, mol=mol, event="kekulize")
-        geom._update_history("kekulize")
         return geom
 
     def ionize(
@@ -709,7 +666,6 @@ class Geometry(XYZGeometry, GeometryInterface):
         """Return hard copy of this class instance."""
         # TODO: manage what should be passed, rather than all?
         d = self.__dict__.copy()
-        d["history"] = self.get_history()
         d["mol"] = self.to_mol()
         return type(self)(**d)
 

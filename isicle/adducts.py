@@ -218,7 +218,7 @@ def write(IonizationWrapper, path, fmt):
 class ExplicitIonizationWrapper(WrapperInterface):
     '''
     '''
-    _defaults = ('history', 'geom', 'adducts')
+    _defaults = ('geom', 'adducts')
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -227,8 +227,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
-        if self.history is None:
-            self.history = []
         if self.adducts is None:
             self.adducts = {}
 
@@ -442,8 +440,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
-        geom = isicle.geometry.Geometry(mol=mw, history=self.geom.get_history(), basename=self.geom.get_basename())
-        #geom._update_history('positive_ionize')
+        geom = isicle.geometry.Geometry(mol=mw, basename=self.geom.get_basename())
         self._update_geometry_charge(geom)
         return geom
 
@@ -568,8 +565,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
-        geom = isicle.geometry.Geometry(mol=mw, history=self.geom.get_history(), basename=self.geom.get_basename())
-        #geom._update_history('negative_ionize')
+        geom = isicle.geometry.Geometry(mol=mw, basename=self.geom.get_basename())
         self._update_geometry_charge(geom)
         return geom
 
@@ -752,7 +748,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
         :obj:`~isicle.adducts.ExplicitIonizationWrapper`
 
         '''
-        geom._update_history('ionize')
         # New instance
         self = ExplicitIonizationWrapper(**geom.__dict__)
         # Sets geom to self.geom
@@ -801,14 +796,12 @@ class ExplicitIonizationWrapper(WrapperInterface):
 class CRESTIonizationWrapper(WrapperInterface):
     '''
     '''
-    _defaults = ('history', 'geom', 'adducts')
+    _defaults = ('geom', 'adducts')
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
-        if self.history is None:
-            self.history = []
         if self.adducts is None:
             self.adducts = {}
 
@@ -1004,7 +997,6 @@ class CRESTIonizationWrapper(WrapperInterface):
         :obj:`~isicle.adducts.CRESTIonizationWrapper`
 
         '''
-        geom._update_history('ionize')
         self = CRESTIonizationWrapper(**geom.__dict__)
 
         self.set_geometry(geom)

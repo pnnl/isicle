@@ -536,7 +536,7 @@ class XTBParser(FileParserInterface):
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
-        return self.contents
+        #return self.contents
 
     def _crest_energy(self):
 
@@ -753,63 +753,65 @@ class XTBParser(FileParserInterface):
             result['protocol'] = self._parse_protocol()
         except:
             pass
+        try:
+            result['timing'] = self._parse_timing()
+        except:
+            pass
 
-        if self.path.endswith('xyz'):
+        try:
+            result['energy'] = self._parse_energy()
+        except:
+            pass
 
-            if 'geometry' in to_parse:
-                try:
-                    self.xyz_path = self.path
-                    result['geom'] = self._parse_xyz()
+        # Parse geometry from assoc. XYZ file
+        try:
+            if self.path.endswith('xyz'):
+
+                if 'geometry' in to_parse:
+                    try:
+                        self.xyz_path = self.path
+                        result['geom'] = self._parse_xyz()
                     
-                except:
-                    pass
+                    except:
+                        pass
 
-        if self.path.endswith('out') or self.path.endswith('log'):
+            if self.path.endswith('out') or self.path.endswith('log'):
 
-            # try geometry parsing
-            try:
-                XYZ = None
-                if result['protocol'].split()[0] == 'xtb':
-                    self.parse_opt = True
-                    XYZ = 'xtbopt.xyz'
-                if result['protocol'].split()[1] == 'crest':
+                # try geometry parsing
+                try:
+                    XYZ = None
+                    if result['protocol'].split()[0] == 'xtb':
+                        self.parse_opt = True
+                        XYZ = 'xtbopt.xyz'
+                    if result['protocol'].split()[1] == 'crest':
 
-                    if '-deprotonate' in result['protocol']:
-                        self.parse_isomer = True
-                        XYZ = 'deprotonated.xyz'
-                    elif '-protonate' in result['protocol']:
-                        self.parse_isomer = True
-                        XYZ = 'protonated.xyz'
-                    elif '-tautomer' in result['protocol']:
-                        self.parse_isomer = True
-                        XYZ = 'tautomers.xyz'
-                    else:
-                        self.parse_crest = True
-                        XYZ = 'crest_conformers.xyz'
+                        if '-deprotonate' in result['protocol']:
+                            self.parse_isomer = True
+                            XYZ = 'deprotonated.xyz'
+                        elif '-protonate' in result['protocol']:
+                            self.parse_isomer = True
+                            XYZ = 'protonated.xyz'
+                        elif '-tautomer' in result['protocol']:
+                            self.parse_isomer = True
+                            XYZ = 'tautomers.xyz'
+                        else:
+                            self.parse_crest = True
+                            XYZ = 'crest_conformers.xyz'
 
 
-                if XYZ is None:
-                    raise RuntimeError('XYZ file associated with XTB job not available,\
+                    if XYZ is None:
+                        raise RuntimeError('XYZ file associated with XTB job not available,\
                                         please parse separately.')
 
-                else:
-                    temp_dir = os.path.dirname(self.path)
-                    self.xyz_path = os.path.join(temp_dir, XYZ)
+                    else:
+                        temp_dir = os.path.dirname(self.path)
+                        self.xyz_path = os.path.join(temp_dir, XYZ)
 
-                    result['geom'] = self._parse_xyz()
-            except:
-                pass
-
-            try:
-                result['timing'] = self._parse_timing()
-            except:
-                pass
-
-            try:
-                result['energy'] = self._parse_energy()
-            except:
-                pass
-
+                        result['geom'] = self._parse_xyz()
+                except:
+                    pass
+        except:
+            pass
         return result
 
     def save(self, path):
