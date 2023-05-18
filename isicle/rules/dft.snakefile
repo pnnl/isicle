@@ -38,7 +38,7 @@ rule createDFTConfig:
     shell:
         'python -m isicle.scripts.generateNW {input.xyz} --dft --charge `cat {input.charge}` \
          --template {config[nwchem][dft_template]} &> {log}'
-         
+
 
 # run NWChem
 rule dft:
