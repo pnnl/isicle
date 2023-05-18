@@ -1,6 +1,6 @@
 import argparse
-import pybel
-import openbabel
+from openbabel import pybel
+from openbabel import openbabel
 from isicle import __version__
 
 
@@ -16,12 +16,18 @@ def rmsd(mol1, mol2):
     return align.GetRMSD()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Calculate RMSD among molecules')
-    parser.add_argument('ref', help='reference .xyz file')
-    parser.add_argument('outfile', help='path to output .rmsd file')
-    parser.add_argument('infiles', nargs='+', help='input .xyz files')
-    parser.add_argument('-v', '--version', action='version', version=__version__, help='print version and exit')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Calculate RMSD among molecules")
+    parser.add_argument("ref", help="reference .xyz file")
+    parser.add_argument("outfile", help="path to output .rmsd file")
+    parser.add_argument("infiles", nargs="+", help="input .xyz files")
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=__version__,
+        help="print version and exit",
+    )
 
     args = parser.parse_args()
 
@@ -29,5 +35,5 @@ if __name__ == '__main__':
     for mol in args.infiles:
         total += rmsd(args.ref, mol)
 
-    with open(args.outfile, 'w') as f:
-        f.write(str(total) + '\n')
+    with open(args.outfile, "w") as f:
+        f.write(str(total) + "\n")
