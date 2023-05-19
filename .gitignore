@@ -7,7 +7,6 @@ tmp/
 .DS_store
 input/
 output/
-data/
 .snakemake/
 result/
 
