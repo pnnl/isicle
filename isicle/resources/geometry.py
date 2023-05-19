@@ -50,9 +50,9 @@ class Box:
         # Determine the edge positions of the box along the x-axis
         [zleft, zright] = self.getBoxEdges(2)
 
-        nx = np.int(np.round((xright - xleft) / self.h) + 1)
-        ny = np.int(np.round((yright - yleft) / self.h) + 1)
-        nz = np.int(np.round((zright - zleft) / self.h) + 1)
+        nx = np.int64(np.round((xright - xleft) / self.h) + 1)
+        ny = np.int64(np.round((yright - yleft) / self.h) + 1)
+        nz = np.int64(np.round((zright - zleft) / self.h) + 1)
 
         self.logger.debug("nx = %s ny = %s nz = %s", nx, ny, nz)
 
@@ -142,18 +142,18 @@ class Box:
 
             x1 = np.floor((atom_x - self.xleft - r_atom) / self.h)
             x2 = np.ceil((atom_x - self.xleft + r_atom) / self.h)
-            ix1 = np.int(x1)
-            ix2 = np.int(x2)
+            ix1 = np.int64(x1)
+            ix2 = np.int64(x2)
 
             y1 = np.floor((atom_y - self.yleft - r_atom) / self.h)
             y2 = np.ceil((atom_y - self.yleft + r_atom) / self.h)
-            iy1 = np.int(y1)
-            iy2 = np.int(y2)
+            iy1 = np.int64(y1)
+            iy2 = np.int64(y2)
 
             z1 = np.floor((atom_z - self.zleft - r_atom) / self.h)
             z2 = np.ceil((atom_z - self.zleft + r_atom) / self.h)
-            iz1 = np.int(z1)
-            iz2 = np.int(z2)
+            iz1 = np.int64(z1)
+            iz2 = np.int64(z2)
 
             for ix in range(ix1, ix2 + 1):
                 for iy in range(iy1, iy2 + 1):
@@ -284,9 +284,9 @@ def addAtomToMol(mol, atom, idx, covalent=True):
             rand_y = y1 + np.random.ranf() * (y2 - y1)
             rand_z = z1 + np.random.ranf() * (z2 - z1)
 
-            ix = np.int((rand_x - box.xleft) / box.h)
-            iy = np.int((rand_y - box.yleft) / box.h)
-            iz = np.int((rand_z - box.zleft) / box.h)
+            ix = np.int64((rand_x - box.xleft) / box.h)
+            iy = np.int64((rand_y - box.yleft) / box.h)
+            iz = np.int64((rand_z - box.zleft) / box.h)
 
             if acc_map[ix, iy, iz] == 0:
                 newatom_xyzr[0] = rand_x
