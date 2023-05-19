@@ -39,7 +39,7 @@ rule collectOutput:
         heccs= aggregate_adducts_He,
         n2ccs= aggregate_adducts_N2
     output:
-        heccs= join('combined_ccs','{id}_{adduct}.He.txt')
+        heccs= join('combined_ccs','{id}_{adduct}.He.txt'),
         n2ccs= join('combined_ccs','{id}_{adduct}.N2.txt')
     shell:
         '''
