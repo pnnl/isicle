@@ -14,7 +14,7 @@ ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) wo
 Installation
 ------------
 # Create the Conda Environment
-## For linux-64
+## linux-64
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
 conda create -n isicle -c conda-forge -c bioconda -c smcolby python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem mobcal-shm
@@ -25,7 +25,7 @@ Activate the virtual environment:
 conda activate isicle
 ```
 
-## For osx-64
+## osx-64
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
 conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem
@@ -39,7 +39,7 @@ conda activate isicle
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
 * [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
 
-## For other distributions (including osx-arm-64)
+## other distributions (including osx-arm-64)
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
 conda create -n isicle -c conda-forge -c bioconda -c ambermd python 'openbabel>3.0.0' rdkit snakemake numpy pandas yaml statsmodels nwchem
