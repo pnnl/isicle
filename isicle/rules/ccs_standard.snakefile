@@ -22,7 +22,7 @@ print(IDS)
 
 rule all:
     input:
-        expand(join('combined_ccs','{id}_{adduct}.txt'),
+        expand(join('output', 'combined_ccs','{id}_{adduct}.txt'),
                id=IDS, adduct=config['adducts'])
 
 def aggregate_adducts(wildcards):
@@ -36,8 +36,8 @@ rule collectOutput:
     input:
         aggregate_adducts
     output:
-        join('combined_ccs','{id}_{adduct}.txt')
+        join('output', 'combined_ccs','{id}_{adduct}.txt')
     shell:
         '''
-        cat {input} > output.combined
+        cat {input} > {output}
         '''

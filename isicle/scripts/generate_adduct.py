@@ -15,7 +15,7 @@ def parse_mol_index(mol):
     nonHList = []
     for obatom in ob.OBMolAtomIter(mol.OBMol):
         # for obatom in mol.atoms:
-        if obatom.GetAtomicNum() not in [1, 6]:  #!= 1:
+        if obatom.GetAtomicNum() != 1: #not in [1, 6]:  #
             idx = obatom.GetIdx()
             nonHList.append(idx)
             # nbatoms = ob.OBAtomAtomIter(obatom.OBAtom)

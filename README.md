@@ -29,10 +29,20 @@ conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
 * [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
 
+### win-64
+Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
+```bash
+conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit snakemake numpy pandas yaml statsmodels
+```
+Additionally, ensure the following third-party software is installed and added to your ``PATH``:
+* [Amber](https://ambermd.org/Installation.php) (required for MD)
+* [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
+* [NWChem](http://www.nwchem-sw.org/index.php/Download) (not required for ``ccs lite``)
+
 ### other distributions (including osx-arm-64)
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
-conda create -n isicle -c conda-forge -c bioconda -c ambermd python 'openbabel>3.0.0' rdkit snakemake numpy pandas yaml statsmodels nwchem
+conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit snakemake numpy pandas yaml statsmodels nwchem
 ```
 
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
