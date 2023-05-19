@@ -13,27 +13,17 @@ ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) wo
 
 Installation
 ------------
-# Create the Conda Environment
+# Create the virtual environment
 ## linux-64
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
 conda create -n isicle -c conda-forge -c bioconda -c smcolby python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem mobcal-shm
 ```
 
-Activate the virtual environment:
-```
-conda activate isicle
-```
-
 ## osx-64
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
 conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem
-```
-
-Activate the virtual environment:
-```
-conda activate isicle
 ```
 
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
@@ -49,20 +39,20 @@ Additionally, ensure the following third-party software is installed and added t
 * [Amber](https://ambermd.org/Installation.php) (required for MD)
 * [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
 
-Activate the virtual environment:
+# Activate the virtual environment
 ```
 conda activate isicle
 ```
 
-# Install ISiCLE to conda environment
+# Install ISiCLE to virtual environment
 Install ISiCLE using [``pip``](https://pypi.org/project/pip/):
 ```bash
 # clone/install
-git clone https://github.com/pnnl/isicle.git
+git clone -b bade-2023 https://github.com/pnnl/isicle.git
 pip install isicle/
 
 # direct
-pip install git+https://github.com/pnnl/isicle
+pip install git+https://github.com/pnnl/isicle@bade-2023
 ```
 
 Getting Started
