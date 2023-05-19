@@ -15,9 +15,7 @@ if 'stop' in config:
 
 rule all:
     input:
-        expand(abspath(join('combined_ccs','{id}_{adduct}.He.txt')),
-               id=IDS, adduct=config['adducts']),
-        expand(abspath(join('combined_ccs','{id}_{adduct}.N2.txt')),
+        expand(abspath(join('combined_ccs','{id}_{adduct}.txt')),
                id=IDS, adduct=config['adducts'])
 
 def aggregate_adducts_He(wildcards):
@@ -39,10 +37,11 @@ rule collectOutput:
         heccs= aggregate_adducts_He,
         n2ccs= aggregate_adducts_N2
     output:
-        heccs= join('combined_ccs','{id}_{adduct}.He.txt'),
-        n2ccs= join('combined_ccs','{id}_{adduct}.N2.txt')
+        #heccs= join('combined_ccs','{id}_{adduct}.He.txt'),
+        #n2ccs= join('combined_ccs','{id}_{adduct}.N2.txt')
+        join('combined_ccs','{id}_{adduct}.txt')
     shell:
         '''
-        cat {input.heccs} > {output.heccs}
-        cat {input.n2ccs} > {output.n2ccs}
+        cat {input.heccs} > {output}
+        cat {input.n2ccs} > {output}
         '''
