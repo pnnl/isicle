@@ -13,20 +13,48 @@ ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) wo
 
 Installation
 ------------
+# Create the Conda Environment
+## For linux-64
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
-conda create -n isicle -c conda-forge -c bioconda -c ambermd python=3.7 openbabel=2.4.1 rdkit ambertools snakemake numpy pandas yaml statsmodels
+conda create -n isicle -c conda-forge -c bioconda -c smcolby python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem mobcal-shm
 ```
-
-Additionally, ensure the following third-party software is installed and added to your ``PATH``:
-* [cxcalc](https://chemaxon.com/products/marvin/download) (license required)
-* [NWChem](http://www.nwchem-sw.org/index.php/Download) (not required for ``ccs lite``)
 
 Activate the virtual environment:
 ```
 conda activate isicle
 ```
 
+## For osx-64
+Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
+```bash
+conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem
+```
+
+Activate the virtual environment:
+```
+conda activate isicle
+```
+
+Additionally, ensure the following third-party software is installed and added to your ``PATH``:
+* [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
+
+## For other distributions (including osx-arm-64)
+Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
+```bash
+conda create -n isicle -c conda-forge -c bioconda -c ambermd python 'openbabel>3.0.0' rdkit snakemake numpy pandas yaml statsmodels nwchem
+```
+
+Additionally, ensure the following third-party software is installed and added to your ``PATH``:
+* [Amber](https://ambermd.org/Installation.php) (required for MD)
+* [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
+
+Activate the virtual environment:
+```
+conda activate isicle
+```
+
+# Install ISiCLE to conda environment
 Install ISiCLE using [``pip``](https://pypi.org/project/pip/):
 ```bash
 # clone/install
