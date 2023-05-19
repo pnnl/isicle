@@ -1,7 +1,7 @@
 from os.path import *
 
 # snakemake configuration
-include: 'mobility_alt.snakefile'
+include: 'mobility_alt.snakefile', 'adducts.snakefile'
 
 SMI, = glob_wildcards(abspath(join('input', '{id}.smi')))
 INCHI, = glob_wildcards(abspath(join('input', '{id}.inchi')))
