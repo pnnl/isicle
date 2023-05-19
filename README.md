@@ -1,7 +1,7 @@
 ISiCLE
 ======
 
-Overview
+# Overview
 --------
 ISiCLE, or the _in silico_ chemical library engine, is a pipeline for high-accuracy chemical property calculation. ISiCLE takes an [InChI](https://en.wikipedia.org/wiki/International_Chemical_Identifier) or [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) string as input, generates an initial 3D conformation, and subsequently optimizes this initial structure through molecular dynamics simulations and quantum chemistry optimizations. Finally, ISiCLE simulates desired properties (e.g. collision cross section, NMR chemical shifts) for each conformer yielded during molecular dynamics simulations to produce a single value, Boltzmann-weighted by relative Gibb's free energy, giving emphasis to properties from highly probable conformations.
 
@@ -11,33 +11,51 @@ ISiCLE is implemented using the [Snakemake](https://snakemake.readthedocs.io) wo
   <img align="center" src="resources/schematic.svg" width="40%" height="40%">
 </p>
 
-Installation
+# Installation
 ------------
+## Create the virtual environment
+### linux-64
 Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
 ```bash
-conda create -n isicle -c conda-forge -c bioconda -c ambermd python=3.7 openbabel=2.4.1 rdkit ambertools snakemake numpy pandas yaml statsmodels
+conda create -n isicle -c conda-forge -c bioconda -c smcolby python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem mobcal-shm
+```
+
+### osx-64
+Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
+```bash
+conda create -n isicle -c conda-forge -c bioconda python 'openbabel>3.0.0' rdkit ambertools snakemake numpy pandas yaml statsmodels nwchem
 ```
 
 Additionally, ensure the following third-party software is installed and added to your ``PATH``:
-* [cxcalc](https://chemaxon.com/products/marvin/download) (license required)
-* [NWChem](http://www.nwchem-sw.org/index.php/Download) (not required for ``ccs lite``)
+* [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
 
-Activate the virtual environment:
+### other distributions (including osx-arm-64)
+Use [``conda``](https://www.anaconda.com/download/) to create a new virtual environment with required dependencies:
+```bash
+conda create -n isicle -c conda-forge -c bioconda -c ambermd python 'openbabel>3.0.0' rdkit snakemake numpy pandas yaml statsmodels nwchem
+```
+
+Additionally, ensure the following third-party software is installed and added to your ``PATH``:
+* [Amber](https://ambermd.org/Installation.php) (required for MD)
+* [mobcal-shm](https://github.com/pnnl/mobcal-shm) (not required for ```ccs lite```)
+
+## Activate the virtual environment
 ```
 conda activate isicle
 ```
 
+## Install ISiCLE to virtual environment
 Install ISiCLE using [``pip``](https://pypi.org/project/pip/):
 ```bash
 # clone/install
-git clone https://github.com/pnnl/isicle.git
+git clone -b bade-2023 https://github.com/pnnl/isicle.git
 pip install isicle/
 
 # direct
-pip install git+https://github.com/pnnl/isicle
+pip install git+https://github.com/pnnl/isicle@bade-2023
 ```
 
-Getting Started
+# Getting Started
 ---------------
 For usage overview, use ``isicle --help`` or ``-h``. Currently, available modules include ``prep`` for input preparation, ``ccs`` for collision cross section calculation, ``shifts`` for NMR chemical shift calculation, and ``export`` to save results. For all modules (except ``export``), a Snakemake configuration file in [YAML](http://yaml.org/) format is required. ISiCLE will try to find ``config.yaml`` in the current directory, else a configuration file must be specified through the ``--config`` flag. Default [workflow](resources/example_config.yaml) and [cluster](resources/example_cluster.yaml) configurations are provided, but these are intended to be modified and supplied by the user to accomodate workflow-specific needs.
 
@@ -66,7 +84,7 @@ Finally, results can be saved in a user-friendly format using the ``export`` mod
 isicle export ccs standard results.tsv
 ```
 
-Citing ISiCLE
+# Citing ISiCLE
 -------------
 If you would like to reference ISiCLE in an academic paper, we ask you include the following references:
 
@@ -76,7 +94,7 @@ If you would like to reference ISiCLE in an academic paper, we ask you include t
 
 The first describes ISiCLE for CCS, the second describes ISiCLE for NMR chemical shifts, and the third is to cite the software package (update version and access date appropriately).
 
-Disclaimer
+# Disclaimer
 ----------
 This material was prepared as an account of work sponsored by an agency of the United States Government. Neither the United States Government nor the United States Department of Energy, nor Battelle, nor any of their employees, nor any jurisdiction or organization that has cooperated in the development of these materials, makes any warranty, express or implied, or assumes any legal liability or responsibility for the accuracy, completeness, or usefulness or any information, apparatus, product, software, or process disclosed, or represents that its use would not infringe privately owned rights.
 
