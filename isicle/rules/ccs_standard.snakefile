@@ -39,5 +39,5 @@ rule collectOutput:
         join('combined_ccs','{id}_{adduct}.txt')
     shell:
         '''
-        cat {input} > output.combined
+        cat {input} > {output}
         '''
