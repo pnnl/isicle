@@ -35,3 +35,4 @@ set lindep:n_dep 0
 task dft energy ignore
 task dft optimize ignore
 task dft energy
+task dft freq
