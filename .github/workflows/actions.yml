@@ -1,0 +1,123 @@
+name: Continuous Integration / Deployment
+on: [pull_request, push]
+
+jobs:
+  Format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Apply formatting
+        uses: github/super-linter@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_PYTHON_PYLINT: true
+          VALIDATE_PYTHON_FLAKE8: true
+          VALIDATE_PYTHON_ISORT: true
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IGNORE_GITIGNORED_FILES: true
+
+  Test_Linux:
+    needs:
+      - Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          environment-file: envs/linux.yml
+          use-only-tar-bz2: true
+          auto-activate-base: false
+          activate-environment: isicle
+      
+      - name: Install ISiCLE
+        run: pip install -e --no-deps . 
+    
+      # - name: Test environment
+      #   run: |
+      #     pytest
+
+      Test_Mac:
+        needs:
+          - Format
+        runs-on: macos-latest
+        defaults:
+          run:
+            shell: bash -l {0}
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v3
+    
+          - name: Setup environment
+            uses: conda-incubator/setup-miniconda@v2
+            with:
+              miniforge-variant: Mambaforge
+              miniforge-version: latest
+              use-mamba: true
+              environment-file: envs/osx.yml
+              use-only-tar-bz2: true
+              auto-activate-base: false
+              activate-environment: isicle
+          
+          - name: Install ISiCLE
+            run: pip install -e --no-deps . 
+        
+          # - name: Test environment
+          #   run: |
+          #     pytest
+  
+  Deploy:
+    needs:
+      - Test_Linux
+      - Test_Mac
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    defaults:
+      run:
+        shell: bash -l {0}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          python-version: 3.9
+          channels: conda-forge,bioconda
+          use-only-tar-bz2: true
+          auto-activate-base: true
+
+      - name: Install dependencies
+        run: |
+          mamba install boa anaconda-client conda-verify
+
+      - name: Build conda package
+        run: |
+          mkdir build/
+          conda mambabuild conda-recipe/ --output-folder build/
+          conda index build/
+
+      - name: Convert to osx-64
+        run: conda convert -p osx-64 build/linux-64/*.tar.bz2 -o build/
+
+      - name: Upload packages
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        run: |
+          anaconda upload build/linux-64/*.tar.bz2
+          anaconda upload build/osx-64/*.tar.bz2
