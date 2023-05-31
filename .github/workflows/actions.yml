@@ -26,6 +26,7 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -48,34 +49,35 @@ jobs:
       #   run: |
       #     pytest
 
-      Test_Mac:
-        needs:
-          - Format
-        runs-on: macos-latest
-        defaults:
-          run:
-            shell: bash -l {0}
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v3
+  Test_Mac:
+    needs:
+      - Format
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          environment-file: envs/osx.yml
+          use-only-tar-bz2: true
+          auto-activate-base: false
+          activate-environment: isicle
+      
+      - name: Install ISiCLE
+        run: pip install -e --no-deps . 
     
-          - name: Setup environment
-            uses: conda-incubator/setup-miniconda@v2
-            with:
-              miniforge-variant: Mambaforge
-              miniforge-version: latest
-              use-mamba: true
-              environment-file: envs/osx.yml
-              use-only-tar-bz2: true
-              auto-activate-base: false
-              activate-environment: isicle
-          
-          - name: Install ISiCLE
-            run: pip install -e --no-deps . 
-        
-          # - name: Test environment
-          #   run: |
-          #     pytest
+      # - name: Test environment
+      #   run: |
+      #     pytest
   
   Deploy:
     needs:
