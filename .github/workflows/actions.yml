@@ -43,7 +43,7 @@ jobs:
           activate-environment: isicle
       
       - name: Install ISiCLE
-        run: pip install -e --no-deps . 
+        run: pip install --no-deps . 
     
       # - name: Test environment
       #   run: |
@@ -73,7 +73,7 @@ jobs:
           activate-environment: isicle
       
       - name: Install ISiCLE
-        run: pip install -e --no-deps . 
+        run: pip install --no-deps . 
     
       # - name: Test environment
       #   run: |
