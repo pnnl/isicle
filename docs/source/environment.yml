@@ -15,5 +15,5 @@ dependencies:
   - snakemake >=6.3.0
   - sphinx >= 3
   - sphinxcontrib-napoleon
-  - sphinx_rtd_theme
+  - sphinx_rtd_theme >=1.2.1
   - statsmodels >=0.11.1
