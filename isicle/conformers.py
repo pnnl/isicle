@@ -89,7 +89,7 @@ def reduce(value, func='boltzmann', **kwargs):
     return f(value, **kwargs)
 
 
-def boltzmann(value, energy, index=None):
+def boltzmann(value, energy, index=None, atom=None):
     '''
     Combine values according to a Boltzmann-weighted average.
 
@@ -101,6 +101,8 @@ def boltzmann(value, energy, index=None):
         Array containing energy values that correspond to entries in `value`.
     index : None or :obj:`~numpy.array`
         Index by which to group values for averaging.
+    atom : None or :obj: `~numpy.array`
+        Atom by which to group values for averaging.
 
     Returns
     -------
@@ -110,12 +112,18 @@ def boltzmann(value, energy, index=None):
     '''
 
     df = pd.DataFrame.from_dict({'value': value, 'energy': energy, 'index': -1})
-
+    grouping = ['index']
+    
     if index is not None:
         df['index'] = index
+    if atom is not None:
+        df['atom'] = atom
+        grouping = ['index', 'atom']
 
     res = []
-    for name, group in df.groupby(['index']):
+
+    
+    for name, group in df.groupby(grouping):
         g = group['energy'] * 627.503
         mn = g.min()
         relG = g - mn
@@ -236,6 +244,56 @@ def threshold(value, energy, threshold=5, index=None):
         return res.drop(columns='index').iloc[0]
 
     return res
+
+
+def transform(value, m={'H': 1.0, 'C': 1.0}, b={'H': 0.0, 'C': 0.0}, atom=None, index=None):
+    '''
+    Perform linear transformation with values using provided parameters.
+
+    Parameters
+    ----------
+    value : :obj: `~numpy.array`
+        Array containing vales that will be transformed.
+    m : float or dict
+        Slope value
+    b : float or dict
+        Y-intercept value
+    atom : None or :obj: `~numpy.array`
+        Atom by which to group values for transforming.
+    index : None or :obj: `~numpy.array`
+        Index by which to group values for transforming.
+
+    Returns
+    -------
+    :obj: `~pandas.DataFrame`
+        Result of transformation operation.
+
+    '''
+
+
+    df = pd.DataFrame({'value': value, 'index': -1})
+
+    if index is not None:
+        df['index'] = index
+    if atom is not None:
+        df['atom'] = atom
+
+    
+    if isinstance(m, dict):
+        res = pd.DataFrame()
+        for idx in m.keys():
+
+            part = df.loc[df['atom'] == idx].copy()
+            part['new_value'] = part['value'].apply(lambda x: m[idx]*x + b[idx])
+
+            res = pd.concat([res, part])
+    else:
+
+        res = df.copy()
+        res['new_value'] = res['value'].apply(lambda x: m*x + b)
+
+    return res
+
 
 
 def build_conformational_ensemble(geometries):
