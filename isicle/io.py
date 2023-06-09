@@ -137,7 +137,46 @@ def _load_mol_from_file(path, func=None, basename=None):
     return geom
 
 
-def load_mol(path):
+def load_nwchem(path, basename=None):
+    """
+    Load NWChem output from file.
+
+    Parameters
+    ----------
+    path : str
+        Path to nwchem output file
+
+    Returns
+    -------
+    :obj:`~isicle.qm.NWChemWrapper`
+        DFT representation
+
+    """
+
+
+    dft = isicle.qm.NWChemWrapper()
+
+    parser = isicle.parse.NWChemParser()
+    parser.load(path)
+    result = parser.parse()
+
+    dft.__dict__.update(result)
+    dft.geom.add___dict__({k: v for k, 
+    v in result.items() if k != 'geom'})
+    dft.output = parser.load(path)
+
+    if basename is None:
+        try:
+            basename = Chem.MolToInchiKey(dft.geom.mol)
+        except:
+            basename = os.path.splitext((os.path.basename(path)))[0]
+    
+    dft.basename = basename
+
+    return dft
+
+
+def load_mol(path, basename=None):
     """
     Load mol from file.
 
@@ -153,10 +192,10 @@ def load_mol(path):
 
     """
 
-    return _load_mol_from_file(path, func=Chem.MolFromMolFile)
+    return _load_mol_from_file(path, func=Chem.MolFromMolFile, basename=basename)
 
 
-def load_mol2(path: str):
+def load_mol2(path: str, basename=None):
     """
     Load mol2 from file.
 
@@ -172,7 +211,7 @@ def load_mol2(path: str):
 
     """
 
-    return _load_mol_from_file(path, func=Chem.MolFromMol2File)
+    return _load_mol_from_file(path, func=Chem.MolFromMol2File, basename=basename)
 
 
 def load_pdb(path):
@@ -526,7 +565,7 @@ def save_mfj(path, geom):
 
     # Check for charges in global properties
     if ("energy" not in geom.__dict__) or ("charge" not in geom.__dict__):
-        raise KeyError("DFT energy optimization required. " "See isicle.qm.dft.")
+        raise KeyError("DFT energy calculation required. " "See isicle.qm.dft.")
 
     # Get XYZ coordinates
     xyz = pd.read_csv(
