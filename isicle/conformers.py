@@ -635,3 +635,19 @@ class ConformationalEnsemble(TypedList):
         '''
 
         io.save(path, self)
+
+    def get_structures(self):
+        '''
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+        '''
+
+        # Check for geom attribute
+        self._check_attributes('geom')
+
+        # Build and return
+        return build_conformational_ensemble([x.geom for x in self])

@@ -1,12 +1,13 @@
+import os
+import subprocess
+from itertools import combinations, cycle
+from string import Template
+
 import isicle
+from isicle.geometry import XYZGeometry
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
-import os
-from string import Template
-from itertools import combinations, cycle
-import subprocess
-from isicle.geometry import XYZGeometry
 
 
 def _program_selector(program):
@@ -96,7 +97,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         Establishes aliases for preconfigured tasks.
 
         '''
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
 
         self.task_map = {'optimize': self._configure_optimize,
@@ -113,7 +115,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         # Set up temporary directory
         self.temp_dir = isicle.utils.mkdtemp()
-
 
     def set_geometry(self, geom):
         '''
@@ -148,8 +149,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
         geomfile = os.path.join(self.temp_dir,
-                               '{}.{}'.format(self.geom.basename,
-                                              self.fmt.lower()))
+                                '{}.{}'.format(self.geom.basename,
+                                               self.fmt.lower()))
 
         # All other formats
         isicle.io.save(geomfile, self.geom)
@@ -270,7 +271,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         if odft is True:
             s += ' odft\n'
-        
+
         s += ' xc {functional}\n'.format(**d)
         s += ' mulliken\n'               # Do we need this line?
         s += ' print "mulliken ao"\n'    # (and this one?)
@@ -363,7 +364,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         '''
 
-         # Add basis block
+        # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
 
         # Add DFT block
@@ -413,7 +414,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
             Energy block of NWChem configuration.
         '''
 
-         # Add basis block
+        # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
 
         # Add DFT block
@@ -519,9 +520,9 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         # Extract atom index information
         #idx = self.geom.mol.get_atom_indices(atoms=atoms)
         #new_idx = []
-        #for i in idx:
+        # for i in idx:
         #    new_idx.append(str(int(i)+1))
-        
+
         #self.idx = new_idx
 
         # Add basis block
@@ -580,7 +581,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         '''
 
-
         def generate_pairs(mol, bonds=bonds):
 
             from rdkit import Chem
@@ -588,30 +588,32 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
             matrix = Chem.GetAdjacencyMatrix(mol)
 
             pair_list = []
-    
+
             for idx, atom in enumerate(matrix):
                 # First round of neighbors
-                neighbors = [i for i, x in enumerate(atom) if x==1]
-        
+                neighbors = [i for i, x in enumerate(atom) if x == 1]
+
                 for n in neighbors:
                     # Check if pair in pair_list, add one to index to match NWChem numbering.
                     if [idx+1, n+1] not in pair_list and [n+1, idx+1] not in pair_list:
                         pair_list.append([idx+1, n+1])
-            
+
                     # Second round of neighbors
-                    n_neighbors = [i for i, x in enumerate(matrix[n]) if x==1]
-            
+                    n_neighbors = [
+                        i for i, x in enumerate(matrix[n]) if x == 1]
+
                     if bonds >= 2:
                         for n_n in n_neighbors:
-                  
+
                             if n_n != idx and atom[n_n] == 0:
                                 if [idx+1, n_n+1] not in pair_list and [n_n+1, idx+1] not in pair_list:
                                     pair_list.append([idx+1, n_n+1])
                                 atom[n_n] += 2
 
                             # Third line of neighbors
-                            nn_neighbors = [i for i, x in enumerate(matrix[n_n]) if x==1]
-                
+                            nn_neighbors = [i for i, x in enumerate(
+                                matrix[n_n]) if x == 1]
+
                             if bonds >= 3:
                                 for nn_n in nn_neighbors:
                                     if nn_n != idx and atom[nn_n] == 0:
@@ -627,7 +629,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
             s = ""
             for pair in pair_list:
                 s += str(pair[0]) + " " + str(pair[1]) + " "
-            
 
             return len(pair_list), s
 
@@ -738,7 +739,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         if not ((len(tasks) == len(cosmo)) or (len(cosmo) == 1)):
             raise ValueError('Maximum iterations must be assigned globally or'
                              'per task.')
-        
+
         if not ((len(tasks) == len(solvent)) or (len(solvent) == 1)):
             raise ValueError('Solvents must be assigned globally or'
                              'per task.')
@@ -754,7 +755,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         # Configure tasks
         for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
-                                    cycle(ao_basis), cycle(cosmo), cycle(solvent)):
+                                        cycle(ao_basis), cycle(cosmo), cycle(solvent)):
             # TODO: finish this
             config += self.task_map[task](functional=f,
                                           basis_set=b,
@@ -763,7 +764,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                                           cosmo=c,
                                           gas=gas,
                                           max_iter=max_iter,
-                                          solvent = so,
+                                          solvent=so,
                                           bonds=bonds)
 
         # Store tasks as attribute
@@ -780,7 +781,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         # Save
         self.save_config()
-
 
         return self.config
 
@@ -830,7 +830,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         # Store as attribute
         self.config = template.substitute(**kwargs)
-        
+
         # Save
         self.save_config()
 
@@ -857,7 +857,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
 
-        if self.command == 'nwchem': 
+        if self.command == 'nwchem':
             s = 'mpirun -n {} nwchem {} > {}'.format(self.processes,
                                                      infile,
                                                      outfile)
@@ -895,9 +895,10 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         result = parser.parse()
 
         self.__dict__.update(result)
-        self.geom.add___dict__({k: v for k, v in result.items() if k != 'geom'})
+        self.geom.add___dict__(
+            {k: v for k, v in result.items() if k != 'geom'})
         self.output = parser.load(os.path.join(self.temp_dir,
-                                                 self.basename + '.out'))
+                                               self.basename + '.out'))
         return self
 
     def run(self, geom, template=None, **kwargs):
@@ -938,3 +939,16 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         self.finish()
 
         return self
+
+    def get_structure(self):
+        '''
+        Extract structure from containing object.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.XYZGeometry`
+            Structure instance. 
+
+        '''
+
+        return self.geom

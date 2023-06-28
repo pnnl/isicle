@@ -1,9 +1,10 @@
+import os
+import subprocess
+
 import isicle
+from isicle.geometry import Geometry, XYZGeometry
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
-import subprocess
-import os
-from isicle.geometry import XYZGeometry, Geometry
 
 '''
 Files resulting from an xtb job always run in the same directory that the command is
@@ -85,7 +86,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
 
     def set_geometry(self, geom):
@@ -121,8 +123,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
         geomfile = os.path.join(self.temp_dir,
-                               '{}.{}'.format(self.basename,
-                                              self.fmt.lower()))
+                                '{}.{}'.format(self.basename,
+                                               self.fmt.lower()))
 
         # All other formats
         isicle.io.save(geomfile, self.geom)
@@ -334,7 +336,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
                                                solvation=solvation,
                                                ignore_topology=ignore_topology)
             else:
-                raise Error('Task not assigned properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
+                raise Error(
+                    'Task not assigned properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
 
         self.task = task
 
@@ -358,7 +361,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         parser = XTBParser()
 
         parser.load(os.path.join(self.temp_dir, self.basename + '.out'))
-        self.output = parser.load(os.path.join(self.temp_dir, self.basename + '.out'))
+        self.output = parser.load(os.path.join(
+            self.temp_dir, self.basename + '.out'))
 
         result = parser.parse()
 
@@ -414,6 +418,38 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         return self
 
+    def get_structures(self):
+        '''
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        '''
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            return self.geom
+
+        raise TypeError(
+            'Object does not contain multiple structures. Use `get_structure` instead.')
+
+    def get_structure(self):
+        '''
+        Extract structure from containing object.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.XYZGeometry`
+            Structure instance. 
+
+        '''
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            raise TypeError(
+                'Object contains multiple structures. Use `get_structures` instead.')
+
+        return self.geom
+
 
 class RDKitWrapper(Geometry, WrapperInterface):
 
@@ -442,18 +478,22 @@ class RDKitWrapper(Geometry, WrapperInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
-
 
     def set_geometry(self):
         return
+
     def configure(self):
         return
+
     def submit(self):
         return
+
     def run(self):
         return
+
     def finish(self):
         return
 
