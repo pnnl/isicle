@@ -10,8 +10,8 @@ md:
   threads: 1
 dft:
   tasks: ['shielding']
-  functional: ['mpw91 0.75 HFexch 0.25 perdew91']
-  basis_set: ['6-311+G(2d,p)']
+  functional: ['HFExch']
+  basis_set: ['3-21g']
   ao_basis: 'cartesian'
   frequency: True
   atoms: ['H', 'C', 'F', 'P', 'O', 'N']
@@ -23,8 +23,8 @@ dft:
   mem_global: 1600
   mem_heap: 100
   mem_stack: 600
-  scratch_dir: '/scratch'
-  command: 'nwchem-'
+  scratch_dir: '/tmp'
+  command: 'nwchem'
 mobility:
   lennard_jones: 'default'
   i2: 5013489
