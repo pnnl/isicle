@@ -1,10 +1,12 @@
-from statsmodels.stats.weightstats import DescrStatsW
-import pandas as pd
-import numpy as np
 import pickle
+
+import numpy as np
+import pandas as pd
+from statsmodels.stats.weightstats import DescrStatsW
+
+from isicle import io
 from isicle.geometry import Geometry, XYZGeometry
 from isicle.utils import TypedList, safelist
-from isicle import io
 
 
 def _function_selector(func):
@@ -27,9 +29,9 @@ def _function_selector(func):
     func_map = {'boltzmann': boltzmann,
                 'simple': simple_average,
                 'lowest': lowest_energy,
-                'threshold': threshold}
+                'threshold': energy_threshold}
 
-    if func.lower() in func_map.keys():
+    if func.lower() in func_map:
         return func_map[func.lower()]
     else:
         raise ValueError('{} not a supported reduction function.'.format(func))
@@ -51,7 +53,7 @@ def _energy_based(func):
 
     '''
 
-    if func in [boltzmann, lowest_energy, threshold]:
+    if func in [boltzmann, lowest_energy, energy_threshold]:
         return True
 
     return False
@@ -89,7 +91,7 @@ def reduce(value, func='boltzmann', **kwargs):
     return f(value, **kwargs)
 
 
-def boltzmann(value, energy, index=None):
+def boltzmann(value, energy, index=None, atom=None):
     '''
     Combine values according to a Boltzmann-weighted average.
 
@@ -101,6 +103,8 @@ def boltzmann(value, energy, index=None):
         Array containing energy values that correspond to entries in `value`.
     index : None or :obj:`~numpy.array`
         Index by which to group values for averaging.
+    atom : None or :obj:`~numpy.array`
+        Atom by which to group values for averaging.
 
     Returns
     -------
@@ -111,13 +115,16 @@ def boltzmann(value, energy, index=None):
 
     if index is None:
         index = np.full_like(value, -1)
+    if atom is None:
+        atom = np.full_like(value, -1)
 
     df = pd.DataFrame.from_dict({'value': value,
                                  'energy': energy,
-                                 'index': index})
+                                 'index': index,
+                                 'atom': atom})
 
     res = []
-    for name, group in df.groupby(['index']):
+    for name, group in df.groupby(['index', 'atom']):
         g = group['energy'] * 627.503
         mn = g.min()
         relG = g - mn
@@ -126,17 +133,17 @@ def boltzmann(value, energy, index=None):
 
         ws = DescrStatsW(group['value'], weights=w, ddof=0)
 
-        res.append([name[0], ws.mean, ws.std, len(group.index)])
+        res.append([name[0], name[1], ws.mean, ws.std, len(group.index)])
 
-    res = pd.DataFrame(res, columns=['index', 'mean', 'std', 'n'])
+    res = pd.DataFrame(res, columns=['index', 'atom', 'mean', 'std', 'n'])
 
-    if index is None:
-        return res.drop(columns='index').iloc[0]
+    if np.all(index == -1):
+        return res.drop(columns=['index', 'atom']).iloc[0]
 
     return res
 
 
-def simple_average(value, index=None):
+def simple_average(value, index=None, atom=None):
     '''
     Combine values according to a simple average.
 
@@ -146,6 +153,8 @@ def simple_average(value, index=None):
         Array containing values that will be combined.
     index : None or :obj:`~numpy.array`
         Index by which to group values for averaging.
+    atom : None or :obj:`~numpy.array`
+        Atom by which to group values for averaging.
 
     Returns
     -------
@@ -156,21 +165,24 @@ def simple_average(value, index=None):
 
     if index is None:
         index = np.full_like(value, -1)
+    if atom is None:
+        atom = np.full_like(value, -1)
 
     df = pd.DataFrame.from_dict({'value': value,
-                                 'index': index})
+                                 'index': index,
+                                 'atom': atom})
 
-    res = df.groupby(['index'], as_index=False).agg({'value':
-                                                     ['mean', 'std', 'count']})
-    res.columns = ['index', 'mean', 'std', 'n']
+    res = df.groupby(['index', 'atom'], as_index=False).agg({'value':
+                                                             ['mean', 'std', 'count']})
+    res.columns = ['index', 'atom', 'mean', 'std', 'n']
 
-    if index is None:
-        return res.drop(columns='index').iloc[0]
+    if np.all(index == -1):
+        return res.drop(columns=['index', 'atom']).iloc[0]
 
     return res
 
 
-def lowest_energy(value, energy, index=None):
+def lowest_energy(value, energy, index=None, atom=None):
     '''
     Combine values according to lowest energy.
 
@@ -182,6 +194,8 @@ def lowest_energy(value, energy, index=None):
         Array containing energy values that correspond to entries in `value`.
     index : None or :obj:`~numpy.array`
         Index by which to group values for averaging.
+    atom : None or :obj:`~numpy.array`
+        Atom by which to group values for averaging.
 
     Returns
     -------
@@ -192,20 +206,24 @@ def lowest_energy(value, energy, index=None):
 
     if index is None:
         index = np.full_like(value, -1)
+    if atom is None:
+        atom = np.full_like(value, -1)
 
     df = pd.DataFrame.from_dict({'value': value,
                                  'energy': energy,
-                                 'index': index})
+                                 'index': index,
+                                 'atom': atom})
 
-    res = df.loc[df.groupby('index')['energy'].idxmin()]
+    res = df.loc[df.groupby(['index', 'atom'])[
+        'energy'].idxmin()]
 
-    if index is None:
-        return res.drop(columns='index').iloc[0]
+    if np.all(index == -1):
+        return res.drop(columns=['index', 'atom']).iloc[0]
 
     return res
 
 
-def threshold(value, energy, threshold=5, index=None):
+def energy_threshold(value, energy, threshold=5, index=None, atom=None):
     '''
     Combine values with energy below a given threshold according to a simple
     average.
@@ -218,6 +236,8 @@ def threshold(value, energy, threshold=5, index=None):
         Array containing energy values that correspond to entries in `value`.
     index : None or :obj:`~numpy.array`
         Index by which to group values for averaging.
+    atom : None or :obj:`~numpy.array`
+        Atom by which to group values for averaging.
 
     Returns
     -------
@@ -228,19 +248,70 @@ def threshold(value, energy, threshold=5, index=None):
 
     if index is None:
         index = np.full_like(value, -1)
+    if atom is None:
+        atom = np.full_like(value, -1)
 
     df = pd.DataFrame.from_dict({'value': value,
                                  'energy': energy,
-                                 'index': index})
+                                 'index': index,
+                                 'atom': atom})
 
     df = df.loc[df['energy'] <= threshold, :]
 
-    res = df.groupby(['index'], as_index=False).agg({'value':
-                                                     ['mean', 'std', 'count']})
-    res.columns = ['index', 'mean', 'std', 'n']
+    res = df.groupby(['index', 'atom'], as_index=False).agg({'value':
+                                                             ['mean', 'std', 'count']})
+    res.columns = ['index', 'atom', 'mean', 'std', 'n']
 
     if index is None:
-        return res.drop(columns='index').iloc[0]
+        return res.drop(columns=['index', 'atom']).iloc[0]
+
+    return res
+
+
+def transform(value, m={'H': 1.0, 'C': 1.0}, b={'H': 0.0, 'C': 0.0}, index=None, atom=None):
+    '''
+    Perform linear transformation with values using provided parameters.
+
+    Parameters
+    ----------
+    value : :obj: `~numpy.array`
+        Array containing vales that will be transformed.
+    m : float or dict
+        Slope value
+    b : float or dict
+        Y-intercept value
+    index : None or :obj: `~numpy.array`
+        Index by which to group values for transforming.
+    atom : None or :obj: `~numpy.array`
+        Atom by which to group values for transforming.
+
+    Returns
+    -------
+    :obj: `~pandas.DataFrame`
+        Result of transformation operation.
+
+    '''
+
+    if index is None:
+        index = np.full_like(value, -1)
+    if atom is None:
+        atom = np.full_like(value, -1)
+
+    df = pd.DataFrame.from_dict({'value': value,
+                                 'index': index,
+                                 'atom': atom})
+
+    if isinstance(m, dict):
+        res = pd.DataFrame()
+        for idx in m:
+            part = df.loc[df['atom'] == idx].copy()
+            part['new_value'] = part['value'].apply(
+                lambda x: m[idx] * x + b[idx])
+
+            res = pd.concat([res, part])
+    else:
+        res = df.copy()
+        res['new_value'] = res['value'].apply(lambda x: m * x + b)
 
     return res
 
@@ -363,7 +434,7 @@ class ConformationalEnsemble(TypedList):
         for key in safelist(attr):
             if not all(key in x for x in value):
                 raise AttributeError('"{}" not found for all conformational '
-                                    'ensemble members.'.format(attr))
+                                     'ensemble members.'.format(attr))
             value = [x.get(key) for x in value]
 
         # if type(value[0]) is dict:
@@ -405,24 +476,39 @@ class ConformationalEnsemble(TypedList):
             value = [x.get(key) for x in value]
 
         # Check for index
-        if type(value[0]) is dict and 'index' in value[0]:
-            index = np.array([x['index'] for x in value]).flatten()
+        if type(value[0]) is dict:
+            # Check index
+            if 'index' in value[0]:
+                index = np.array([x['index'] for x in value]).flatten()
+            else:
+                index = None
+
+            # Check atom
+            if 'atom' in value[0]:
+                atom = np.array([x['atom'] for x in value]).flatten()
+            else:
+                atom = None
+
             value = np.array([x[attr] for x in value]).flatten()
             pad = int(len(index) / len(self))
+
+        # No index
         else:
             index = None
+            atom = None
             pad = 1
 
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array([np.repeat(x.get___dict__()['energy'], pad) for x in self])
+            energy = np.array(
+                [np.repeat(x.get___dict__()['energy'], pad) for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method
-            return f(value, energy, index=index, **kwargs)
+            return f(value, energy, index=index, atom=atom, **kwargs)
 
         # Execute other method
-        return f(value, index=index, **kwargs)
+        return f(value, index=index, atom=atom, **kwargs)
 
     # TODO: automatically unpack multiple returned objects
     def _apply_method(self, method, **kwargs):

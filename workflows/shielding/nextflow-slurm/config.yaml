@@ -1,0 +1,38 @@
+adducts:
+  ion_list: ['H+']
+  element_list: ['O']
+  method: 'explicit'
+  save: True
+md:
+  forcefield: 'gff'
+  energywindow: 6
+  task: 'conformer'
+  threads: 1
+dft:
+  tasks: ['shielding']
+  functional: ['mpw91 0.75 HFexch 0.25 perdew91']
+  basis_set: ['6-311+G(2d,p)']
+  ao_basis: 'cartesian'
+  frequency: True
+  atoms: ['H', 'C', 'F', 'P', 'O', 'N']
+  temp: 298.15
+  cosmo: True
+  solvent: 'h2o'
+  gas: False
+  max_iter: 150
+  mem_global: 1600
+  mem_heap: 100
+  mem_stack: 600
+  scratch_dir: '/scratch'
+  command: 'csh /people/jyst649/opt/nwchem/nwchem-dec'
+mobility:
+  lennard_jones: 'default'
+  i2: 5013489
+  buffer_gas: 'helium'
+  buffer_gas_mass: 4.0026
+  temp: 300
+  ipr: 1000
+  itn: 10
+  inp: 48
+  imp: 1024
+  command: '/people/dbaxter/deception/mobcal/mobcal_shm'
