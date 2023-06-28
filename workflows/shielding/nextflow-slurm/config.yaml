@@ -24,7 +24,7 @@ dft:
   mem_heap: 100
   mem_stack: 600
   scratch_dir: '/scratch'
-  command: 'csh /people/jyst649/opt/nwchem/nwchem-dec'
+  command: 'nwchem-'
 mobility:
   lennard_jones: 'default'
   i2: 5013489
@@ -35,4 +35,4 @@ mobility:
   itn: 10
   inp: 48
   imp: 1024
-  command: '/people/dbaxter/deception/mobcal/mobcal_shm'
+  command: 'mobcal_shm'

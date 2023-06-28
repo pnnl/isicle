@@ -31,6 +31,7 @@ Finally, ISiCLE simulates desired properties (e.g. collision cross section, nucl
 	user_guide/structure_optimization
 	user_guide/property_prediction
 	user_guide/CCS.ipynb
+        user_guide/NMR.ipynb
 
 .. toctree::
 	:caption: API reference
