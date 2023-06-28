@@ -109,10 +109,12 @@ def boltzmann(value, energy, index=None):
 
     '''
 
-    df = pd.DataFrame.from_dict({'value': value, 'energy': energy, 'index': -1})
+    if index is None:
+        index = np.full_like(value, -1)
 
-    if index is not None:
-        df['index'] = index
+    df = pd.DataFrame.from_dict({'value': value,
+                                 'energy': energy,
+                                 'index': index})
 
     res = []
     for name, group in df.groupby(['index']):
@@ -124,7 +126,7 @@ def boltzmann(value, energy, index=None):
 
         ws = DescrStatsW(group['value'], weights=w, ddof=0)
 
-        res.append([name, ws.mean, ws.std, len(group.index)])
+        res.append([name[0], ws.mean, ws.std, len(group.index)])
 
     res = pd.DataFrame(res, columns=['index', 'mean', 'std', 'n'])
 
@@ -152,10 +154,11 @@ def simple_average(value, index=None):
 
     '''
 
-    df = pd.DataFrame({'value': value, 'index': -1})
+    if index is None:
+        index = np.full_like(value, -1)
 
-    if index is not None:
-        df['index'] = index
+    df = pd.DataFrame.from_dict({'value': value,
+                                 'index': index})
 
     res = df.groupby(['index'], as_index=False).agg({'value':
                                                      ['mean', 'std', 'count']})
@@ -187,10 +190,12 @@ def lowest_energy(value, energy, index=None):
 
     '''
 
-    df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
+    if index is None:
+        index = np.full_like(value, -1)
 
-    if index is not None:
-        df['index'] = index
+    df = pd.DataFrame.from_dict({'value': value,
+                                 'energy': energy,
+                                 'index': index})
 
     res = df.loc[df.groupby('index')['energy'].idxmin()]
 
@@ -221,10 +226,12 @@ def threshold(value, energy, threshold=5, index=None):
 
     '''
 
-    df = pd.DataFrame({'value': value, 'energy': energy, 'index': -1})
+    if index is None:
+        index = np.full_like(value, -1)
 
-    if index is not None:
-        df['index'] = index
+    df = pd.DataFrame.from_dict({'value': value,
+                                 'energy': energy,
+                                 'index': index})
 
     df = df.loc[df['energy'] <= threshold, :]
 
@@ -359,8 +366,8 @@ class ConformationalEnsemble(TypedList):
                                     'ensemble members.'.format(attr))
             value = [x.get(key) for x in value]
 
-        if type(value[0]) is dict:
-            raise AttributeError('"{}" has additional keys: {}'.format(attr, value[0].keys()))
+        # if type(value[0]) is dict:
+        #     raise AttributeError('"{}" has additional keys: {}'.format(attr, value[0].keys()))
 
     def reduce(self, attr, func='boltzmann', **kwargs):
         '''
@@ -401,14 +408,14 @@ class ConformationalEnsemble(TypedList):
         if type(value[0]) is dict and 'index' in value[0]:
             index = np.array([x['index'] for x in value]).flatten()
             value = np.array([x[attr] for x in value]).flatten()
-            pad = pad = int(len(index) / len(self))
+            pad = int(len(index) / len(self))
         else:
             index = None
             pad = 1
 
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array([x.get___dict__()['energy'] * pad for x in self])
+            energy = np.array([np.repeat(x.get___dict__()['energy'], pad) for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method
