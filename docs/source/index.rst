@@ -25,11 +25,6 @@ Finally, ISiCLE simulates desired properties (e.g. collision cross section, nucl
 	:hidden:
 	:maxdepth: 1
 
-	user_guide/loading_saving
-	user_guide/molecule_prep
-	user_guide/conformer_generation
-	user_guide/structure_optimization
-	user_guide/property_prediction
 	user_guide/CCS.ipynb
         user_guide/NMR.ipynb
 
