@@ -1,6 +1,0 @@
-======================
-Structure optimization
-======================
-
-Coming soon!
-

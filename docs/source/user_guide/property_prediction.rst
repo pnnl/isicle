@@ -1,6 +1,0 @@
-===================
-Property prediction
-===================
-
-Coming soon!
-
