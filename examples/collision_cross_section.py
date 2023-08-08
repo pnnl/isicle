@@ -1,7 +1,7 @@
 import isicle
 
 # Load example structure
-geom = isicle.geometry.load('example.smi')
+geom = isicle.load('example.smi')
 
 # Desalt
 geom = geom.desalt()
