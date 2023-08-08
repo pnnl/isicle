@@ -644,6 +644,7 @@ class ConformationalEnsemble(TypedList):
         -------
         :obj:`~isicle.conformers.ConformationalEnsemble`
             Conformational ensemble.
+
         '''
 
         # Check for geom attribute
