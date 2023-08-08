@@ -871,16 +871,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
     def finish(self):
         '''
-        Parse NWChem simulation results and clean up temporary directory.
-
-        Parameters
-        ----------
-        keep_files : bool
-            Indicate whether to keep all intermediate files (relevant data will
-            automatically be parsed).
-        path : str
-            Directory to copy intermediate files. Only used if `keep_files` is
-            True.
+        Parse NWChem simulation results.
 
         Returns
         -------
