@@ -887,6 +887,32 @@ class ExplicitIonizationWrapper(WrapperInterface):
         self.finish()
 
         return self
+    
+    def get_structures(self):
+        '''
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        '''
+        
+        return self.adducts.get_structures()
+
+    def get_adducts(self):
+        '''
+        Extract all structures from containing object as an adduct ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.adducts.AdductEnsemble`
+            Adduct ensemble.
+
+        '''
+
+        return self.adducts
 
     def save_pickle(self, path):
         '''
@@ -1170,6 +1196,32 @@ class CRESTIonizationWrapper(WrapperInterface):
         self.finish()
 
         return self
+    
+    def get_structures(self):
+        '''
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        '''
+        
+        return self.adducts.get_structures()
+
+    def get_adducts(self):
+        '''
+        Extract all structures from containing object as an adduct ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.adducts.AdductEnsemble`
+            Adduct ensemble.
+
+        '''
+
+        return self.adducts
 
     def save_pickle(self, path):
         '''
