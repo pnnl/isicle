@@ -1,9 +1,11 @@
-import isicle
-from isicle.interfaces import WrapperInterface
 import os
+import shutil
 import subprocess
 from importlib import resources
-import shutil
+
+import isicle
+from isicle.geometry import XYZGeometry
+from isicle.interfaces import WrapperInterface
 
 
 def calculate_ccs(geom, **kwargs):
@@ -11,7 +13,7 @@ def calculate_ccs(geom, **kwargs):
     return MobcalWrapper().run(geom, **kwargs)
 
 
-class MobcalWrapper(WrapperInterface):
+class MobcalWrapper(XYZGeometry, WrapperInterface):
 
     def __init__(self):
         pass
@@ -113,7 +115,7 @@ class MobcalWrapper(WrapperInterface):
                                                       self.infile,
                                                       self.outfile,
                                                       self.logfile),
-                                                      shell=True)
+                        shell=True)
 
     def finish(self):
         # Initialize parser
@@ -128,8 +130,9 @@ class MobcalWrapper(WrapperInterface):
         # Update objects
         self.__dict__.update(result)
         self.geom.add___dict__(result)
-        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
-        
+        self.output = parser.load(os.path.join(
+            self.temp_dir, self.geom.basename + '.out'))
+
         return self
 
     def run(self, geom, **kwargs):
