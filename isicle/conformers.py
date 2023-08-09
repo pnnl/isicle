@@ -475,13 +475,15 @@ class ConformationalEnsemble(TypedList):
         for key in safelist(attr):
             value = [x.get(key) for x in value]
 
-        # Check for index
+        # Check nested values
         if isinstance(value[0], dict):
             # Check index
             if 'index' in value[0]:
                 index = np.array([x['index'] for x in value]).flatten()
+                pad = int(len(index) / len(self))
             else:
                 index = None
+                pad = 1
 
             # Check atom
             if 'atom' in value[0]:
@@ -496,9 +498,7 @@ class ConformationalEnsemble(TypedList):
             else:
                 value = np.array([x[attr] for x in value]).flatten()
 
-            pad = int(len(index) / len(self))
-
-        # No index
+        # Not nested
         else:
             index = None
             atom = None
