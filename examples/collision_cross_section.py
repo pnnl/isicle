@@ -1,46 +1,52 @@
 import isicle
 
 # Load example structure
-geom = isicle.load('example.smi')
+geom = isicle.load('CCCC(=O)O')
 
-# Desalt
-geom = geom.desalt()
-
-# Neutralize
-geom = geom.neutralize()
-
-# Tautomerize
-geom = geom.tautomerize()
+# Perform initial optimization
+geom = geom.initial_optimize(embed=True, forcefield="UFF", ff_iter=200)
 
 # Form adducts
-adducts = geom.generate_adducts()
+ionization_res = geom.ionize(method='explicit',
+                             ion_list=['H-'],
+                             element_list=['O'])
 
-ccs_result = {}
-for label, adduct in adducts.items():
+# Iterate through adduct ions
+ccs_container = []
+for adduct in ionization_res.get_structures():
     # Molecular dynamics
-    conformers, md_result = geom.md_optimize(program='xtb',
-                                             tasks='crest',
-                                             forcefield='gff',
-                                             ewin=1,
-                                             optlevel='Normal')
+    md_result = adduct.md(program='xtb',
+                          task='conformer',
+                          forcefield='gff',
+                          ewin=1,
+                          optlevel='Normal',
+                          charge=adduct.charge)
 
     # Density functional theory
-    dft_result = conformers.apply(func=isicle.qm.dft,
-                                  tasks='optimize',
-                                  functional='b3lyp',
-                                  basis_set='6-31g*',
-                                  ao_basis='cartesian',
-                                  charge=adduct.charge,  # Need to resolve this
-                                  frequency=True,
-                                  temp=298.15)
+    dft_result = md_result.get_structures().apply(func=isicle.qm.dft,
+                                                  tasks=['optimize', 'energy'],
+                                                  functional='b3lyp',
+                                                  basis_set='3-21g*',
+                                                  ao_basis='cartesian',
+                                                  charge=adduct.charge,
+                                                  temp=298.15,
+                                                  processes=8)
 
-    # Separate conformers from result
-    conformers_opt = isicle.conformers.build_conformational_ensemble(
-        [x[0] for x in dft_result])
-    dft_result = [x[1] for x in dft_result]
+    # Calculate CCS
+    ccs_result = dft_result.get_structures().apply(isicle.mobility.calculate_ccs,
+                                                   lennard_jones='default',
+                                                   i2=5013489,
+                                                   buffer_gas='nitrogen',
+                                                   buffer_gas_mass=28.014,
+                                                   temp=300,
+                                                   ipr=1000,
+                                                   itn=10,
+                                                   inp=48,
+                                                   imp=1024,
+                                                   processes=8)
 
     # Combine shielding result across conformers
-    ccs = conformers_opt.reduce('ccs', func='boltzmann')
+    ccs = ccs_result.get_structures().reduce('ccs', func='boltzmann')
 
-    # Add to dictionary
-    ccs_result[label] = ccs
+    # Add to container
+    ccs_container.append(ccs)

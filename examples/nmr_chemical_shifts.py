@@ -1,42 +1,28 @@
 import isicle
 
 # Load example structure
-geom = isicle.load('example.smi')
+geom = isicle.load('CCCC(=O)O')
 
-# Optional desalt
-geom = geom.desalt()
-
-# Optional neutralize
-geom = geom.neutralize()
-
-# Optional tautomerize
-geom = geom.tautomerize()
+# Initial optimization
+geom = geom.initial_optimize(embed=True, forcefield="UFF", ff_iter=200)
 
 # Molecular dynamics
-conformers, md_result = geom.md_optimize(program='xtb',
-                                         tasks='crest',
-                                         forcefield='gff',
-                                         ewin=1,
-                                         optlevel='Normal')
+md_result = geom.md(program='xtb',
+                    task='conformer',
+                    forcefield='gff',
+                    ewin=1,
+                    optlevel='Normal')
 
 # Density functional theory
-dft_result = conformers.apply(func=isicle.qm.dft,
-                              tasks=['optimize', 'shielding'],
-                              functional='b3lyp',
-                              basis_set='6-31g*',
-                              ao_basis='cartesian',
-                              charge=0,
-                              atoms=['C', 'H'],
-                              frequency=True,
-                              temp=298.15)
-
-# Separate conformers from result
-conformers = isicle.conformers.build_conformational_ensemble(
-    [x[0] for x in dft_result])
-dft_result = [x[1] for x in dft_result]
+dft_result = md_result.get_structures().apply(func=isicle.qm.dft,
+                                              tasks=['energy', 'shielding'],
+                                              functional='b3lyp',
+                                              basis_set='3-21g*',
+                                              ao_basis='cartesian',
+                                              charge=0,
+                                              atoms=['C', 'H'],
+                                              temp=298.15,
+                                              processes=8)
 
 # Combine shielding result across conformers
-shielding = conformers.reduce('shielding', func='boltzmann')
-
-# Convert to shifts
-# TODO: implement shielding to shifts conversion
+shielding = dft_result.get_structures().reduce('shielding', func='boltzmann')
