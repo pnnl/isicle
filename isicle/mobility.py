@@ -13,6 +13,14 @@ def calculate_ccs(geom, **kwargs):
     return MobcalWrapper().run(geom, **kwargs)
 
 
+def _mobcal_selector():
+    for name in ['mobcal_shm', 'mobcal']:
+        if shutil.which(name) is not None:
+            return name
+    
+    raise OSError('mobcal installation not found')
+
+
 class MobcalWrapper(XYZGeometry, WrapperInterface):
 
     def __init__(self):
@@ -90,11 +98,14 @@ class MobcalWrapper(XYZGeometry, WrapperInterface):
 
     def configure(self, lennard_jones='default', i2=5013489,
                   buffer_gas='helium', buffer_gas_mass=4.0026, temp=300,
-                  ipr=1000, itn=10, inp=48, imp=1024, processes=24, command='mobcal'):
+                  ipr=1000, itn=10, inp=48, imp=1024, processes=24, command=None):
 
         # Handle default case
         if lennard_jones == 'default':
             lennard_jones = None
+        
+        if command is None:
+            command = _mobcal_selector()
 
         # Configure Lennard-Jones potentials
         self._configure_lennard_jones(lennard_jones)
