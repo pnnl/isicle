@@ -476,7 +476,7 @@ class ConformationalEnsemble(TypedList):
             value = [x.get(key) for x in value]
 
         # Check for index
-        if type(value[0]) is dict:
+        if isinstance(value[0]) is dict:
             # Check index
             if 'index' in value[0]:
                 index = np.array([x['index'] for x in value]).flatten()
@@ -489,7 +489,13 @@ class ConformationalEnsemble(TypedList):
             else:
                 atom = None
 
-            value = np.array([x[attr] for x in value]).flatten()
+            # Special case for CCS
+            if 'mean' in value[0] and 'std' in value[0]:
+                value = np.array([x['mean'] for x in value]).flatten()
+
+            else:
+                value = np.array([x[attr] for x in value]).flatten()
+
             pad = int(len(index) / len(self))
 
         # No index
