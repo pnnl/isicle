@@ -476,7 +476,7 @@ class ConformationalEnsemble(TypedList):
             value = [x.get(key) for x in value]
 
         # Check for index
-        if isinstance(value[0]) is dict:
+        if isinstance(value[0], dict):
             # Check index
             if 'index' in value[0]:
                 index = np.array([x['index'] for x in value]).flatten()
