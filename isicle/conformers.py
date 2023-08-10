@@ -475,13 +475,15 @@ class ConformationalEnsemble(TypedList):
         for key in safelist(attr):
             value = [x.get(key) for x in value]
 
-        # Check for index
-        if type(value[0]) is dict:
+        # Check nested values
+        if isinstance(value[0], dict):
             # Check index
             if 'index' in value[0]:
                 index = np.array([x['index'] for x in value]).flatten()
+                pad = int(len(index) / len(self))
             else:
                 index = None
+                pad = 1
 
             # Check atom
             if 'atom' in value[0]:
@@ -489,10 +491,14 @@ class ConformationalEnsemble(TypedList):
             else:
                 atom = None
 
-            value = np.array([x[attr] for x in value]).flatten()
-            pad = int(len(index) / len(self))
+            # Special case for CCS
+            if 'mean' in value[0] and 'std' in value[0]:
+                value = np.array([x['mean'] for x in value]).flatten()
 
-        # No index
+            else:
+                value = np.array([x[attr] for x in value]).flatten()
+
+        # Not nested
         else:
             index = None
             atom = None
@@ -644,6 +650,7 @@ class ConformationalEnsemble(TypedList):
         -------
         :obj:`~isicle.conformers.ConformationalEnsemble`
             Conformational ensemble.
+
         '''
 
         # Check for geom attribute

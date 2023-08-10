@@ -1,14 +1,17 @@
+import functools
+import operator
+import os
+import pickle
+import re
+
+import rdkit.Chem.rdchem as rdc
+from rdkit import Chem
+
 import isicle
+from isicle.conformers import ConformationalEnsemble
 from isicle.interfaces import WrapperInterface
 from isicle.md import md
 from isicle.utils import safelist
-from isicle.conformers import ConformationalEnsemble
-import os
-from rdkit import Chem
-import re
-import rdkit.Chem.rdchem as rdc
-import functools
-import operator
 
 
 def _parse_file_ions(path):
@@ -127,9 +130,11 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     valid_list = []
     for ion in unknown_valid_list:
         parsed_ion = re.findall('.+?[0-9]?[+-]', ion)
-        subset = [f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
+        subset = [
+            f"[{re.findall('(.+?)[0-9]?[-]', i)[0]}]" for i in parsed_ion if '-' in i]
         subset_mol = [Chem.MolFromSmiles(i, sanitize=False) for i in subset]
-        substruc_check = [i for i in subset_mol if init_mol.HasSubstructMatch(i)]
+        substruc_check = [
+            i for i in subset_mol if init_mol.HasSubstructMatch(i)]
         if False in substruc_check:
             continue
         else:
@@ -137,31 +142,72 @@ def _filter_by_substructure_match(init_mol, unknown_valid_list):
     return valid_list
 
 
-def _build_adduct_ensembl(adducts):
-    '''
-    Create an adduct ensemble from a dictionary of adduct geometries.
-    Parses wrapper.adducts dictionary and returns a list of adduct geometry objects.
+def get_nested_dict_values(d):
+    for v in d.values():
+        if isinstance(v, dict):
+            yield from get_nested_dict_values(v)
+        else:
+            yield v
 
-    Params
-    ------
-    adducts : {<IonCharge>: [<geomObjects>]}
-        Dictionary returned from `isicle.adducts.<IonMethod>Wrapper.run`
 
-    Returns
-    -------
-    List of adduct geometries
+class AdductEnsemble(dict):
+    def __setitem__(self, key, value):
+        self.__dict__[key] = value
 
-    '''
-    ensembl = []
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
-    for k, v in adducts.items():
-        id = 1
-        for geom in v:
-            geom.__dict__.update(ion=k, adductID=id)
-            ensembl.append(geom)
-            id += 1
+    def __repr__(self):
+        return repr(self.__dict__)
 
-    return ensembl
+    def __len__(self):
+        return len(self.__dict__)
+
+    def __delitem__(self, key):
+        del self.__dict__[key]
+
+    def clear(self):
+        return self.__dict__.clear()
+
+    def copy(self):
+        return self.__dict__.copy()
+
+    def has_key(self, k):
+        return k in self.__dict__
+
+    def update(self, *args, **kwargs):
+        return self.__dict__.update(*args, **kwargs)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def get_structures(self):
+        values = get_nested_dict_values(self.__dict__)
+        return isicle.conformers.build_conformational_ensemble(values)
+
+
+def build_adduct_ensemble(geometries):
+
+    # Cast to conformational ensemble
+    if not isinstance(geometries, isicle.conformers.ConformationalEnsemble):
+        geometries = isicle.conformers.build_conformational_ensemble(
+            geometries)
+
+    geometries._check_attributes('ion')
+    geometries._check_attributes('adductID')
+
+    d = AdductEnsemble()
+    for adduct in geometries:
+        if adduct.ion not in d.keys():
+            d[adduct.ion] = {}
+
+        d[adduct.ion][adduct.adductID] = adduct
+
+    return d
+
 
 def ionize(ion_method):
     '''
@@ -178,12 +224,15 @@ def ionize(ion_method):
         Wrapped functionality of the selected program. Must implement
         :class:`~isicle.interfaces.AdductInterface`.
     '''
-    ion_method_map = {'explicit': ExplicitIonizationWrapper, 'crest': CRESTIonizationWrapper}
+
+    ion_method_map = {'explicit': ExplicitIonizationWrapper,
+                      'crest': CRESTIonizationWrapper}
 
     if ion_method.lower() in ion_method_map.keys():
         return ion_method_map[ion_method.lower()]()
     else:
-        raise ValueError('{} not a supported ionization method.'.format(ion_method))
+        raise ValueError(
+            '{} not a supported ionization method.'.format(ion_method))
 
 
 def write(IonizationWrapper, path, fmt):
@@ -197,22 +246,20 @@ def write(IonizationWrapper, path, fmt):
     fmt : str
         Format in which to save the RDKit mol object (eg. 'mol2', 'pdb')
     '''
+
     if path is not None and fmt is not None:
         for adduct in IonizationWrapper.adducts:
             isicle.geometry.Geometry.save(adduct.mol, os.path.join(
-                path, '{}_{}'.format(adduct.basename,adduct.ion,adduct.adductID)), fmt)
+                path, '{}_{}'.format(adduct.basename, adduct.ion, adduct.adductID)), fmt)
         return
     elif path is not None:
-        raise(
+        raise (
             'path passed to isicle.adducts.write; fmt flag must also be passed; data not written')
     elif fmt is not None:
-        raise(
+        raise (
             'fmt is supplied to isicle.adducts.write; path flag must also be passed; data not saved')
     else:
         return
-
-
-
 
 
 class ExplicitIonizationWrapper(WrapperInterface):
@@ -225,7 +272,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Initialize :obj:`~isicle.adducts.ExplicitIonizationWrapper` instance.
         '''
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
         if self.adducts is None:
             self.adducts = {}
@@ -233,11 +281,14 @@ class ExplicitIonizationWrapper(WrapperInterface):
     def set_geometry(self, geom):
         '''
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
+
         Parameters
         ----------
         geometry : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
+
         '''
+
         if self.__dict__.get('geom') is not None:
             pass
         elif self.__dict__.get('mol') is not None:
@@ -248,13 +299,16 @@ class ExplicitIonizationWrapper(WrapperInterface):
     def set_charge(self):
         '''
         '''
+
         if self.geom.__dict__.get('charge') is None:
             self.geom.__dict__.update(charge=self.geom.get_formal_charge())
 
     def _set_ions(self, ion_path=None, ion_list=None):
         '''
         '''
-        cations, anions, complex = _parse_ions(ion_path=ion_path, ion_list=ion_list)
+
+        cations, anions, complex = _parse_ions(
+            ion_path=ion_path, ion_list=ion_list)
         # Cast to list safely
         self.adducts['cations'] = safelist(cations)
         self.adducts['anions'] = safelist(anions)
@@ -262,10 +316,14 @@ class ExplicitIonizationWrapper(WrapperInterface):
 
     def _check_valid(self):
         '''
-        Perform substructure search
+        Perform substructure search.
+
         '''
-        self.adducts['anions'] = _filter_by_substructure_match(self.geom.mol, self.adducts['anions'])
-        self.adducts['complex'] = _filter_by_substructure_match(self.geom.mol, self.adducts['complex'])
+
+        self.adducts['anions'] = _filter_by_substructure_match(
+            self.geom.mol, self.adducts['anions'])
+        self.adducts['complex'] = _filter_by_substructure_match(
+            self.geom.mol, self.adducts['complex'])
 
     def configure(self, ion_path=None, ion_list=None):
         '''
@@ -277,8 +335,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Downselect atom sites that can accept ions
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         ion_atomic_num: Int
             Integer denoting the atomic number of the ion to be added or removed
@@ -297,7 +355,9 @@ class ExplicitIonizationWrapper(WrapperInterface):
             -atom.GetDegree() returns number of directly-bonded neighbours
              indep. of bond order, dep. of Hs set to explicit
             -atom.GetTotalNumHs returns total (explicit+implicit) Hs on atom
+
         '''
+
         pt = Chem.GetPeriodicTable()
         all_atom_dict = {atom.GetIdx(): [atom.GetSymbol(), atom.GetTotalValence() -
                                          atom.GetDegree(), atom.GetTotalNumHs(includeNeighbors=True),
@@ -331,7 +391,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
             return atom_dict
 
         elif mode == None:
-            raise ValueError('Must supply an ionization mode to _modify_atom_dict')
+            raise ValueError(
+                'Must supply an ionization mode to _modify_atom_dict')
 
     def _subset_atom_dict(self, atom_dict, index_list=None, element_list=None):
         '''
@@ -354,24 +415,28 @@ class ExplicitIonizationWrapper(WrapperInterface):
             -atom.GetDegree() returns number of directly-bonded neighbours
              indep. of bond order, dep. of Hs set to explicit
             -atom.GetTotalNumHs returns total (explicit+implicit) Hs on atom
+
         '''
+
         subset_atom_dict = {}
         if index_list is not None:
             for k, v in atom_dict.items():
                 if k in index_list:
                     subset_atom_dict[k] = v
+
         if element_list is not None:
             for k, v in atom_dict.items():
                 if v[0] in element_list:
                     subset_atom_dict[k] = v
+
         return subset_atom_dict
 
     def _forcefield_selector(self, forcefield, mw):
         '''
         Checks if user specified forcefield is compatible with supplied mol
 
-        Params
-        ------
+        Parameters
+        ----------
         forcefield: str
             Specify "UFF" for Universal Force Field optimization by RDKit
             Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
@@ -381,32 +446,40 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         -------
         RDKit forcefield optimization function that must be implemented
+
         '''
+
         forcefield = forcefield.lower()
         if forcefield == 'uff':
             if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
                 return Chem.AllChem.UFFOptimizeMolecule
             else:
-                raise ValueError('UFF is not available for all atoms in molecule.')
+                raise ValueError(
+                    'UFF is not available for all atoms in molecule.')
+
         elif forcefield in ['mmff', 'mmff94', 'mmff94s']:
             if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
                 return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
             else:
-                raise ValueError('specified MMFF is not available for all atoms in molecule.')
-        else:
-            raise ValueError('RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
+                raise ValueError(
+                    'specified MMFF is not available for all atoms in molecule.')
 
-    def _update_geometry_charge(self,geom):
+        else:
+            raise ValueError(
+                'RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
+
+    def _update_geometry_charge(self, geom):
         '''
         '''
+
         geom.__dict__.update(charge=geom.get_formal_charge())
 
     def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
         Adds specified ion (by atomic num) to specified base atom (by atom's index).
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         base_atom_idx: Int
             Integer denoting the the atom to which an ion will be added
@@ -424,7 +497,9 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         _______
         Ionized RDKit mol object
+
         '''
+
         mw = Chem.RWMol(init_mol)
         atom_idx = mw.AddAtom(Chem.Atom(ion_atomic_num))
         ba = mw.GetAtomWithIdx(base_atom_idx)
@@ -440,7 +515,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
-        geom = isicle.geometry.Geometry(mol=mw, basename=self.geom.get_basename())
+        geom = isicle.geometry.Geometry(
+            mol=mw, basename=self.geom.get_basename())
         self._update_geometry_charge(geom)
         return geom
 
@@ -448,8 +524,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Iteratively ionize all atoms in a supplied dictionary.
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         atom_dict: Dict
             Dictionary of format {<atom.rdkit.obj>:[atom Symbol, atom Total Valence, atom Degree, # bonded H atoms]}
@@ -467,11 +543,13 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         -------
         Dictionary of style {base atom index: ionized RDKit mol object}
+
         '''
 
         mol_dict = {}
         for key in atom_dict.keys():
-            mw = self._add_ion(init_mol, key, ion_atomic_num, sanitize, forcefield, ff_iter)
+            mw = self._add_ion(init_mol, key, ion_atomic_num,
+                               sanitize, forcefield, ff_iter)
             # Format {atom_base_idx:<newmol>}
             mol_dict[key] = mw
         return mol_dict
@@ -480,8 +558,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         ion_atomic_num: Int
             Integer denoting the atomic number of the ion to be added
@@ -506,15 +584,19 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         -------
         Dictionary of style {base atom index: ionized RDKit mol object}
+
         '''
+
         atom_dict = self._modify_atom_dict(
             init_mol, ion_atomic_num, mode='positive', include_Alkali_ne=include_Alkali_ne)
         if index_list is not None:
-            subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
+            subset_atom_dict = self._subset_atom_dict(
+                atom_dict, index_list=index_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
                                            ion_atomic_num, sanitize, forcefield, ff_iter)
         elif element_list is not None:
-            subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
+            subset_atom_dict = self._subset_atom_dict(
+                atom_dict, element_list=element_list)
             mol_dict = self._apply_add_ion(init_mol, subset_atom_dict,
                                            ion_atomic_num, sanitize, forcefield, ff_iter)
         elif batch == True:
@@ -530,8 +612,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Removes specified ion (by atomic num) from specified base atom (by atom's index).
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         base_atom_idx: Int
             Integer denoting the the atom from which an ion will be removed from
@@ -545,15 +627,18 @@ class ExplicitIonizationWrapper(WrapperInterface):
             Specify "MMFF94s" for the MMFF94 s variant
         ff_iter: Int
             Integer specifying the max iterations for the specified forcefield
+
         Returns
-        _______
+        -------
         Deionized RDKit mol object
+
         '''
 
         mw = Chem.RWMol(init_mol)
         ba = mw.GetAtomWithIdx(base_atom_idx)
         fc = ba.GetFormalCharge()
-        nbrs_dict = {nbr.GetAtomicNum(): nbr.GetIdx() for nbr in ba.GetNeighbors()}
+        nbrs_dict = {nbr.GetAtomicNum(): nbr.GetIdx()
+                     for nbr in ba.GetNeighbors()}
         mw.RemoveAtom(nbrs_dict[ion_atomic_num])
         ba.SetFormalCharge(fc-1)
         mw.UpdatePropertyCache(strict=False)
@@ -565,7 +650,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 tempff(mw, mmffVariant=forcefield, maxIters=ff_iter)
             else:
                 tempff(mw, maxIters=ff_iter)
-        geom = isicle.geometry.Geometry(mol=mw, basename=self.geom.get_basename())
+        geom = isicle.geometry.Geometry(
+            mol=mw, basename=self.geom.get_basename())
         self._update_geometry_charge(geom)
         return geom
 
@@ -573,8 +659,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Iteratively deionize all atoms in a supplied dictionary.
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         atom_dict: Dict
             Dictionary of format {<atom.rdkit.obj>:[atom Symbol, atom Total Valence, atom Degree, # bonded H atoms]}
@@ -592,6 +678,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         -------
         Dictionary of style {base atom index: deionized RDKit mol object}
+
         '''
 
         mol_dict = {}
@@ -605,8 +692,8 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         Subsets atoms in supplied mol by specified index or elemental constraints, or feasibilty based upon supplied ion atomic number.
 
-        Params
-        ------
+        Parameters
+        ----------
         init_mol: RDKit mol object
         ion_atomic_num: Int
             Integer denoting the atomic number of the ion to be removed
@@ -631,15 +718,19 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         -------
         Dictionary of style {base atom index: deionized RDKit mol object}
+
         '''
+
         atom_dict = self._modify_atom_dict(
             init_mol, ion_atomic_num, mode='negative', include_Alkali_ne=include_Alkali_ne)
         if index_list is not None:
-            subset_atom_dict = self._subset_atom_dict(atom_dict, index_list=index_list)
+            subset_atom_dict = self._subset_atom_dict(
+                atom_dict, index_list=index_list)
             mol_dict = self._apply_remove_ion(
                 init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter)
         elif element_list is not None:
-            subset_atom_dict = self._subset_atom_dict(atom_dict, element_list=element_list)
+            subset_atom_dict = self._subset_atom_dict(
+                atom_dict, element_list=element_list)
             mol_dict = self._apply_remove_ion(
                 init_mol, subset_atom_dict, ion_atomic_num, sanitize, forcefield, ff_iter)
         elif batch == True:
@@ -650,12 +741,13 @@ class ExplicitIonizationWrapper(WrapperInterface):
                 'Must provide a list of atom indexes, list of elements, or set batch=True.')
         return mol_dict
 
-    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, forcefield='UFF', ff_iter=200, include_Alkali_ne=False):
+    def submit(self, batch=True, index_list=None, element_list=None, sanitize=True, forcefield='UFF',
+               ff_iter=200, include_Alkali_ne=False):
         '''
         Calls positive or negative ionization modes based upon supplied ion list.
 
-        Params
-        ------
+        Parameters
+        ----------
         batch: Bool
             Whether adducts should be formed from all possible heavy atoms
         index_list: list
@@ -677,7 +769,9 @@ class ExplicitIonizationWrapper(WrapperInterface):
         Returns
         -------
         Dictionary of style {base atom index: ionized RDKit mol object}
+
         '''
+
         pt = Chem.GetPeriodicTable()
 
         anion_dict = {}
@@ -690,45 +784,68 @@ class ExplicitIonizationWrapper(WrapperInterface):
             element_list = safelist(element_list)
 
         for x in self.adducts['cations']:
-            ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+]', x)[0])
-            mol_dict = self._positive_mode(self.geom.mol, ion_atomic_num,batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne)
+            ion_atomic_num = pt.GetAtomicNumber(
+                re.findall('(.+?)[0-9]?[+]', x)[0])
+            mol_dict = self._positive_mode(self.geom.mol, ion_atomic_num, batch, index_list,
+                                           element_list, sanitize, forcefield, ff_iter, include_Alkali_ne)
             cation_dict[x] = list(mol_dict.values())
+
         for x in self.adducts['anions']:
-            ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[-]', x)[0])
-            mol_dict = self._negative_mode(self.geom.mol, ion_atomic_num,batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne)
+            ion_atomic_num = pt.GetAtomicNumber(
+                re.findall('(.+?)[0-9]?[-]', x)[0])
+            mol_dict = self._negative_mode(self.geom.mol, ion_atomic_num, batch, index_list,
+                                           element_list, sanitize, forcefield, ff_iter, include_Alkali_ne)
             anion_dict[x] = list(mol_dict.values())
+
         for x in self.adducts['complex']:
             # This self-determined charge doesn't account for K(2+) or CO2- type adducts
             parsed = re.findall('.*?[+-]', x)
             # TODO strip whitespace
             geom_list = safelist(self.geom)
+
             for ion in parsed:
-                ion_atomic_num = pt.GetAtomicNumber(re.findall('(.+?)[0-9]?[+-]', ion)[0])
+                ion_atomic_num = pt.GetAtomicNumber(
+                    re.findall('(.+?)[0-9]?[+-]', ion)[0])
                 if ('+') in ion:
-                    res = list(map(lambda geom: list(self._positive_mode(geom.mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne).values()),geom_list))
-                    complex_dict[x] = functools.reduce(operator.iconcat, res, [])
+                    res = list(map(lambda geom: list(self._positive_mode(geom.mol, ion_atomic_num, batch, index_list,
+                               element_list, sanitize, forcefield, ff_iter, include_Alkali_ne).values()), geom_list))
+                    complex_dict[x] = functools.reduce(
+                        operator.iconcat, res, [])
 
                 elif ('-') in ion:
-                    res = list(map(lambda geom: list(self._negative_mode(geom.mol, ion_atomic_num, batch, index_list, element_list, sanitize, forcefield, ff_iter, include_Alkali_ne).values()),geom_list))
-                    complex_dict[x] = functools.reduce(operator.iconcat, res, [])
+                    res = list(map(lambda geom: list(self._negative_mode(geom.mol, ion_atomic_num, batch, index_list,
+                               element_list, sanitize, forcefield, ff_iter, include_Alkali_ne).values()), geom_list))
+                    complex_dict[x] = functools.reduce(
+                        operator.iconcat, res, [])
                 geom_list = complex_dict.get(x)
-        self.__dict__.update({'adducts': {**cation_dict, **anion_dict, **complex_dict}})
+
+        # Combine ion dictionaries and index
+        ensemble = []
+        for k, v in {**cation_dict, **anion_dict, **complex_dict}.items():
+            id = 0
+            for geom in v:
+                geom.__dict__.update(ion=k, adductID=id)
+                ensemble.append(geom)
+                id += 1
+
+        self.adducts = build_adduct_ensemble(ensemble)
 
     def finish(self):
         '''
-        Combine generated structures
+        Parse results.
 
         Returns
         -------
-        :obj:`~isicle.parse.XTBResult`
-            Parsed result data.
+        :obj:`~isicle.adducts.ExplicitIonizationWrapper`
+
         '''
-        # ion dict format {ion<charge>:mol}
-        self.__dict__.update({'adducts': _build_adduct_ensembl(self.adducts)})
+
+        return self
 
     def run(self, geom, ion_path=None, ion_list=None, **kwargs):
         '''
         Ionize geometry via with supplied geometry and file containing list of ions.
+
         Parameters
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
@@ -743,17 +860,22 @@ class ExplicitIonizationWrapper(WrapperInterface):
         **kwargs
             Keyword arguments to configure how ionization is run.
             See :meth:`~isicle.adducts.ExplicitIonizationWrapper.submit`.
+
         Returns
         -------
         :obj:`~isicle.adducts.ExplicitIonizationWrapper`
 
         '''
+
         # New instance
         self = ExplicitIonizationWrapper(**geom.__dict__)
+
         # Sets geom to self.geom
         self.set_geometry(geom)
+
         # Infers charge of geom.mol
         self.set_charge()
+
         # Load specified ions by type
         # Validity check if negative ionization can be done
         self.configure(ion_path=ion_path, ion_list=ion_list)
@@ -761,10 +883,36 @@ class ExplicitIonizationWrapper(WrapperInterface):
         # Generate adducts
         self.submit(**kwargs)
 
-        # Combine varions ion mols into one output dictionary
+        # Finish
         self.finish()
 
         return self
+    
+    def get_structures(self):
+        '''
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        '''
+        
+        return self.adducts.get_structures()
+
+    def get_adducts(self):
+        '''
+        Extract all structures from containing object as an adduct ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.adducts.AdductEnsemble`
+            Adduct ensemble.
+
+        '''
+
+        return self.adducts
 
     def save_pickle(self, path):
         '''
@@ -788,6 +936,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         ----------
         path : str
             Path to save object to.
+
         '''
 
         self.save_pickle(path)
@@ -800,7 +949,8 @@ class CRESTIonizationWrapper(WrapperInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
         if self.adducts is None:
             self.adducts = {}
@@ -808,11 +958,14 @@ class CRESTIonizationWrapper(WrapperInterface):
     def set_geometry(self, geom):
         '''
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
+
         Parameters
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
+
         '''
+
         if self.__dict__.get('geom') is not None:
             pass
         elif self.__dict__.get('mol') is not None:
@@ -825,15 +978,18 @@ class CRESTIonizationWrapper(WrapperInterface):
     def set_charge(self):
         '''
         '''
+
         if self.geom.__dict__.get('charge') is None:
             if self.geom.load.get('filetype') == '.xyz':
-                #self.geom.__dict__.update(charge=charge)
-                raise ValueError('Must first run geom.set_formal_charge for an xyz structure')
+                # self.geom.__dict__.update(charge=charge)
+                raise ValueError(
+                    'Must first run geom.set_formal_charge for an xyz structure')
             else:
                 self.geom.__dict__.update(charge=self.geom.get_formal_charge())
 
     def _set_ions(self, ion_path=None, ion_list=None):
-        cations, anions, complex = _parse_ions(ion_path=ion_path, ion_list=ion_list)
+        cations, anions, complex = _parse_ions(
+            ion_path=ion_path, ion_list=ion_list)
         # cast to list safely
         self.adducts['cations'] = safelist(cations)
         self.adducts['anions'] = safelist(anions)
@@ -844,7 +1000,9 @@ class CRESTIonizationWrapper(WrapperInterface):
         Filters ions by what is supported by xtb software.
         consult https://github.com/grimme-lab/crest/issues/2 for supported ions by xtb CREST
         xtb supports alkali and alkaline earth metals.
+
         '''
+
         pt = Chem.GetPeriodicTable()
         valid_list = []
         for ion in unknown_valid_list:
@@ -864,10 +1022,15 @@ class CRESTIonizationWrapper(WrapperInterface):
     def _check_valid(self):
         '''
         Performs substructure search and checks if supported by CREST documentation
+
         '''
-        self.adducts['cations'] = self._filter_supported_by_xtb(self.adducts['cations'])
-        self.adducts['anions'] = self._filter_supported_by_xtb(self.adducts['anions'])
-        self.adducts['complex'] = self._filter_supported_by_xtb(self.adducts['complex'])
+
+        self.adducts['cations'] = self._filter_supported_by_xtb(
+            self.adducts['cations'])
+        self.adducts['anions'] = self._filter_supported_by_xtb(
+            self.adducts['anions'])
+        self.adducts['complex'] = self._filter_supported_by_xtb(
+            self.adducts['complex'])
 
         if self.geom.load['filetype'] != '.xyz':
             self.adducts['anions'] = _filter_by_substructure_match(
@@ -882,6 +1045,7 @@ class CRESTIonizationWrapper(WrapperInterface):
     def _parse_ion_charge(self, ion):
         '''
         '''
+
         # TODO update with MSAC code for ion charge lookup table
         charge = re.findall('[0-9]', ion)
         if not charge:
@@ -893,6 +1057,7 @@ class CRESTIonizationWrapper(WrapperInterface):
     def _update_geometry_charge(self, geom, adduct, ion_charge, mode):
         '''
         '''
+
         if mode == 'negative':
             charge = geom.__dict__.get('charge') - ion_charge
         elif mode == 'positive':
@@ -903,6 +1068,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
         Call isicle.md.md for specified geom and cation
         '''
+
         output = md(geom, program='xtb', task='protonate', forcefield=forcefield,
                     ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=geom.charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology)
         ion_charge = self._parse_ion_charge(cation)
@@ -914,6 +1080,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
         Call isicle.md.md for specified geom and anion
         '''
+
         output = md(geom, program='xtb', task='deprotonate', forcefield=forcefield,
                     ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=geom.charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology)
         ion_charge = self._parse_ion_charge(anion)
@@ -931,7 +1098,9 @@ class CRESTIonizationWrapper(WrapperInterface):
         -----
         see isicle.md.md for forcefield, ewin, optlevel, dryrun
         molecular_charge is net charge of structure pre-ionization, default neutral, 0
+
         '''
+
         anion_dict = {}
         cation_dict = {}
         complex_dict = {}
@@ -954,28 +1123,38 @@ class CRESTIonizationWrapper(WrapperInterface):
                     # complex_dict[x] =
                     res = list(map(lambda geom: self._positive_mode(geom, forcefield, ewin, ion,
                                                                     optlevel, dryrun, processes, solvation, ignore_topology), geom_list))
-                    complex_dict[x] = functools.reduce(operator.iconcat, res, [])
+                    complex_dict[x] = functools.reduce(
+                        operator.iconcat, res, [])
 
                 elif ('-') in ion:
                     res = list(map(lambda geom: self._negative_mode(geom, forcefield, ewin, ion,
                                                                     optlevel, dryrun, processes, solvation, ignore_topology), geom_list))
-                    complex_dict[x] = functools.reduce(operator.iconcat, res, [])
+                    complex_dict[x] = functools.reduce(
+                        operator.iconcat, res, [])
                 geom_list = complex_dict.get(x)
 
-        self.__dict__.update({'adducts': {**cation_dict, **anion_dict, **complex_dict}})
+        # Combine ion dictionaries and index
+        ensemble = []
+        for k, v in {**cation_dict, **anion_dict, **complex_dict}.items():
+            id = 0
+            for geom in v:
+                geom.__dict__.update(ion=k, adductID=id)
+                ensemble.append(geom)
+                id += 1
+
+        self.adducts = build_adduct_ensemble(ensemble)
 
     def finish(self):
         '''
-        Combine generated structures
+        Parse results.
 
         Returns
         -------
-        :obj:`~isicle.parse.XTBResult`
-            Parsed result data.
-        '''
-        # ion dict format {ion<charge>:mol}
+        :obj:`~isicle.adducts.CRESTIonizationWrapper`
 
-        self.__dict__.update({'adducts': _build_adduct_ensembl(self.adducts)})
+        '''
+
+        return self
 
     def run(self, geom, ion_path=None, ion_list=None, **kwargs):
         '''
@@ -997,6 +1176,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         :obj:`~isicle.adducts.CRESTIonizationWrapper`
 
         '''
+
         self = CRESTIonizationWrapper(**geom.__dict__)
 
         self.set_geometry(geom)
@@ -1016,6 +1196,32 @@ class CRESTIonizationWrapper(WrapperInterface):
         self.finish()
 
         return self
+    
+    def get_structures(self):
+        '''
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        '''
+        
+        return self.adducts.get_structures()
+
+    def get_adducts(self):
+        '''
+        Extract all structures from containing object as an adduct ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.adducts.AdductEnsemble`
+            Adduct ensemble.
+
+        '''
+
+        return self.adducts
 
     def save_pickle(self, path):
         '''

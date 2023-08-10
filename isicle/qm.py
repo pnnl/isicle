@@ -145,8 +145,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
             ".pdb", ".pkl".
 
         '''
-        # Path operationspyth
-        self.temp_dir = isicle.utils.mkdtemp()
+        # Path operations
         self.fmt = fmt.lower()
         geomfile = os.path.join(self.temp_dir,
                                 '{}.{}'.format(self.geom.basename,
@@ -156,7 +155,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         isicle.io.save(geomfile, self.geom)
         self.geom.path = geomfile
 
-    def _configure_header(self, scratch_dir='/scratch', mem_global=1600,
+    def _configure_header(self, scratch_dir=None, mem_global=1600,
                           mem_heap=100, mem_stack=600):
         '''
         Generate header block of NWChem configuration.
@@ -662,7 +661,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
                   atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-                  mem_stack=600, scratch_dir='/scratch', processes=12, command='nwchem'):
+                  mem_stack=600, scratch_dir=None, processes=12, command='nwchem'):
         '''
         Configure NWChem simulation.
 
@@ -720,6 +719,10 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         atoms = safelist(atoms)
         cosmo = safelist(cosmo)
         solvent = safelist(solvent)
+
+        # Set scratch directory
+        if scratch_dir is None:
+            scratch_dir = isicle.utils.mkdtemp()
 
         # Container for final configuration script
         config = ''
@@ -871,16 +874,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
     def finish(self):
         '''
-        Parse NWChem simulation results and clean up temporary directory.
-
-        Parameters
-        ----------
-        keep_files : bool
-            Indicate whether to keep all intermediate files (relevant data will
-            automatically be parsed).
-        path : str
-            Directory to copy intermediate files. Only used if `keep_files` is
-            True.
+        Parse NWChem simulation results.
 
         Returns
         -------

@@ -818,3 +818,92 @@ class XTBParser(FileParserInterface):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
         return
+
+class TINKERParser(FileParserInterface):
+
+    def __init__(self):
+        self.contents = None
+        self.result = None
+        self.path = None
+
+    def load(self, path: str):
+        '''Load in the data file'''
+        with open(path, 'r') as f:
+            self.contents = f.readlines()
+        self.path = path
+
+    def _tinker_energy(self):
+        return
+    
+    def _tinker_conformers(self):
+
+        def check_float(coord: str):
+            if coord[0] == '-':
+                return '   '+coord
+            else:
+                return '    '+coord
+
+        # Define file path and load file
+        self.xyzpath = self.path.split('.')[0]+'.arc'
+        with open('butyric_acid.arc', 'r') as f:
+            geoms = f.readlines()  
+
+
+        #atom count in molecule
+        atomnum = int(geoms[0].split()[0])
+
+        FILE = self.path.split('.')[0]+'.xyz'
+
+        f = open(FILE, 'w+')
+        # Convert from TINKER xyz format to standard xyz format
+        for idx, line in enumerate(geoms):
+
+            if line == geoms[0]:
+                xyz = geoms[idx:idx+atomnum+1]
+                
+                new_xyz = [str(xyz[0].strip()+'\n\n')]
+                for coord in xyz[1:]:
+                    old_line = coord.split()
+                    
+                    s = ' '
+                    
+                    if old_line[1][1].islower():
+                        s += old_line[1][0:2]
+                    else:
+                        s += old_line[1][0]
+                    
+                    # XYZ coordinates
+                    s += check_float(old_line[2])
+                    s += check_float(old_line[3])
+                    s += check_float(old_line[4])+'\n'
+            
+                    new_xyz.append(s)
+
+                for i in new_xyz:
+                    f.write(i)
+        f.close()
+
+        if len(list(pybel.readfile('xyz', FILE))) > 1:
+            geom_list = []
+            count = 1
+            XYZ = FILE.split(".")[0]
+            for geom in pybel.readfile('xyz', FILE):
+                geom.write("xyz", "%s_%d.xyz" % (XYZ, count))
+                geom_list.append("%s_%d.xyz" % (XYZ, count))
+                count += 1
+
+            x = [isicle.io.load(i) for i in geom_list]
+
+        else:
+            x = [isicle.io.load(self.xyz_path)]
+
+        return isicle.conformers.ConformationalEnsemble(x)
+    
+    def parse(self):
+        return
+    
+    def save(self):
+        return
+    
+
+                                    
