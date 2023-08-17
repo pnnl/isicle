@@ -106,7 +106,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         """
 
         # Assign geometry
-        self.geom = geom
+        self.geom = geom.__copy__()
         self.basename = self.geom.basename
 
         # Save geometry
@@ -426,7 +426,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.set_geometry(geom)
 
         # Configure
-        self.configure(**kwargs)
+        self.configure(task=task, forcefield=forcefield, charge=charge,
+            ewin=ewin, ion=ion, optlevel=optlevel, dryrun=dryrun, processes=processes,
+            solvation=solvation, ignore_topology=ignore_topology)
 
         # Run QM simulation
         self.submit()
@@ -716,7 +718,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         """
 
         # Assign geometry
-        self.geom = geom
+        self.geom = geom.__copy__()
         self.basename = self.geom.basename
 
         self.tinkerxyz = self._convert_to_tinkerxyz()

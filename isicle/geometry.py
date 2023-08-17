@@ -106,7 +106,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         """
 
-        return isicle.md.md(self.__copy__(), program=program, **kwargs)
+        return isicle.md.md(self, program=program, **kwargs)
 
     def ionize(self, ion_path=None, ion_list=None, **kwargs):
         """
