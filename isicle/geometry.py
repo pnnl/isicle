@@ -733,7 +733,9 @@ class Geometry(XYZGeometry, GeometryInterface):
         -------
         str
             SMARTS string.
+
         """
+
         return Chem.MolToSmarts(self.to_mol())
 
     def to_xyzblock(self):
