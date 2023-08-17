@@ -379,7 +379,9 @@ class ConformationalEnsemble(TypedList):
         ----------
         *args
             Objects to comprise the conformational ensemble.
+
         '''
+
         super().__init__((Geometry, XYZGeometry), *args)
 
     def _check_attributes(self, attr):
@@ -395,7 +397,9 @@ class ConformationalEnsemble(TypedList):
         ------
         AttributeError
             If all members do not have `attr`.
+
         '''
+
         value = [x.get___dict__() for x in self]
         for key in safelist(attr):
             if not all(key in x for x in value):
@@ -421,7 +425,9 @@ class ConformationalEnsemble(TypedList):
         -------
         :obj:`~pandas.DataFrame`
             Result of reduction operation.
+
         '''
+
         # Select reduction function
         f = _function_selector(func)
 
@@ -493,7 +499,9 @@ class ConformationalEnsemble(TypedList):
         -------
         :obj:`~isicle.conformers.ConformationalEnsemble` or list
             Result of operation, type depends on `method` return type.
+
         '''
+
         # Check for attribute
         if not all(hasattr(x, method) for x in self):
             raise AttributeError('"{}" not found for all conformational '
@@ -525,7 +533,9 @@ class ConformationalEnsemble(TypedList):
         -------
         :obj:`~isicle.conformers.ConformationalEnsemble` or list
             Result of operation, type depends on `func` return type.
+
         '''
+
         # Apply method to collection
         result = [func(x, **kwargs) for x in self]
 
@@ -560,7 +570,9 @@ class ConformationalEnsemble(TypedList):
         ------
         ValueError
             If neither `func` nor `method` is supplied.
+
         '''
+
         # Apply function
         if func is not None:
             return self._apply_function(func, **kwargs)
@@ -579,7 +591,9 @@ class ConformationalEnsemble(TypedList):
         -------
         :obj:`~isicle.conformers.ConformationalEnsemble`
             Conformational ensemble.
+
         '''
+
         # Check for geom attribute
         self._check_attributes('geom')
 

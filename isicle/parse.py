@@ -9,7 +9,7 @@ from openbabel import pybel
 import isicle
 
 class NWChemParser(FileParserInterface):
-    '''Extract text from an NWChem simulation output file.'''
+    """Extract text from an NWChem simulation output file."""
 
     def __init__(self):
         self.contents = None
@@ -17,7 +17,7 @@ class NWChemParser(FileParserInterface):
         self.path = None
 
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
@@ -274,7 +274,7 @@ class NWChemParser(FileParserInterface):
 
     def _parse_protocol(self):
 
-        '''Parse out dft protocol'''
+        """Parse out dft protocol"""
         functional = []
         basis_set = []
         solvation = []
@@ -337,14 +337,15 @@ class NWChemParser(FileParserInterface):
         return connectivity
 
     def parse(self):
-        '''
-        Extract relevant information from NWChem output
+        """
+        Extract relevant information from NWChem output.
 
         Parameters
         ----------
         to_parse : list of str
             geometry, energy, shielding, spin, frequency, molden, charge, timing 
-        '''
+
+        """
 
         # Check that the file is valid first
         if len(self.contents) == 0:
@@ -419,21 +420,21 @@ class NWChemParser(FileParserInterface):
         return
 
 class ImpactParser(FileParserInterface):
-    '''Extract text from an Impact mobility calculation output file.'''
+    """Extract text from an Impact mobility calculation output file."""
 
     def __init__(self):
         self.contents = None
         self.result = None
 
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         with open(path, 'rb') as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        '''Extract relevant information from data'''
+        """Extract relevant information from data"""
 
         # Check CCS results == 1
         count = 0
@@ -470,26 +471,26 @@ class ImpactParser(FileParserInterface):
         return result  # TODO: return CCS?
 
     def save(self, path: str, sep='\t'):
-        '''Write parsed object to file'''
+        """Write parsed object to file"""
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 class MobcalParser(FileParserInterface):
-    '''Extract text from a MOBCAL mobility calculation output file.'''
+    """Extract text from a MOBCAL mobility calculation output file."""
 
     def __init__(self):
         self.contents = None
         self.result = {}
 
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         with open(path, 'r') as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        '''Extract relevant information from data'''
+        """Extract relevant information from data"""
         done = False
         for line in self.contents:
             # if "average (second order) TM mobility" in line:
@@ -506,23 +507,23 @@ class MobcalParser(FileParserInterface):
         return self.result
 
     def save(self, path: str, sep='\t'):
-        '''Write parsed object to file'''
+        """Write parsed object to file"""
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 class SanderParser(FileParserInterface):
-    '''Extract text from an Sander simulated annealing simulation output file.'''
+    """Extract text from an Sander simulated annealing simulation output file."""
 
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         raise NotImplementedError
 
     def parse(self):
-        '''Extract relevant information from data'''
+        """Extract relevant information from data"""
         raise NotImplementedError
 
     def save(self, path: str):
-        '''Write parsed object to file'''
+        """Write parsed object to file"""
         raise NotImplementedError
 
 class XTBParser(FileParserInterface):
@@ -532,7 +533,7 @@ class XTBParser(FileParserInterface):
         self.path = None
 
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path
@@ -711,9 +712,9 @@ class XTBParser(FileParserInterface):
         return protocol
 
     def _parse_xyz(self):
-        '''
+        """
         Split .xyz into separate XYZGeometry instances
-        '''
+        """
 
         FILE = self.xyz_path
         if len(list(pybel.readfile('xyz', FILE))) > 1:
@@ -733,7 +734,7 @@ class XTBParser(FileParserInterface):
         return isicle.conformers.ConformationalEnsemble(x)
 
     def parse(self):
-        '''Extract relevant information from data'''
+        """Extract relevant information from data"""
 
         # Check that the file is valid first
         if len(self.contents) == 0:
@@ -827,7 +828,7 @@ class TINKERParser(FileParserInterface):
         self.path = None
 
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         with open(path, 'r') as f:
             self.contents = f.readlines()
         self.path = path

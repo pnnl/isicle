@@ -10,14 +10,14 @@ from isicle.geometry import Geometry, XYZGeometry
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser
 
-'''
+"""
 Files resulting from an xtb job always run in the same directory that the command is
 issued in, no matter where the input is. Can direct the .log file, but no other files.
-'''
+"""
 
 
 def _program_selector(program):
-    '''
+    """
     Selects a supported molecular dynamics program for associated simulation.
     Currently only NWChem has been implemented.
 
@@ -32,7 +32,7 @@ def _program_selector(program):
         Wrapped functionality of the selected program. Must implement
         :class:`~isicle.interfaces.MDWrapperInterface`.
 
-    '''
+    """
 
     program_map = {'xtb': XTBWrapper, 'rdkit': RDKitWrapper, 'tinker': TINKERWrapper}
 
@@ -44,7 +44,7 @@ def _program_selector(program):
 
 
 def md(geom, program='xtb', **kwargs):
-    '''
+    """
     Optimize geometry via molecular dyanmics using supplied forcefield
     and basis set.
 
@@ -58,14 +58,14 @@ def md(geom, program='xtb', **kwargs):
     result
         Object containing relevant outputs from the simulation.
 
-    '''
+    """
 
     # Select program
     return _program_selector(program).run(geom, **kwargs)
 
 
 class XTBWrapper(XYZGeometry, WrapperInterface):
-    '''
+    """
     Wrapper for xtb functionality.
 
     Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
@@ -84,7 +84,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
     job_list : str
         List of commands for simulation.
 
-    '''
+    """
 
     _defaults = ['geom']
     _default_value = None
@@ -95,7 +95,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.__dict__.update(**kwargs)
 
     def set_geometry(self, geom):
-        '''
+        """
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
 
         Parameters
@@ -103,7 +103,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
 
-        '''
+        """
 
         # Assign geometry
         self.geom = geom
@@ -113,7 +113,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.save_geometry()
 
     def save_geometry(self, fmt='xyz'):
-        '''
+        """
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
         Parameters
@@ -122,7 +122,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
             Filetype used by xtb. Must be "xyz", "smi", ".inchi", ".mol", ".xyz",
             ".pdb", ".pkl".
 
-        '''
+        """
         # Path operationspyth
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
@@ -135,7 +135,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.geom.path = geomfile
 
     def _configure_xtb(self, forcefield='gfn2', optlevel='normal', charge=None, solvation=None):
-        '''
+        """
         Set command line for xtb simulations.
 
         Parameters
@@ -152,7 +152,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
             Charge of molecular system.
             Default : 0 (Neutral charge)
 
-        '''
+        """
 
         # Add base command
         s = 'xtb '
@@ -184,7 +184,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
                          protonate=False, deprotonate=False, tautomerize=False,
                          ion=None, charge=None, dryrun=False, processes=1,
                          solvation=None, ignore_topology=False):
-        '''
+        """
         Set command line for crest simulations.
 
         Parameters
@@ -215,7 +215,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         charge : int
             Charge of molecular system.
             Default : 0 (Neutral charge)
-        '''
+        """
 
         # Start base command
         s = 'crest '
@@ -275,7 +275,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
     def configure(self, task='optimize', forcefield='gfn2', charge=None,
                   ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
                   solvation=None, ignore_topology=False):
-        '''
+        """
         Generate command line
 
         Parameters
@@ -300,7 +300,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         charge : int
             Charge of molecular system.
             Default : 0 (Neutral charge)
-        '''
+        """
 
         if type(task) == list:
             raise TypeError('Initiate one xtb or crest job at a time.')
@@ -348,9 +348,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.config = config
 
     def submit(self):
-        '''
+        """
         Run xtb or crest simulation according to configured inputs.
-        '''
+        """
         owd = os.getcwd()
         os.chdir(self.temp_dir)
         job = self.config
@@ -358,9 +358,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         os.chdir(owd)
 
     def finish(self):
-        '''
+        """
         Parse results, save xtb output files, and clean temporary directory
-        '''
+        """
 
         parser = XTBParser()
 
@@ -385,8 +385,10 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         else:
             self.geom = self.geom[0]
 
-    def run(self, geom, **kwargs):
-        '''
+    def run(self, geom, task='optimize', forcefield='gfn2', charge=None,
+            ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
+            solvation=None, ignore_topology=False):
+        """
         Optimize geometry via density functional theory using supplied functional
         and basis set.
 
@@ -394,16 +396,28 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
-        **kwargs
-            Keyword arguments to configure the simulation.
-            See :meth:`~isicle.md.XTBWrapper.configure`.
+        tasks : str
+            Set task to "optimize", "conformer", "protonate", "deprotonate", or "tautomerize".
+        forcefield : str
+            GFN forcefield for the optimization, including "gfn2", "gfn1", "gff".
+        ewin : int
+            Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search.
+        ion : str
+            Ion for protomer calculation.
+        optlevel : str or list of str
+            Set optimization level. Supply globally or per task.
+        ion : str
+            Keyword to couple with protonate to ionize molecule with an ion other than a proton.
+            See :obj:`~isicle.adduct.parse_ion` for list of ion options.
+        charge : int
+            Charge of molecular system. Defaults to 0 (neutral).
 
         Returns
         -------
         :obj:`~isicle.md.XTBWrapper`
             Wrapper object containing relevant outputs from the simulation.
 
-        '''
+        """
 
         # New instance
         self = XTBWrapper()
@@ -423,7 +437,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         return self
 
     def get_structures(self):
-        '''
+        """
         Extract all structures from containing object as a conformational ensemble.
 
         Returns
@@ -431,7 +445,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         :obj:`~isicle.conformers.ConformationalEnsemble`
             Conformational ensemble.
 
-        '''
+        """
+
         if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
             return self.geom
 
@@ -439,7 +454,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
             'Object does not contain multiple structures. Use `get_structure` instead.')
 
     def get_structure(self):
-        '''
+        """
         Extract structure from containing object.
 
         Returns
@@ -447,7 +462,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         :obj:`~isicle.geometry.XYZGeometry`
             Structure instance. 
 
-        '''
+        """
+
         if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
             raise TypeError(
                 'Object contains multiple structures. Use `get_structures` instead.')
@@ -456,8 +472,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
 
 class RDKitWrapper(Geometry, WrapperInterface):
-
-    '''
+    """
     Wrapper for rdkit functionality.
 
     Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
@@ -476,7 +491,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
     job_list : str
         List of commands for simulation.
 
-    '''
+    """
 
     _defaults = ['geom']
     _default_value = None
@@ -504,7 +519,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
 class TINKERWrapper(Geometry, WrapperInterface):
 
-    '''
+    """
     Wrapper for TINKER functionality.
 
     Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
@@ -523,7 +538,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
     job_list : str
         List of commands for simulation.
 
-    '''
+    """
 
     _defaults = ['geom']
     _default_value = None
@@ -535,7 +550,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
 
 
     def _convert_to_tinkerxyz(self):
-        '''
+        """
         Convert mol to TINKER XYZ format using code from DP5, Goodman Lab. 
 
         Parameters
@@ -543,7 +558,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         geom : :obj: `~isicle.geometry.Geometry`
             Molecule representation.
 
-        '''
+        """
 
         # getting MMFF values for large atom types
         def getMMFF_large_atom_type(mmff_props , atom, m):
@@ -690,7 +705,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         return xyz
 
     def set_geometry(self, geom):
-        '''
+        """
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
 
         Parameters
@@ -698,7 +713,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
 
-        '''
+        """
 
         # Assign geometry
         self.geom = geom
@@ -710,7 +725,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         self.save_geometry()
 
     def save_geometry(self, fmt='xyz'):
-        '''
+        """
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
         Parameters
@@ -719,7 +734,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
             Filetype used by xtb. Must be "xyz", "smi", ".inchi", ".mol", ".xyz",
             ".pdb", ".pkl".
 
-        '''
+        """
         # Path operationspyth
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
@@ -775,7 +790,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
             self.geom = self.geom[0]
 
     def run(self, geom, **kwargs):
-        '''
+        """
         Take geometry and conduct specified tasks using TINKER
 
         Parameters
@@ -791,7 +806,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         :obj:`~isicle.md.TINKERWrapper`
             Wrapper object containing relevant outputs from the simulation.
 
-        '''
+        """
 
         # New instance
         self = TINKERWrapper()
@@ -809,6 +824,3 @@ class TINKERWrapper(Geometry, WrapperInterface):
         self.finish()
 
         return self
-
-    def finish(self):
-        return

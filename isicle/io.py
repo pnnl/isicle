@@ -153,7 +153,6 @@ def load_nwchem(path, basename=None):
 
     """
 
-
     dft = isicle.qm.NWChemWrapper()
 
     parser = isicle.parse.NWChemParser()
@@ -305,6 +304,7 @@ def load_smiles(path, force=False, basename=None):
         Molecule representation.
 
     """
+
     extension = os.path.splitext(path)[-1].lower()
     if "smi" in extension:
         return _load_line_notation(path, func=Chem.MolFromSmiles, force=force, basename=basename)
@@ -331,6 +331,7 @@ def load_inchi(path, force=False, basename=None):
         Molecule representation.
 
     """
+
     if "inchi=" in path.lower():
         return _load_line_notation(
             path, func=Chem.MolFromInchi, force=force, string=True, basename=basename
@@ -386,7 +387,7 @@ def _check_mol_obj(mol_obj):
     try:
         Chem.MolToMolBlock(mol_obj)
     except ValueError:
-        print("Invalid RDKit mol object")
+        print("Invalid RDKit Mol object")
         raise
 
 
@@ -443,6 +444,7 @@ def load(path, force=False, basename=None):
         Molecule representation.
 
     """
+
     if (type(path)) == str:
         path = path.strip()
         extension = os.path.splitext(path)[-1].lower()
@@ -479,8 +481,6 @@ def load(path, force=False, basename=None):
         except:
             raise IOError("Not a valid RDKit mol object passed.")
         
-
-
 
 def save_xyz(path, geom):
     """

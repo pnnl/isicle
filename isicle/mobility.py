@@ -27,7 +27,7 @@ class MobcalWrapper(XYZGeometry, WrapperInterface):
         pass
 
     def set_geometry(self, geom):
-        '''
+        """
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
 
         Parameters
@@ -35,7 +35,7 @@ class MobcalWrapper(XYZGeometry, WrapperInterface):
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
 
-        '''
+        """
 
         # Assign geometry
         self.geom = geom
@@ -44,7 +44,7 @@ class MobcalWrapper(XYZGeometry, WrapperInterface):
         self.save_geometry()
 
     def save_geometry(self):
-        '''
+        """
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
         Raises
@@ -52,7 +52,7 @@ class MobcalWrapper(XYZGeometry, WrapperInterface):
         TypeError
             If geometry loaded from .xyz is saved to another format.
 
-        '''
+        """
 
         # Temp directory
         self.temp_dir = isicle.utils.mkdtemp()

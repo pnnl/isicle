@@ -1,123 +1,66 @@
 import os
 
-import isicle
 import numpy as np
-import pandas as pd
-from isicle.interfaces import GeometryInterface, XYZGeometryInterface
+from openbabel import pybel
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
-from openbabel import pybel
+
+import isicle
+from isicle.interfaces import GeometryInterface, XYZGeometryInterface
+
 
 class XYZGeometry(XYZGeometryInterface):
     """
     Molecule information, specialized for XYZ files (bonding info not provided).
-    It is not recommended to manipulate or retrieve
-    attributes of this class without using class functions.
-
-    Attributes
-    ----------
-    xyz: list of str
-        Lines of XYZ block used to represent this compound's structure
-    global_properties : dict
-        Dictionary of properties calculated for this structure. Always at least
-        contains the "from" key, which reports the last operation performed on
-        this compound (e.g. load, dft_optimize). To generate compound
-        properties, use get_* and *_optimize functions.
+    It is not recommended to manipulate or retrieve attributes of this class
+    without using class functions.
     """
 
     _defaults = ["xyz"]
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        """
+        Initialize :obj:`~isicle.geometry.XYZGeometry` instance.
+
+        Parameters
+        ----------
+        kwargs
+            Keyword arguments to initialize instance attributes.
+
+        """
+
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
-    def _upgrade_to_Geometry(self, mol):
-        """
-        Upgrade this class to the Geometry class using a provided mol object.
-        Hard copies everything but the xyz structure.
-
-        Parameters
-        ----------
-        mol : RDKit Mol object
-            Structure to use in new Geometry object
-
-        Returns
-        -------
-        Geometry
-            Instance containing the new mol representation.
-
-        """
-
-        if mol is None:
-            mol = self.mol
-        # Create dict to load in
-        d = self.__dict__.copy()
-        d["mol"] = mol
-        d.pop("xyz")
-
-        return Geometry(**d)
-
-    def _update_structure(
-        self, inplace, mol=None, xyz=None, xyz_filename=None, event=None
-    ):
-        """
-        Return object with given structure. If inplace and a xyz structure is
-        provided, manipulates the current instance. Otherwise, a new
-        XYZGeometry or Geometry object is created with hard copied attributes.
-        Only one of mol, xyz, or xyz_filename is to be provided. If multiple
-        are provided, they are prioritized in the following order: (1) mol,
-        (2) xyz_filename, (3) xyz. If none of these are provided, an error is
-        raised.
-
-        Parameters
-        ----------
-        inplace : boolean
-            If true, update this instance with the new structure. Otherwise,
-            create a new XYZGeometry or Geometry instance and populate it with
-            the structure.
-        mol : RDKit Mol object (optional)
-            Structure with 3D abilities.
-        xyz_filename: str (optional)
-            Path to file to load in xyz from
-        xyz: list of str (optional)
-            Lines from xyz block to use as structure representation.
-
-        Returns
-        -------
-        XYZGeometry or Geometry
-            Updated structure instance. Geometry is returned if mol was
-            provided, otherwise XYZGeometry is returned.
-
-        """
-
-        if mol is not None:
-            # Upgrade to the Geometry class
-            geom = self._upgrade_to_Geometry(mol)
-
-        else:
-            if inplace:  # Modify this object
-                geom = self
-            else:  # Make a new object
-                geom = self.__copy__()
-
-            # Ensure exactly one of xyz or a filename is provided
-            # Add as structure of the new XYZGeometry
-            if xyz_filename is not None:
-                geom.xyz = load_xyz(xyz_filename)
-            elif xyz is not None:
-                geom.xyz = xyz
-
-        return geom
-
     def get_basename(self):
-        """Returns a copy of this object's basename (original filename)."""
+        """
+        Returns a copy of this object's basename (original filename).
+
+        Returns
+        -------
+        str
+            Basename of original filepath.
+
+        """
+
         return self.basename
 
     def add___dict__(self, d, override=False):
-        """Accepts a dictionary of values and adds any non-conflicting
-        information to the attribute dictionary"""
+        """
+        Accepts a dictionary of values and adds any non-conflicting
+        information to the attribute dictionary.
+
+        Parameters
+        ----------
+        d : dict
+            Attribute dictionary.
+        override : bool
+            Singal whether to override existing attributes.
+
+        """
 
         if not override:
             # Remove keys that are already present in attribute dictionary
@@ -125,32 +68,50 @@ class XYZGeometry(XYZGeometryInterface):
 
         # Add to attributes
         self.__dict__.update(d)
-        return
 
-    def dft(self, program="NWChem", template=None, **kwargs):
+    def dft(self, program='NWChem', **kwargs):
         """
-        Optimize geometry from XYZ, using stated functional and basis set.
-        Additional inputs can be grid size, optimization criteria level,
-        """
-        geom = isicle.qm.dft(
-            self.__copy__(), program=program, template=template, **kwargs
-        )
+        Perform density functional theory calculations according to supplied task list
+        and configuration parameters for specified program (currently only NWChem).
 
-        return geom
+        Parameters
+        ----------
+        kwargs
+            Keyword arguments supplied to selected program. See `run` method of relevant
+            wrapper for configuration parameters, e.g. :meth:`~isicle.qm.NWChemWrapper.run`.
+
+        Returns
+        -------
+        :obj:`~isicle.qm.{program}Wrapper`
+            Wrapper object containing relevant outputs from the simulation.
+
+        """
+
+        return isicle.qm.dft(self, program=program, **kwargs)
 
     def md(self, program="xtb", **kwargs):
         """
-        Optimize geometry or generate conformers or adducts from XYZ using stated forcefield.
-        Additional inputs can be energy window, optimization criteria level, charge, or ion.
-        """
-        geom = isicle.md.md(self.__copy__(), program=program, **kwargs)
+        Optimize geometry or generate conformers or adducts using stated forcefield.
 
-        return geom
+        Parameters
+        ----------
+        kwargs
+            Keyword arguments supplied to selected program. See `run` method of relevant
+            wrapper for configuration parameters, e.g. :meth:`~isicle.md.XTBWrapper.run`.
 
-    def ionize(self, ion_path=None, ion_list=None, save=False, path=None, **kwargs):
+        Returns
+        -------
+        :obj:`~isicle.md.{program}Wrapper`
+            Wrapper object containing relevant outputs from the simulation.
+
         """
-        Calls xtb CREST to ionize xyz geometry, using specified list of ions and method of ionization.
-        WARNING: must run isicle.geometry.XYZGeometry.set_formal_charge prior to this.
+
+        return isicle.md.md(self.__copy__(), program=program, **kwargs)
+
+    def ionize(self, ion_path=None, ion_list=None, **kwargs):
+        """
+        Calls xtb CREST to ionize XYZ geometry, using specified list of ions and method of ionization.
+        WARNING: must run isicle.geometry.XYZGeometry.set_charge prior to this.
 
         Parameters
         ----------
@@ -161,42 +122,57 @@ class XYZGeometry(XYZGeometryInterface):
             List of strings of adducts to be considered.
             Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
             Either ion_path or ion_list must be specified
-        save : bool
-            Saves wrapper object to .pkl in specified path directory
-        path : str (optional)
-            Directory to write output files
-        **kwargs :
-            see :meth: `~isicle.adducts.CRESTIonizationWrapper.submit`
+        kwargs
+            See :meth: `~isicle.adducts.CRESTIonizationWrapper.submit`
             for more options
 
         Returns
         -------
         Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
+
         """
+
         if self.__dict__.get("charge") is None:
             raise ValueError(
-                "Must first run isicle.geometry.XYZGeometry.set_formal_charge for an xyz structure"
+                "Must first run isicle.geometry.XYZGeometry.set_charge for an XYZ structure"
             )
         iw = isicle.adducts.ionize("crest").run(
             self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs
         )
 
-        if save == True and path is not None:
-            iw.save(path)
-
         return iw
 
-    def set_formal_charge(self, charge):
-        """Specify and set the known formal charge of the xyz molecule to __dict__"""
+    def set_charge(self, charge):
+        """
+        Specify and set the known formal charge of the XYZ molecule.
+
+        Parameters
+        ----------
+        charge : int
+            Nominal charge of the molecule.
+
+        """
+
+        # Attempt cast to int
         try:
             charge = int(charge)
         except:
-            raise TypeError("Charge specifed must be str or int")
+            raise TypeError("Charge specifed must be str or int.")
+
+        # Update attribute
         self.__dict__.update(charge=charge)
-        return self.charge
 
     def get_natoms(self):
-        """Calculate total number of atoms."""
+        """
+        Calculate total number of atoms.
+
+        Returns
+        -------
+        int
+            Number of atoms.
+
+        """
+
         self.__dict__["natoms"] = int(self.xyz[0].strip())
         return self.__dict__["natoms"]
 
@@ -213,35 +189,95 @@ class XYZGeometry(XYZGeometryInterface):
         -------
         list of int
             Atom indices.
+
         """
+
+        # Index container
         idx = []
 
+        # Enumerate rows
         for i in range(2, len(self.xyz)):
+            # Extract atom
             atom = self.xyz[i].split(" ")[0]
+
+            # Check if of interest
             if atom in atoms:
+                # Append index
                 idx.append(i - 2)
+
         return idx
 
     def get___dict__(self):
-        """Return a copy of this object's attribute dictionary"""
+        """
+        Return a copy of this object's attributes as a dictionary.
+
+        Returns
+        -------
+        dict
+            Instance attributes.
+
+        """
+
         return self.__dict__.copy()
 
-    def __copy__(self):
-        """Return hard copy of this class instance."""
-        # TODO: manage what should be passed, rather than all?
+    def __copy__(self, **kwargs):
+        """
+        Copy this class instance.
+
+        Parameters
+        ----------
+        kwargs
+            Keyword arguments to update copy.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.XYZGeometry`
+            Molecule representation.
+
+        """
+
+        # Copy attributes
         d = self.__dict__.copy()
-        return type(self)(**d)
+
+        # Safely copy mol if present
+        if 'mol' in d:
+            d['mol'] = self.to_mol()
+
+        # Build self instance from scratch
+        instance = type(self)(**d)
+
+        # Update from kwargs
+        instance.__dict__.update(kwargs)
+
+        return instance
 
     def to_xyzblock(self):
-        """Get XYZ text for this structure."""
+        """
+        Get XYZ text for this structure.
+        
+        Returns
+        -------
+        str
+            XYZ text.
+
+        """
+
         return "\n".join(self.xyz)
 
     def to_mol(self):
+        """
+        Get structure representation in :obj:`~rdkit.Chem.rdchem.Mol` format.
+
+        :obj:`~rdkit.Chem.rdchem.Mol`
+            RDKit Mol instance.
+
+        """
+
         self.temp_dir = isicle.utils.mkdtemp()
 
         geomfile = os.path.join(self.temp_dir,
-                               '{}.{}'.format(self.basename,
-                                              "xyz"))
+                                '{}.{}'.format(self.basename,
+                                               "xyz"))
         isicle.io.save(geomfile, self)
 
         mols = list(pybel.readfile("xyz", geomfile))
@@ -252,122 +288,56 @@ class XYZGeometry(XYZGeometryInterface):
 
 class Geometry(XYZGeometry, GeometryInterface):
     """
-    Molecule information, specialized for 3D representations.
-    It is not recommended to manipulate or retrieve
-    attributes of this class without using class functions.
-
-    Attributes
-    ---------- =
-    mol : RDKit Mol object
-        Current structure.
-    __dict__ : dict
-        Dictionary of properties calculated for this structure.
+    Molecule information, specialized for 3D representations. It is not
+    recommended to manipulate or retrieve attributes of this class without
+    using class functions.
     """
 
     _defaults = ["mol"]
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(
+            self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
-
-    def _downgrade_to_XYZGeometry(self, xyz):
+    def _is_embedded(self):
         """
-        Downgrade this class to the XYZGeometry class using a provided xyz.
-        Hard copies everything but the mol structure.
-
-        Parameters
-        ----------
-        xyz : list of str
-            Lines of xyz block to use for new object.
+        Check if molecule has embedded 3D coordinates.
 
         Returns
         -------
-        XYZGeometry
-            Instance containing the new xyz representation.
+        bool
+            Indication of 3D coordinate presence.
 
         """
 
-        # Create dict to load in
-        d = self.__dict__.copy()
-        d["xyz"] = xyz
+        try:
+            self.mol.GetConformers()
+            return True
+        except:
+            return False
 
-        return XYZGeometry(**d)
-
-    def _update_structure(
-        self, inplace, mol=None, xyz=None, xyz_filename=None):
+    def initial_optimize(self, embed=False, forcefield="UFF", ff_iter=200):
         """
-        Return object with given structure. If inplace and a mol structure is
-        provided, manipulates the current instance. Otherwise, a new
-        XYZGeometry or Geometry object is created with hard copied attributes.
-        Only one of mol, xyz, or xyz_filename is to be provided. If multiple
-        are provided, they are prioritized in the following order: (1) mol,
-        (2) xyz_filename, (3) xyz. If none of these are provided, an error is
-        raised.
+        Initial molecule optimization by basic force field to establish rough
+        3D coordinates. Further optimization (molecular dynamics, density
+        functional theory) recommended.
 
         Parameters
         ----------
-        inplace : boolean
-            If true, update this instance with the new structure. Otherwise,
-            create a new XYZGeometry or Geometry instance and populate it with
-            the structure.
-        mol : RDKit Mol object (optional)
-            Structure with 3D abilities.
-        xyz_filename: str (optional)
-            Path to file to load in xyz from
-        xyz: list of str (optional)
-            Lines from xyz block to use as structure representation.
-
-        Returns
-        -------
-        XYZGeometry or Geometry
-            Updated structure instance. Geometry is returned if mol was
-            provided, otherwise XYZGeometry is returned.
-
-        """
-
-        if mol is None:
-
-            if xyz_filename is not None:
-                # Load in file first
-                xyz = load_xyz(xyz_filename)
-
-            if xyz is not None:
-                # Downgrade to XYZGeometry class
-                geom = self._downgrade_to_XYZGeometry(xyz)
-
-        else:
-            if inplace:  # Modify this object
-                geom = self
-            else:  # Make a new object
-                geom = self.__copy__()
-            geom.mol = mol
-
-        # Add event that led to this change in structure
-        # If event is None, nothing will happen
-
-        return geom
-
-    def initial_optimize(
-        self, embed=False, forcefield="UFF", ff_iter=200, inplace=False
-    ):
-        """
-        Params
-        ------
         embed: bool
-            Try embedding molecule with eigenvalues of distance matrix
-            Except failure seeds with random coordinates
+            Attempt molecule embedding with eigenvalues of distance matrix.
+            Failure results in seeding with random coordinates.
         forcefield: str
-            Specify "UFF" for Universal Force Field optimization by RDKit
-            Specify "MMFF" or "MMFF94" for Merck Molecular Force Field 94
-            Specify "MMFF94s" for the MMFF94 s variant
-        inplace: bool
-            If geom.mol is modified inplace
+            Specify "UFF" for universal force field, "MMFF" or "MMFF94" for
+            Merck molecular force field 94, or "MMFF94s" for the MMFF94 s variant.
+
         Returns
         -------
-        Geometry
-            Updated structure instance
+        :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
         """
 
         def _forcefield_selector(forcefield, mw):
@@ -379,7 +349,8 @@ class Geometry(XYZGeometry, GeometryInterface):
                 if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
                     return Chem.AllChem.UFFOptimizeMolecule
                 else:
-                    raise ValueError("UFF is not available for all atoms in molecule.")
+                    raise ValueError(
+                        "UFF is not available for all atoms in molecule.")
             elif forcefield in ["mmff", "mmff94", "mmff94s"]:
                 if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
                     return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
@@ -392,25 +363,41 @@ class Geometry(XYZGeometry, GeometryInterface):
                     "RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields."
                 )
 
+        # Get rdkit mol
         mol = self.to_mol()
-        if embed == True:
+
+        # Embed molecule 3D coordinates
+        if embed is True:
+            # Attempt embedding
             try:
                 Chem.AllChem.EmbedMolecule(mol)
+
+            # Use random coordinates
             except:
                 Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+
+        # Optimize according to supplied forcefield
         if forcefield is not None:
-            if "mmff94s" in forcefield.lower():
-                _forcefield_selector(forcefield, mol)(
-                    mol, mmffVariant=forcefield, maxIters=ff_iter
-                )
+
+            # Check if embedded
+            if self._is_embedded():
+
+                # Forcefield selection
+                if "mmff94s" in forcefield.lower():
+                    _forcefield_selector(forcefield, mol)(
+                        mol, mmffVariant=forcefield, maxIters=ff_iter
+                    )
+                else:
+                    _forcefield_selector(forcefield, mol)(mol, maxIters=ff_iter)
+            
+            # Not embedded
             else:
-                _forcefield_selector(forcefield, mol)(mol, maxIters=ff_iter)
+                raise ValueError('Molecule must have embedded 3D coordinates.')
 
-        geom = self._update_structure(inplace, mol=mol)
+        # Return copy with updated mol
+        return self.__copy__(mol=mol)
 
-        return geom
-
-    def desalt(self, salts=None, inplace=False):
+    def desalt(self, salts=None):
         """
         Desalts RDKit mol object using Chem.SaltRemover module.
 
@@ -418,22 +405,18 @@ class Geometry(XYZGeometry, GeometryInterface):
         ----------
         salts : str (optional)
             Salt type to remove. Ex: 'Cl', 'Br', '[Na+]'. Default: None.
-        inplace : boolean (optional)
-            If true, update this instance with the new structure. Otherwise,
-            create a new Geometry instance and populate it with the structure.
-            Default: False.
 
         Returns
         -------
-        Geometry
-            Molecule with given salt(S) removed.
+        :obj:`~isicle.geometry.Geometry`
+            Moleculerepresentation.
 
         """
 
         # TODO: should this raise an error instead?
         # If no salts given, skip desalting
         if salts is None:
-            return self._update_structure(inplace, mol=self.to_mol())
+            return self.__copy__()
 
         remover = SaltRemover(defnFormat="smiles", defnData=salts)
         # defnData="[Cl,Br,Na]" *sample definition of salts to be removed*
@@ -446,26 +429,16 @@ class Geometry(XYZGeometry, GeometryInterface):
         # atomno = res.GetNumAtoms
         # if relevant to future use, returns atom count post desalting
 
-        geom = self._update_structure(inplace, mol=mol)
-        # TODO: add any properties from this operation to global_props?
+        return self.__copy__(mol=mol)
 
-        return geom
-
-    def neutralize(self, inplace=False):
+    def neutralize(self):
         """
         Neutralizes RDKit mol object using neutralization reactions.
 
-        Parameters
-        ----------
-        inplace : boolean (optional)
-            If true, update this instance with the new structure. Otherwise,
-            create a new Geometry instance and populate it with the structure.
-            Default: False.
-
         Returns
         -------
-        Geometry
-            Neutralized form of the molecule.
+        :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
 
         """
 
@@ -495,6 +468,8 @@ class Geometry(XYZGeometry, GeometryInterface):
         reactions = _initialize_neutralisation_reactions()
 
         mol = self.to_mol()
+
+        # TODO: `replaced` is unused
         replaced = False
         for i, (reactant, product) in enumerate(reactions):
             while mol.HasSubstructMatch(reactant):
@@ -502,12 +477,9 @@ class Geometry(XYZGeometry, GeometryInterface):
                 rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
-        geom = self._update_structure(inplace, mol=mol)
-        # TODO: add any properties from this operation to global_props?
+        return self.__copy__(mol=mol)
 
-        return geom
-
-    def tautomerize(self, return_all=False, inplace=False):
+    def tautomerize(self, return_all=False):
         """
         Generate tautomers according to RDKit TautomerEnumerator() method.
 
@@ -516,14 +488,10 @@ class Geometry(XYZGeometry, GeometryInterface):
         return_all : boolean (optional)
             If true, return all tautomers generated. Otherwise, only return
             the most common. Default=False
-        inplace : boolean (optional)
-            If true, update this instance with the new structure. Otherwise,
-            create a new Geometry instance and populate it with the structure.
-            Default: False.
 
         Returns
         -------
-        Geometry or list(Geometry)
+        :obj:`~isicle.geometry.Geometry` or list of :obj:`~isicle.geometry.Geometry`
             Tautomer(s) of starting structure.
 
         """
@@ -536,81 +504,77 @@ class Geometry(XYZGeometry, GeometryInterface):
         res = [mol]
         tauts = enumerator.Enumerate(mol)
         smis = [Chem.MolToSmiles(x) for x in tauts]
-        s_smis = sorted((x, y) for x, y in zip(smis, tauts) if x != self.to_smiles())
+        s_smis = sorted((x, y)
+                        for x, y in zip(smis, tauts) if x != self.to_smiles())
         res += [y for x, y in s_smis]
 
         # Ensure res is a list of mol objects
         if return_all:
             new_geoms = []
             for r in res:
-                geom = self._update_structure(False, mol=r, event="tautomerize")
+                geom = self.__copy__(mol=r)
                 new_geoms.append(geom)
             return new_geoms
 
-        geom = self._update_structure(inplace, mol=res[0])
-        # TODO: add any properties from this operation to global_props?
+        return self.__copy__(mol=res[0])
 
-        return geom
-
-    def kekulize(self, inplace=False):
+    def kekulize(self):
         """
-        `Kekulizes the molecule if possible. Otherwise the molecule is not modified`
+        Kekulizes the molecule if possible. Otherwise the molecule is not modified.
         This is recommended for aromatic molecules undergoing explicit ionization.
         Aromatic bonds are explicitly defined and aromatic flags are cleared.
-        """
-        mol = Chem.KekulizeIfPossible(self.to_mol(), clearAromaticFlags=True)
-        geom = self._update_structure(inplace, mol=mol, event="kekulize")
-        return geom
 
-    def ionize(
-        self,
-        ion_path=None,
-        ion_list=None,
-        method="explicit",
-        save=False,
-        path=None,
-        **kwargs,
-    ):
+        """
+
+        mol = Chem.KekulizeIfPossible(self.to_mol(), clearAromaticFlags=True)
+        return self.__copy__(mol=mol)
+
+    def ionize(self, ion_path=None, ion_list=None, method="explicit", **kwargs):
         """
         Ionize geometry, using specified list of ions and method of ionization.
 
         Parameters
         ----------
         ion_path : str
-            Filepath to text file containing ions with charge (eg. `H+`) to be considered
-            Either ion_path or ion_list must be specified
+            Filepath to text file containing ions with charge (eg. `H+`) to be 
+            considered. Either ion_path or ion_list must be specified.
         ion_list : list
-            List of strings of adducts to be considered.
-            Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
-            Either ion_path or ion_list must be specified
+            List of strings of adducts to be considered. Must be specifed in
+            syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`. Either ion_path
+            or ion_list must be specified
         method : str
             Method of ionization to be used, 'explicit' or 'crest' is accepted
-        save : bool
-            Saves wrapper object to .pkl in specified path directory
-        path : str (optional)
-            Directory to write output files
         ensembl : bool (optional)
             Returns instead a list of adduct geometries
-        **kwargs:
+        kwargs:
             see :meth: `~isicle.adducts.ExplicitIonizationWrapper.submit` or
                        `~isicle.adducts.CRESTIonizationWrapper.submit`
             for more options
 
         Returns
         -------
-        Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
+        :obj:`~isicle.adducts.IonizationWrapper`
+            Ionization result.
+
         """
+
         iw = isicle.adducts.ionize(method).run(
             self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs
         )
 
-        if save == True and path is not None:
-            iw.save(path)
-
         return iw
 
     def get_natoms(self):
-        """Calculate total number of atoms."""
+        """
+        Calculate total number of atoms.
+        
+        Returns
+        -------
+        int
+            Number of atoms.
+
+        """
+
         natoms = Chem.Mol.GetNumAtoms(self.to_mol())
         self.__dict__["natoms"] = natoms
         return self.__dict__["natoms"]
@@ -632,6 +596,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         -------
         list of int
             Atom indices.
+
         """
 
         atoms = [lookup[x] for x in atoms]
@@ -643,7 +608,16 @@ class Geometry(XYZGeometry, GeometryInterface):
         return idx
 
     def get_total_partial_charge(self):
-        """Sum the partial charge across all atoms."""
+        """
+        Sum the partial charge across all atoms.
+
+        Returns
+        -------
+        float
+            Total partial charge.
+
+        """
+
         mol = self.to_mol()
         Chem.AllChem.ComputeGasteigerCharges(mol)
         contribs = [
@@ -652,80 +626,151 @@ class Geometry(XYZGeometry, GeometryInterface):
         ]
         return np.nansum(contribs)
 
-    def get_formal_charge(self):
-        """Calculate formal charge of the molecule."""
-        mol = self.to_mol()
-        return Chem.rdmolops.GetFormalCharge(mol)
+    def get_charge(self):
+        """
+        Get formal charge of the molecule.
+        
+        Returns
+        -------
+        int
+            Formal charge.
 
-    def set_formal_charge(self):
-        """Set formal charge of the molecule to __dict__"""
-        self.__dict__.update(charge=self.get_formal_charge())
-        return self.charge
+        """
 
-    def __copy__(self):
-        """Return hard copy of this class instance."""
-        # TODO: manage what should be passed, rather than all?
+        return Chem.rdmolops.GetFormalCharge(self.to_mol())
+
+    def set_charge(self, charge=None):
+        """
+        Set formal charge of the molecule.
+
+        Parameters
+        ----------
+        charge : int
+            Formal charge of molecule.
+        
+        """
+
+        if charge is None:
+            charge = self.get_charge()
+        
+        self.__dict__.update(charge=int(charge))
+
+    def __copy__(self, **kwargs):
+        """
+        Return hard copy of this class instance.
+
+        Parameters
+        ----------
+        kwargs
+            Keyword arguments to update copy.
+        
+        Returns
+        -------
+        :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+
+        # Copy attributes
         d = self.__dict__.copy()
-        d["mol"] = self.to_mol()
-        return type(self)(**d)
+
+        # Safely copy mol if present
+        if 'mol' in d:
+            d['mol'] = self.to_mol()
+
+        # Build self instance from scratch
+        instance = type(self)(**d)
+        
+        # Update from kwargs
+        instance.__dict__.update(kwargs)
+
+        return instance
 
     def to_mol(self):
         """
-        Returns RDKit Mol object for this Geometry.
+        Returns :obj:`~rdkit.Chem.rdchem.Mol` instance for this Geometry.
 
         Returns
         -------
-        RDKit Mol object
-            Copy of structure
+        :obj:`~rdkit.Chem.rdchem.Mol`
+            RDKit Mol instance.
 
         """
 
         return self.mol.__copy__()
 
     def to_smiles(self):
-        """Get SMILES for this structure."""
+        """
+        Get SMILES for this structure.
+
+        Returns
+        -------
+        str
+            SMILES string.
+
+        """
+
         return Chem.MolToSmiles(self.to_mol())
 
     def to_inchi(self):
-        """Get InChI for this structure."""
+        """
+        Get InChI for this structure.
+
+        Returns
+        -------
+        str
+            InChI string.
+
+        """
+
         return Chem.MolToInchi(self.to_mol())
 
     def to_smarts(self):
-        """Get SMARTS for this structure."""
+        """
+        Get SMARTS for this structure.
+
+        Returns
+        -------
+        str
+            SMARTS string.
+        """
         return Chem.MolToSmarts(self.to_mol())
 
     def to_xyzblock(self):
-        """Get XYZ text for this structure."""
+        """
+        Get XYZ text for this structure.
+
+        Returns
+        -------
+        str
+            XYZ representation as string.
+
+        """
+
         return Chem.MolToXYZBlock(self.to_mol())
 
     def to_pdbblock(self):
-        """Get PDB text for this structure"""
+        """
+        Get PDB text for this structure.
+        
+        Returns
+        -------
+        str
+            PDB representation as string.
+
+        """
+
         return Chem.MolToPDBBlock(self.to_mol())
 
     def to_molblock(self):
-        """Get PDB text for this structure"""
+        """
+        Get :obj:`~rdkit.Chem.rdchem.Mol` text for this structure.
+        
+        Returns
+        -------
+        str
+            :obj:`~rdkit.Chem.rdchem.Mol` representation as string.
+
+        """
+
         return Chem.MolToMolBlock(self.to_mol())
-
-
-class MDOptimizedGeometry(Geometry):
-    """
-    Builds off of the 3D representation, with additional methods specific to a
-    representation with MD optimized 3D coordinates. Any methods that would
-    result in a more defined representation (e.g. DFT optimized) should yield
-    the appropriate subclass.
-    """
-
-    def __init__(self):
-        # Initialize the base class
-        super().__init__()
-
-
-class DFTOptimizedGeometry(Geometry):
-    """
-    Builds off of the 3D representation, with additional methods specific to a
-    representation with DFT optimized 3D coordinates.
-    """
-
-    def __init__(self):
-        # Initialize the base class
-        super().__init__()
