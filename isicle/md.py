@@ -8,7 +8,7 @@ from rdkit.Chem import ChemicalForceFields
 import isicle
 from isicle.geometry import Geometry, XYZGeometry
 from isicle.interfaces import WrapperInterface
-from isicle.parse import XTBParser
+from isicle.parse import XTBParser, TINKERParser
 
 """
 Files resulting from an xtb job always run in the same directory that the command is
