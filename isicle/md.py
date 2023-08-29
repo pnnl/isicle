@@ -939,5 +939,36 @@ class TINKERWrapper(Geometry, WrapperInterface):
 
         return self
 
-    def finish(self):
-        return
+    def get_structures(self):
+        """
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        """
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            return self.geom
+
+        raise TypeError(
+            "Object does not contain multiple structures. Use `get_structure` instead."
+        )
+
+    def get_structure(self):
+        """
+        Extract structure from containing object.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.XYZGeometry`
+            Structure instance.
+
+        """
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            raise TypeError(
+                "Object contains multiple structures. Use `get_structures` instead."
+            )
+
+        return self.geom
