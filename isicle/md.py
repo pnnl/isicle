@@ -890,18 +890,15 @@ class TINKERWrapper(Geometry, WrapperInterface):
 
         self.__dict__.update(result)
 
+        conformerID = 1
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != "geom"})
             i.__dict__.update(basename=self.basename)
-
-        if self.task != "optimize":
-            conformerID = 1
-            for i in self.geom:
-                i.__dict__.update(conformerID=conformerID)
-                conformerID += 1
+            i.__dict__.update(conformerID=conformerID)
+            conformerID += 1
             return self
-        else:
-            self.geom = self.geom[0]
+
+        return self
 
     def run(self, geom, **kwargs):
         """
