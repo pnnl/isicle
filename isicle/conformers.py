@@ -761,7 +761,7 @@ class ConfpassEnsemble(ConformationalEnsemble):
         """
         Run the pre-optimization CONFPASS module.
         """
-        cp = confpass.conp([self.sdf_file])
+        cp = self.confpass.conp([self.sdf_file])
         cp.get_priority(method=method, x=x, x_as=x_as, n=n)
         self.cp = cp
         self.priority = cp.priority_df.loc[0, "priority_ls"]
@@ -770,7 +770,7 @@ class ConfpassEnsemble(ConformationalEnsemble):
         """
         Run the post-optimization CONFPASS module.
         """
-        cp = confpass.pas([self.sdf_file])
+        cp = self.confpass.pas([self.sdf_file])
         cp.get_priority(method=method, x=x, x_as=x_as, n=n)
         self.cp = cp
 
