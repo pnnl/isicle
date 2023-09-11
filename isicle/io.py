@@ -153,7 +153,6 @@ def load_nwchem(path, basename=None):
 
     """
 
-
     dft = isicle.qm.NWChemWrapper()
 
     parser = isicle.parse.NWChemParser()
@@ -161,8 +160,7 @@ def load_nwchem(path, basename=None):
     result = parser.parse()
 
     dft.__dict__.update(result)
-    dft.geom.add___dict__({k: v for k, 
-    v in result.items() if k != 'geom'})
+    dft.geom.add___dict__({k: v for k, v in result.items() if k != "geom"})
     dft.output = parser.load(path)
 
     if basename is None:
@@ -170,7 +168,7 @@ def load_nwchem(path, basename=None):
             basename = Chem.MolToInchiKey(dft.geom.mol)
         except:
             basename = os.path.splitext((os.path.basename(path)))[0]
-    
+
     dft.basename = basename
 
     return dft
@@ -307,7 +305,9 @@ def load_smiles(path, force=False, basename=None):
     """
     extension = os.path.splitext(path)[-1].lower()
     if "smi" in extension:
-        return _load_line_notation(path, func=Chem.MolFromSmiles, force=force, basename=basename)
+        return _load_line_notation(
+            path, func=Chem.MolFromSmiles, force=force, basename=basename
+        )
     else:
         return _load_line_notation(
             path, func=Chem.MolFromSmiles, force=force, string=True, basename=basename
@@ -336,7 +336,9 @@ def load_inchi(path, force=False, basename=None):
             path, func=Chem.MolFromInchi, force=force, string=True, basename=basename
         )
     else:
-        return _load_line_notation(path, func=Chem.MolFromInchi, force=force, basename=basename)
+        return _load_line_notation(
+            path, func=Chem.MolFromInchi, force=force, basename=basename
+        )
 
 
 def load_pickle(path):
@@ -478,8 +480,6 @@ def load(path, force=False, basename=None):
             return load_mol_obj(path, basename=basename)
         except:
             raise IOError("Not a valid RDKit mol object passed.")
-        
-
 
 
 def save_xyz(path, geom):
@@ -683,6 +683,29 @@ def save_pdb(path, geom):
 
     # Write
     Chem.MolToPDBFile(geom.mol, path)
+
+
+def save_sdf(path, geom):
+    """
+    Save molecule geometry(s) as SDF file.
+
+    Parameters
+    ----------
+    path : str
+        Path to output file.
+    geom : :obj:`~isicle.geometry.Geometry` (or collection of)
+        Molecule representation.
+    """
+    if isinstance(geom, isicle.geometry.Geometry):
+        w = Chem.SDWriter(path)
+        w.write(geom.mol)
+        w = None
+
+    elif isinstance(geom, isicle.geometry.Geometry):
+        w = Chem.SDWriter(path)
+        for m in geom.geom:
+            w.write(m.mol)
+        w = None
 
 
 def save(path, data):
