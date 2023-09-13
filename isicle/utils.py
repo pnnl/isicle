@@ -116,8 +116,7 @@ def gettempdir():
     
     root = os.path.join(tempfile.gettempdir(), 'isicle')
     
-    if not os.path.exists(root):
-        os.makedirs(root)
+    os.makedirs(root, exist_ok=True)
     
     return root
 
