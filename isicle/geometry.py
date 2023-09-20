@@ -317,6 +317,27 @@ class Geometry(XYZGeometry, GeometryInterface):
             return True
         except:
             return False
+        
+    
+    def addHs(self):
+        """
+        Add implicit hydrogens to molecule.
+
+        Returns
+        -------
+         :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+
+        # Get copy of mol object
+        mol = self.to_mol()
+
+        # Add Hs with coordinates
+        mol = Chem.AddHs(mol, addCoords=True)
+
+        # Return new geometry instance
+        return self.__copy__(mol=mol)
 
     def initial_optimize(self, embed=False, forcefield="UFF", ff_iter=200):
         """
