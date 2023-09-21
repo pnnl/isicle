@@ -739,9 +739,12 @@ class XTBParser(FileParserInterface):
         # Check that the file is valid first
         if len(self.contents) == 0:
             raise RuntimeError('No contents to parse: {}'.format(self.path))
-        if "terminated normally" not in self.contents[-1]:
-            if "ratio" not in self.contents[-2]:
-                raise RuntimeError('XTB job failed: {}'.format(self.path))
+        
+        last_lines = ''.join(self.contents[-10:])
+        if ("terminat" not in last_lines) \
+           & ("normal" not in last_lines) \
+           & ("ratio" not in last_lines):
+            raise RuntimeError('XTB job failed: {}'.format(self.path))
 
         self.parse_crest = False
         self.parse_opt = False
@@ -749,11 +752,8 @@ class XTBParser(FileParserInterface):
 
         # Initialize result object to store info
         result = {}
+        result['protocol'] = self._parse_protocol()
 
-        try:
-            result['protocol'] = self._parse_protocol()
-        except:
-            pass
         try:
             result['timing'] = self._parse_timing()
         except:
@@ -767,14 +767,12 @@ class XTBParser(FileParserInterface):
         # Parse geometry from assoc. XYZ file
         try:
             if self.path.endswith('xyz'):
-
-                if 'geometry' in to_parse:
-                    try:
-                        self.xyz_path = self.path
-                        result['geom'] = self._parse_xyz()
-                    
-                    except:
-                        pass
+                try:
+                    self.xyz_path = self.path
+                    result['geom'] = self._parse_xyz()
+                
+                except:
+                    pass
 
             if self.path.endswith('out') or self.path.endswith('log'):
 
