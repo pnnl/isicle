@@ -134,23 +134,29 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         isicle.io.save(geomfile, self.geom)
         self.geom.path = geomfile
 
-    def _configure_xtb(self, forcefield='gfn2', optlevel='normal', charge=None, solvation=None):
+    def _configure_xtb(self, forcefield='gfn2', optlevel='normal', charge=0, solvation=None,
+                       ignore_topology=False, cycles=None, dryrun=False):
         """
         Set command line for xtb simulations.
 
         Parameters
         ----------
         forcefield : str
-            GFN forcefield for the optimization
-            Default: gff
-            Supported forcefields: gfn2, gfn1, gff
+            GFN forcefield for the optimization.
+            Supported : gfn2, gfn1, gff
         optlevel : str
-            Optimization convergence level
-            Default : normal
+            Optimization convergence level.
             Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
         charge : int
             Charge of molecular system.
-            Default : 0 (Neutral charge)
+        solvation : str
+            Specify solvent for simulation.
+        ignore_topolgy : bool
+            Turn off only the initial topology check prior to the conformational search.
+        cycles : int
+            Maximum number of optimization cycles.
+        dryrun : bool
+            Signal whether to perform a dry run.
 
         """
 
@@ -166,13 +172,23 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add forcefield
         s += '--' + forcefield + ' '
 
-        # Add optional charge
+        # Add charge
         if charge is not None:
-            s += '--chrg ' + charge + ' '
+            s += '--chrg ' + str(charge) + ' '
+
+        # Add dryrun option
+        if dryrun:
+            s += '--dryrun '
 
         # Add optional implicit solvation
         if solvation is not None:
             s += '--alpb ' + solvation + ' '
+
+        if ignore_topology:
+            s += '--noreftopo '
+        
+        if cycles:
+            s += '--cycles ' + str(cycles) + ' ' 
 
         # Add output
         s += '&>' + ' '
@@ -180,41 +196,45 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s += '{}.{}'.format(self.basename, "out")
         return s
 
-    def _configure_crest(self, ewin=6, optlevel='Normal', forcefield='gfn2',
+    def _configure_crest(self, forcefield='gfn2', optlevel='Normal', ewin=6, 
                          protonate=False, deprotonate=False, tautomerize=False,
-                         ion=None, charge=None, dryrun=False, processes=1,
-                         solvation=None, ignore_topology=False):
+                         ion=None, charge=None, solvation=None, ignore_topology=False,
+                         cycles=None, dryrun=False, processes=1):
         """
         Set command line for crest simulations.
 
         Parameters
         ----------
-        ewin : int
-            Energy window (kcal/mol) for conformer, (de)protomer, or tautomer search.
-            Default : 6
-        optlevel : str
-            Optimization convergence level
-            Default : normal
-            Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
         forcefield : str
             GFN forcefield for the optimization
-            Default: gff
-            Supported forcefields: gfn2, gfn1, gff
+            Supported : gfn2, gfn1, gff
+        optlevel : str
+            Optimization convergence level
+            Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
+        ewin : int
+            Energy window (kcal/mol) for conformer, (de)protomer, or tautomer search.
         protonate : bool
             Signal to initiate protomer search. Suggested ewin = 30.
-            Default : False
         deprotonate : bool
             Signal to initiate deprotonated conformers. Suggesting ewin = 30.
-            Default : False
-        tautomer : bool
+        tautomerize : bool
             Signal to initiate tautomer search.
-            Default : False
         ion : str
             Keyword to couple with protonate to ionize molecule with an ion other than a proton.
             See :obj:`~isicle.adduct.parse_ion` for list of ion options.
         charge : int
             Charge of molecular system.
-            Default : 0 (Neutral charge)
+        solvation : str
+            Specify solvent for simulation.
+        ignore_topolgy : bool
+            Turn off only the initial topology check prior to the conformational search.
+        cycles : int
+            Maximum number of optimization cycles.
+        dryrun : bool
+            Signal whether to perform a dry run.
+        processes : int
+            Number of parallel processes.
+
         """
 
         # Start base command
@@ -237,8 +257,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         if ion is not None:
             s += '-swel ' + ion + ' '
 
+        # Add charge
         if charge is not None:
-            s += '-chrg ' + str(charge) + ' '
+            s += '--chrg ' + str(charge) + ' '
 
         # Add dryrun option
         if dryrun:
@@ -263,6 +284,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         if ignore_topology:
             s += '--noreftopo '
 
+        if cycles:
+            s += '--cycles ' + str(cycles) + ' ' 
+
         # Add output
         s += '&>' + ' '
 
@@ -272,34 +296,39 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         return s
 
-    def configure(self, task='optimize', forcefield='gfn2', charge=None,
-                  ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
-                  solvation=None, ignore_topology=False):
+    def configure(self, task='optimize', forcefield='gfn2', optlevel='Normal',
+                  ewin=6, charge=None, ion=None, solvation=None,
+                  ignore_topology=False, cycles=None, dryrun=False, processes=1):
         """
         Generate command line
 
         Parameters
         ----------
-        tasks : str
+        task : str
             Set task to "optimize", "conformer", "protonate", "deprotonate", or "tautomerize".
-            Default : "optimize"
         forcefield : str
             GFN forcefield for the optimization
-            Default: gff
-            Supported forcefields: gfn2, gfn1, gff
-        ewin : int
-            Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search.
-            Default : 6
-        ion : str
-            Ion for protomer calculation.
+            Supported : gfn2, gfn1, gff
         optlevel : str or list of str
             Set optimization level. Supply globally or per task.
+        ewin : int
+            Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search
+        charge : int
+            Charge of molecular system.
         ion : str
             Keyword to couple with protonate to ionize molecule with an ion other than a proton.
             See :obj:`~isicle.adduct.parse_ion` for list of ion options.
-        charge : int
-            Charge of molecular system.
-            Default : 0 (Neutral charge)
+        solvation : str
+            Specify solvent for simulation.
+        ignore_topolgy : bool
+            Turn off only the initial topology check prior to the conformational search.
+        cycles : int
+            Maximum number of optimization cycles.
+        dryrun : bool
+            Signal whether to perform a dry run.
+        processes : int
+            Number of parallel processes.
+
         """
 
         if type(task) == list:
@@ -311,7 +340,12 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         if task == 'optimize':
             config = self._configure_xtb(optlevel=optlevel,
-                                         forcefield=forcefield)
+                                         forcefield=forcefield,
+                                         charge=charge,
+                                         dryrun=dryrun,
+                                         solvation=solvation,
+                                         ignore_topology=ignore_topology,
+                                         cycles=cycles)
 
         else:
             if task == 'conformer':
@@ -338,7 +372,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
                                                dryrun=dryrun,
                                                processes=processes,
                                                solvation=solvation,
-                                               ignore_topology=ignore_topology)
+                                               ignore_topology=ignore_topology,
+                                               cycles=cycles)
             else:
                 raise Error(
                     'Task not assigned properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize')
@@ -369,7 +404,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
             self.temp_dir, self.basename + '.out'))
 
         result = parser.parse()
-
         self.__dict__.update(result)
 
         for i in self.geom:
@@ -385,9 +419,9 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         else:
             self.geom = self.geom[0]
 
-    def run(self, geom, task='optimize', forcefield='gfn2', charge=None,
-            ewin=6, ion=None, optlevel='Normal', dryrun=False, processes=1,
-            solvation=None, ignore_topology=False):
+    def run(self, geom, task='optimize', forcefield='gfn2', optlevel='Normal',
+            ewin=6, charge=None, ion=None, solvation=None, ignore_topology=False,
+            cycles=None, dryrun=False, processes=1):
         """
         Optimize geometry via density functional theory using supplied functional
         and basis set.
@@ -396,21 +430,29 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         ----------
         geom : :obj:`~isicle.geometry.Geometry`
             Molecule representation.
-        tasks : str
+        task : str
             Set task to "optimize", "conformer", "protonate", "deprotonate", or "tautomerize".
         forcefield : str
             GFN forcefield for the optimization, including "gfn2", "gfn1", "gff".
-        ewin : int
-            Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search.
-        ion : str
-            Ion for protomer calculation.
         optlevel : str or list of str
             Set optimization level. Supply globally or per task.
+        ewin : int
+            Energy window (kcal/mol) for conformer(set to 6), (de)protomer(set to 30), or tautomer(set to 30) search.
+        charge : int
+            Charge of molecular system.
         ion : str
             Keyword to couple with protonate to ionize molecule with an ion other than a proton.
             See :obj:`~isicle.adduct.parse_ion` for list of ion options.
-        charge : int
-            Charge of molecular system. Defaults to 0 (neutral).
+        solvation : str
+            Specify solvent for simulation.
+        ignore_topolgy : bool
+            Turn off only the initial topology check prior to the conformational search.
+        cycles : int
+            Maximum number of optimization cycles.
+        dryrun : bool
+            Signal whether to perform a dry run.
+        processes : int
+            Number of parallel processes.
 
         Returns
         -------
@@ -428,7 +470,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Configure
         self.configure(task=task, forcefield=forcefield, charge=charge,
             ewin=ewin, ion=ion, optlevel=optlevel, dryrun=dryrun, processes=processes,
-            solvation=solvation, ignore_topology=ignore_topology)
+            solvation=solvation, ignore_topology=ignore_topology, cycles=cycles)
 
         # Run QM simulation
         self.submit()
