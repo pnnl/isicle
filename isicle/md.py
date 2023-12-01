@@ -4,6 +4,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdForceFieldHelpers
 from rdkit.Chem import ChemicalForceFields
+from rdkit.Chem import rdDistGeom
 
 import isicle
 from isicle.geometry import Geometry, XYZGeometry
@@ -482,7 +483,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 class RDKitWrapper(Geometry, WrapperInterface):
 
     """
-    Wrapper for rdkit functionality.
+    Wrapper for RDKit functionality.
 
     Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
 
@@ -509,13 +510,88 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
 
-    def set_geometry(self):
+    def set_geometry(self, geom):
+        """
+        Set :obj:`~isicle.geometry.Geometry` instance for simulation.
+
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+
+        # Assign geometry
+        self.geom = geom
+        self.basename = self.geom.basename
+
+    def configure(self, method="distance", ff="mmff94", **kwargs):
+        """
+        Set conformer generation parameters.
+        Parameters
+        ----------
+        method: str
+            `distance` for distance geometry method (default)
+        ff: str
+            Forcefield used in conformer generation.
+        seed:
+            randomSeed argument of conformer generation. Enables reproducibility.
+
+        """
+        lookup = {
+            "distance": self._configure_distance_geometry,
+            "etkdg": self._configure_etkdg,
+        }
+        try:
+            lookup[method.lower()](**kwargs)
+        except KeyError:
+            raise CustomException("Not a supported RDKit method")
+
+        # TODO run forcefield availability check code found in geometry
+        self.ff = ff
         return
 
-    def configure(self):
+    def _configure_distance_geometry(
+        self, numConfs=10, randomSeed=-1, pruneRmsThresh=-1.0, forceTol=0.001
+    ):
+        """
+        Set parameters for distance geometry based conformer generation.
+        Parameters
+        ----------
+        numConfs: int
+            Number of conformers to generate.
+        randomSeed: int
+            set seed for randomness, argument of `rdkit.Chem.rdDistGeom.EmbedMultipleConfs`
+        pruneRmsThresh: float
+            Greedy pruning mainting conformers are <float> apart based upon RMSD of heavy atoms.
+            Default: no pruning, -1.0
+        forceTol: float
+            Tolerance to be used in force-field minimizations
+        """
+        # TODO numThreads argument, look in to multi-thread support in compilation
+        self.method = "distance"
+        self.numConfs = numConfs
+        self.randomSeed = randomSeed
+        self.pruneRmsThresh = pruneRmsThresh
+        self.forceTol = forceTol
+
+    def _configure_etkdg(self, version=2):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        """
+        lookup = {1: "etkdg1", 2: "etkdg2"}
+        try:
+            self.method = lookup[version]
+        except KeyError:
+            raise CustomException(
+                "Only versions 1 and 2 are available for ETKDG method."
+            )
+
         return
 
     def submit(self):
+        mol = self.geom.mol
+        rdDistGeom.EmbedMultipleConfs(mol, self.confno, randomSeed=self.seed)
         return
 
     def run(self):
