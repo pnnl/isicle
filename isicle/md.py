@@ -548,7 +548,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
             raise CustomException("Not a supported RDKit method")
 
         # TODO run forcefield availability check code found in geometry
-        self.ff = ff
+        # self.ff = ff
         return
 
     def _configure_distance_geometry(
@@ -575,24 +575,59 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.pruneRmsThresh = pruneRmsThresh
         self.forceTol = forceTol
 
-    def _configure_etkdg(self, version=2):
+    def _configure_etkdg(self, version=2, variant=False):
         """
         Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Parameters
+        ----------
+        version: int
+            Specify version of ETKDG to use.
+            Version 1: RDKit default
+            Version 2: (default) 2016 release, updated torsion angle potentials
+            Version 3: Updated sampling small rings and macrocycles
+        variant: bool
+            Specify if variant of ETKDGv3 should be used (srETKDGv3).
+            True: updated sampling for small rings
+            False: (default) updated sampling for small rings and macrocyles
         """
-        lookup = {1: "etkdg1", 2: "etkdg2"}
+        lookup = {1: "etkdg1", 2: "etkdg2", 3: "etkdg3"}
         try:
             self.method = lookup[version]
+            self.variant = variant
         except KeyError:
-            raise CustomException(
-                "Only versions 1 and 2 are available for ETKDG method."
-            )
+            raise "Version options [1,2,3] for ETKDG method."
 
         return
+
+    def _submit_etkdg(self):
+        if self.method == "etkdg1":
+            params = rdDistGeom.ETKDG()
+        elif self.method == "etkdg2":
+            params = rdDistGeom.ETKDGv2()
+        elif self.method == "etkdg3" and self.variant is False:
+            params = rdDistGeom.ETKDGv3()
+        elif self.method == "etkdg3" and self.variant is True:
+            params = rdDistGeom.srETKDGv3()
+        else:
+            raise "Failure to run RDKit MD, method and/or variant not recognized"
+        return params
 
     def submit(self):
         mol = self.geom.mol
-        rdDistGeom.EmbedMultipleConfs(mol, self.confno, randomSeed=self.seed)
-        return
+        if self.method == "distance":
+            rdDistGeom.EmbedMultipleConfs(
+                mol,
+                numConfs=self.numConfs,
+                randomSeed=self.randomSeed,
+                pruneRmsThresh=self.pruneRmsThresh,
+                forceTol=self.forceTol,
+            )
+        elif "etkdg" in self.method:
+            params = self._submit_etkdg()
+        else:
+            raise CustomException(
+                "Failure to run RDKit MD, method and/or variant not recognized"
+            )
 
     def run(self):
         return
