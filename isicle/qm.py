@@ -1,3 +1,4 @@
+import glob
 import os
 import subprocess
 from itertools import combinations, cycle
@@ -10,25 +11,26 @@ from isicle.parse import NWChemParser
 from isicle.utils import safelist
 
 
-def _program_selector(program):
+def _backend_selector(program):
     """
-    Selects a supported quantum mechanical program for associated simulation.
-    Currently only NWChem has been implemented.
+    Selects a supported quantum mechanical backend for associated simulation.
+    Currently only NWChem and ORCA have been implemented.
 
     Parameters
     ----------
     program : str
-        Alias for program selection (e.g. NWChem).
+        Alias for backend selection (e.g. NWChem, ORCA).
 
     Returns
     -------
     program
-        Wrapped functionality of the selected program. Must implement
+        Wrapped functionality of the selected backend. Must implement
         :class:`~isicle.interfaces.WrapperInterface`.
 
     """
 
-    program_map = {'nwchem': NWChemWrapper}
+    program_map = {'nwchem': NWChemWrapper,
+                   'orca': ORCAWrapper}
 
     if program.lower() in program_map.keys():
         return program_map[program.lower()]()
@@ -37,11 +39,7 @@ def _program_selector(program):
                          .format(program))
 
 
-def dft(geom, program='NWChem', template=None, tasks='energy', functional='b3lyp',
-        basis_set='6-31g*', ao_basis='cartesian', charge=0,
-        atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
-        gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-        mem_stack=600, scratch_dir=None, processes=12, command='nwchem'):
+def dft(geom, backend='NWChem', **kwargs):
     """
     Perform density functional theory calculations according to supplied task list
     and configuration parameters.
@@ -50,47 +48,11 @@ def dft(geom, program='NWChem', template=None, tasks='energy', functional='b3lyp
     ----------
     geom : :obj:`~isicle.geometry.Geometry`
         Molecule representation.
-    program : str
-        Alias for program selection (NWChem).
-    template : str
-        Path to optional template to bypass default configuration process.
-    tasks : str or list of str
-        List of calculations to perform. One or more of "optimize", "energy",
-        "frequency", "shielding", "spin".
-    functional : str or list of str
-        Functional selection. Supply globally or per task.
-    basis_set : str or list of str
-        Basis set selection. Supply globally or per task.
-    ao_basis : str or list of str
-        Angular function selection ("spherical", "cartesian"). Supply
-        globally or per task.
-    charge : int
-        Nominal charge of the molecule to be optimized.
-    atoms : list of str
-        Atom types of interest. Only used for `spin` and `shielding` tasks.
-    temp : float
-        Temperature for frequency calculation. Only used if `frequency` is
-        a selected task.
-    cosmo : bool
-        Indicate whether to include COSMO block. Supply globally or per
-        task.
-    solvent : str
-        Solvent selection. Only used if `cosmo` is True. Supply globally or
-        per task.
-    gas : bool
-        Indicate whether to use gas phase calculations. Only used if
-        `cosmo` is True. Supply globally or per task.
-    max_iter : int
-        Maximum number of optimization iterations.
-    scratch_dir : str
-        Path to simulation scratch directory.
-    mem_global : int
-        Global memory allocation in MB.
-    mem_heap : int
-        Heap memory allocation in MB.
-    mem_stack : int
-        Stack memory allocation in MB.
-    
+    backend : str
+        Alias for backend selection (NWChem, ORCA).
+    kwargs
+        Keyword arguments passed to selected backend.
+
     Returns
     -------
     :obj:`~isicle.qm.QMWrapper`
@@ -99,18 +61,10 @@ def dft(geom, program='NWChem', template=None, tasks='energy', functional='b3lyp
     """
 
     # Select program
-    return _program_selector(program).run(geom, template=template, tasks=tasks,
-                                          functional=functional, basis_set=basis_set,
-                                          ao_basis=ao_basis, charge=charge,
-                                          atoms=atoms, bonds=bonds, temp=temp,
-                                          cosmo=cosmo, solvent=solvent, gas=gas,
-                                          max_iter=max_iter, mem_global=mem_global,
-                                          mem_heap=mem_heap, mem_stack=mem_stack,
-                                          scratch_dir=scratch_dir, processes=processes,
-                                          command=command)
+    return _backend_selector(backend).run(geom, **kwargs)
 
 
-class NWChemWrapper(XYZGeometry, WrapperInterface):
+class NWChemWrapper(WrapperInterface):
     """
     Wrapper for NWChem functionality.
 
@@ -125,30 +79,16 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         Indicates order of tasks in `task_map`.
     geom : :obj:`~isicle.geometry.Geometry`
         Internal molecule representation.
-    fmt : str
-        File extension indicator.
     config : str
         Configuration information for simulation.
 
     """
 
-    _defaults = ['geom']
-    _default_value = None
-
-    def __init__(self, **kwargs):
+    def __init__(self):
         """
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
 
-        Parameters
-        ----------
-        kwargs
-            Keyword arguments to initialize instance attributes.
-
         """
-
-        self.__dict__.update(dict.fromkeys(
-            self._defaults, self._default_value))
-        self.__dict__.update(**kwargs)
 
         self.task_map = {'optimize': self._configure_optimize,
                          'energy': self._configure_energy,
@@ -181,9 +121,9 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         self.basename = self.geom.basename
 
         # Save
-        self.save_geometry()
+        self._save_geometry()
 
-    def save_geometry(self, fmt='xyz'):
+    def _save_geometry(self):
         """
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
@@ -195,10 +135,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         """
 
         # Path operations
-        self.fmt = fmt.lower()
         geomfile = os.path.join(self.temp_dir,
-                                '{}.{}'.format(self.geom.basename,
-                                               self.fmt.lower()))
+                                '{}.xyz'.format(self.geom.basename))
 
         # Save
         isicle.io.save(geomfile, self.geom)
@@ -552,12 +490,12 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         """
 
         # Extract atom index information
-        #idx = self.geom.mol.get_atom_indices(atoms=atoms)
-        #new_idx = []
+        # idx = self.geom.mol.get_atom_indices(atoms=atoms)
+        # new_idx = []
         # for i in idx:
         #    new_idx.append(str(int(i)+1))
 
-        #self.idx = new_idx
+        # self.idx = new_idx
 
         # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
@@ -691,7 +629,7 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
                   basis_set='6-31g*', ao_basis='cartesian', charge=0,
                   atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-                  mem_stack=600, scratch_dir=None, processes=12, command='nwchem'):
+                  mem_stack=600, scratch_dir=None, processes=12):
         """
         Configure NWChem simulation.
 
@@ -803,9 +741,6 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         # Store tasks as attribute
         self.tasks = tasks
 
-        # Store cluster as attribute
-        self.command = command
-
         # Store number of processes as attribute
         self.processes = processes
 
@@ -890,15 +825,10 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
 
-        if self.command == 'nwchem':
-            s = 'mpirun -n {} nwchem {} > {}'.format(self.processes,
-                                                     infile,
-                                                     outfile)
-        else:
-            s = '{} {} {} {}'.format(self.command,
-                                     self.processes,
-                                     infile,
-                                     outfile)
+        s = 'mpirun -n {} nwchem {} > {} 2> {}'.format(self.processes,
+                                                       infile,
+                                                       outfile,
+                                                       logfile)
 
         subprocess.call(s, shell=True)
 
@@ -908,8 +838,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         Returns
         -------
-        :obj:`~isicle.parse.NWChemResult`
-            Parsed result data.
+        dict
+            Dictionary containing simulation results.
 
         """
 
@@ -918,19 +848,12 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         # Open output file
         self.output = parser.load(os.path.join(self.temp_dir,
-                                 self.basename + '.out'))
-        
+                                               self.basename + '.out'))
+
         # Parse results
         result = parser.parse()
 
-        # Update this instance attributes
-        self.__dict__.update(result)
-
-        # Update geom attributes
-        self.geom.add___dict__(
-            {k: v for k, v in result.items() if k != 'geom'})
-
-        return self
+        return result
 
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
             basis_set='6-31g*', ao_basis='cartesian', charge=0,
@@ -986,8 +909,8 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
 
         Returns
         -------
-        :obj:`~isicle.qm.NWChemWrapper`
-            Wrapper object containing relevant outputs from the simulation.
+        dict
+            Dictionary containing simulation results.
 
         """
 
@@ -1012,19 +935,272 @@ class NWChemWrapper(XYZGeometry, WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        self.finish()
+        result = self.finish()
 
-        return self
+        return result
 
-    def get_structure(self):
+
+class ORCAWrapper(WrapperInterface):
+    """
+    Wrapper for ORCA functionality.
+
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure
+    required methods are exposed.
+
+    Attributes
+    ----------
+    temp_dir : str
+        Path to temporary directory used for simulation.
+    geom : :obj:`~isicle.geometry.Geometry`
+        Internal molecule representation.
+    fmt : str
+        File extension indicator.
+    config : str
+        Configuration information for simulation.
+    result : dict
+        Dictionary containing simulation results.
+
+    """
+
+    def __init__(self):
         """
-        Extract structure from containing object.
+        Initialize :obj:`~isicle.qm.ORCAWrapper` instance.
+
+        """
+
+        # Set up temporary directory
+        self.temp_dir = isicle.utils.mkdtemp()
+
+    def set_geometry(self, geom):
+        """
+        Set :obj:`~isicle.geometry.Geometry` instance for simulation.
+
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+
+        # Assign geometry
+        self.geom = geom.__copy__()
+        self.basename = self.geom.basename
+
+        # Save
+        self._save_geometry()
+
+    def _save_geometry(self):
+        """
+        Save internal :obj:`~isicle.geometry.Geometry` representation to file in
+        XYZ format.
+
+        """
+
+        # Path to output
+        geomfile = os.path.join(self.temp_dir,
+                                '{}.xyz'.format(self.geom.basename))
+
+        # Save
+        isicle.save(geomfile, self.geom)
+
+        # Store path
+        self.geom.path = geomfile
+
+    def configure(self, simple_input=[], block_input={}, processes=1, **kwargs):
+        """
+        Configure ORCA simulation.
+
+        Parameters
+        ----------
+        simple_input : list
+            List of simple input keywords. See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
+            section of the ORCA docs.
+        block_input : dict
+            Dictionary defining configuration "blocks". Use names of blocks as keys, 
+            lists of each block's content as values. To configure a line of block content
+            directly, include as a complete string. Include key:value pairs as tuples. 
+            See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
+            section of the ORCA docs.
+        processes : int
+            Number of parallel processes.
+        kwargs
+            Additional keyword arguments fed as key:value pairs.
 
         Returns
         -------
-        :obj:`~isicle.geometry.XYZGeometry`
-            Structure instance.
- 
+        str
+            ORCA configuration text.
+
         """
 
-        return self.geom
+        # Safely cast to list
+        simple_input = isicle.utils.safelist(simple_input)
+
+        # Expand simple inputs
+        config = '! ' + ' '.join(simple_input) + '\n'
+
+        # Add processes
+        if processes > 1:
+            config += '%PAL NPROCS {} END\n'.format(processes)
+
+        # Add geometry context
+        config += '* xyzfile 0 1 {}\n'.format(self.geom.path)
+
+        # Expand keyword args
+        for k, v in kwargs.items():
+            config += '%{} {}\n'.format(k, v)
+
+        # Expand block inputs
+        for block, params in block_input.items():
+            # Safely cast to list
+            params = isicle.utils.safelist(params)
+
+            # Block header
+            block_text = '%{}\n'.format(block)
+
+            # Block configuration
+            for param in params:
+                if type(param) is str:
+                    block_text += param + '\n'
+                elif type(param) is tuple:
+                    block_text += ' '.join(map(str, param)) + '\n'
+                else:
+                    raise TypeError
+
+            # End block
+            block_text += 'end\n'
+
+            # Append block to config
+            config += block_text
+
+        # Assign to attribute
+        self.config = config
+
+        # Save configuration
+        self._save_config()
+
+        return self.config
+
+    def _save_config(self):
+        """
+        Write generated ORCA configuration to file.
+
+        """
+
+        # Write to file
+        with open(os.path.join(self.temp_dir,
+                               self.geom.basename + '.inp'), 'w') as f:
+            f.write(self.config)
+
+    def submit(self):
+        """
+        Submit the ORCA simulation according to configured inputs.
+
+        """
+
+        infile = os.path.join(self.temp_dir, self.geom.basename + '.inp')
+        outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
+        logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
+
+        s = '`which orca` {} > {} 2> {}'.format(infile,
+                                                outfile,
+                                                logfile)
+
+        subprocess.call(s, shell=True)
+
+    def finish(self):
+        """
+        Collect ORCA simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing relevant outputs from the simulation.
+
+        """
+
+        # Get list of outputs
+        outfiles = glob.glob(os.path.join(self.temp_dir, '*'))
+
+        # Filter out temp files
+        outfiles = [x for x in outfiles if not x.endswith('.tmp')]
+
+        # Result container
+        result = {}
+
+        # Enumerate output files
+        for outfile in outfiles:
+            # Split name and extension
+            basename, ext = os.path.basename(outfile).rsplit('.', 1)
+
+            # Grab suitable variable names
+            if any(basename.endswith(x) for x in ['_property', '_trj']):
+                var_name = basename.split('_')[-1]
+            else:
+                var_name = ext
+
+            # Read output content
+            with open(outfile, 'rb') as f:
+                contents = f.read()
+
+            # Attempt utf-8 decode
+            try:
+                result[var_name] = contents.decode('utf-8')
+            except UnicodeDecodeError:
+                result[var_name] = contents
+
+        # Assign to attribute
+        self.result = result
+        return self.result
+
+    def run(self, geom, **kwargs):
+        """
+        Optimize geometry via density functional theory using supplied functional
+        and basis set.
+
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        template : str
+            Path to optional template to bypass default configuration process.
+        **kwargs
+            Keyword arguments to configure the simulation.
+            See :meth:`~isicle.qm.ORCAWrapper.configure`.
+
+        Returns
+        -------
+        dict
+            Dictionary containing relevant outputs from the simulation.
+
+        """
+
+        # Set geometry
+        self.set_geometry(geom)
+
+        # Configure
+        self.configure(**kwargs)
+
+        # Run QM simulation
+        self.submit()
+
+        # Parse outputs
+        self.finish()
+
+        return self.result
+
+    def save(self, path):
+        """
+        Save result as pickle file.
+
+        Parameters
+        ----------
+        path : str
+            Path to output file.
+
+        """
+
+        if hasattr(self, 'result'):
+            isicle.io.save_pickle(path, self.result)
+        else:
+            raise AttributeError("Object must have `result` attribute")
