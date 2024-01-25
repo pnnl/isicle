@@ -671,7 +671,7 @@ class ConfpassEnsemble(ConformationalEnsemble):
     in Python path.
     """
 
-    import confpass
+    from confpass import confpass
 
     _defaults = ["temp_dir", "basename", "sdf_file", "priority", "cp"]
     _default_value = None
