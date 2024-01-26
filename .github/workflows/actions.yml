@@ -35,7 +35,6 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-variant: Mambaforge
-          miniforge-version: latest
           use-mamba: true
           environment-file: envs/linux.yml
           use-only-tar-bz2: true
@@ -65,7 +64,6 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-variant: Mambaforge
-          miniforge-version: latest
           use-mamba: true
           environment-file: envs/osx.yml
           use-only-tar-bz2: true
@@ -97,7 +95,6 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-variant: Mambaforge
-          miniforge-version: latest
           use-mamba: true
           python-version: 3.9
           channels: conda-forge,bioconda
