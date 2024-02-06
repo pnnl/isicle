@@ -534,9 +534,10 @@ class RDKitWrapper(Geometry, WrapperInterface):
             `distance` for distance geometry method (default)
         ff: str
             Forcefield used in conformer generation.
-        seed:
-            randomSeed argument of conformer generation. Enables reproducibility.
-
+        **kwargs:
+            Keyword arguments to configure the simulation.
+            See :meth:`~isicle.md.RDKitWrapper._configure_distance_geometry`,
+                :meth:`~isicle.md.RDKitWrapper._configure_etkdg`.
         """
         lookup = {
             "distance": self._configure_distance_geometry,
@@ -622,18 +623,58 @@ class RDKitWrapper(Geometry, WrapperInterface):
                 pruneRmsThresh=self.pruneRmsThresh,
                 forceTol=self.forceTol,
             )
+            self.geom.mol = mol
         elif "etkdg" in self.method:
             params = self._submit_etkdg()
+            rdDistGeom.EmbedMultipleConfs(mol, numConfs=self.numconfs, params=params)
+            self.geom.mol = mol
         else:
             raise CustomException(
                 "Failure to run RDKit MD, method and/or variant not recognized"
             )
 
-    def run(self):
-        return
-
     def finish(self):
-        return
+        """
+        Parse RDKit conformers generated.
+        """
+
+        self.conformers = [i for i in self.geom.mol.GetConformers()]
+
+    def run(self, geom, **kwargs):
+        """
+        Generate conformers using RKDit and supplied parameters.
+
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        **kwargs
+            Keyword arguments to configure the simulation.
+            See :meth:`~isicle.md.RDKitWrapper.configure`.
+
+        Returns
+        -------
+        :obj:`~isicle.md.XTBWrapper`
+            Wrapper object containing relevant outputs from the simulation.
+
+        """
+
+        # New instance
+        self = RDKitWrapper()
+
+        # Set geometry
+        self.set_geometry(geom)
+
+        # Configure
+        self.configure(**kwargs)
+
+        # Run QM simulation
+        self.submit()
+
+        # Finish/clean up
+        self.finish()
+
+        return self
 
 
 class TINKERWrapper(Geometry, WrapperInterface):
