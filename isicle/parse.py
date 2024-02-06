@@ -947,34 +947,6 @@ class XTBParser(FileParserInterface):
         return
 
 
-class RDKitParser(FileParserInterface):
-    """ """
-
-    def __init__(self):
-        """
-        Add docstring
-        """
-        return
-
-    def load(self, path: str):
-        """
-        Add docstring
-        """
-        return
-
-    def parse(self):
-        """
-        Add docstring
-        """
-        return
-
-    def save(self, path: str):
-        """
-        Add docstring
-        """
-        return
-
-
 class TINKERParser(FileParserInterface):
     """
     Add docstring
@@ -1021,6 +993,7 @@ class TINKERParser(FileParserInterface):
         """
 
         def parse_atom_symbol(AtomNum):
+            # TODO: modify lookup to use resources/atomic_masses.tsv
             Lookup = [
                 "H",
                 "He",
