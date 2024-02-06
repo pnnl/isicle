@@ -10,7 +10,9 @@ import isicle
 
 
 class NWChemParser(FileParserInterface):
-    """Extract text from an NWChem simulation output file."""
+    """
+    Extract text from an NWChem simulation output file.
+    """
 
     def __init__(self):
         self.contents = None
@@ -18,13 +20,18 @@ class NWChemParser(FileParserInterface):
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
         self.path = path
         return self.contents
 
     def _parse_geometry(self):
+        """
+        Add docstring
+        """
         search = os.path.dirname(self.path)
         geoms = sorted(glob.glob(os.path.join(search, "*.xyz")))
 
@@ -34,6 +41,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_energy(self):
+        """
+        Add docstring
+        """
         # TO DO: Add Initial energy and final energy if different
 
         # Init
@@ -48,6 +58,9 @@ class NWChemParser(FileParserInterface):
         return energy
 
     def _parse_shielding(self):
+        """
+        Add docstring
+        """
         # Init
         ready = False
         shield_idxs = []
@@ -78,6 +91,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_spin(self):
+        """
+        Add docstring
+        """
         # TO DO: Add g-factors
 
         # Declaring couplings
@@ -117,6 +133,9 @@ class NWChemParser(FileParserInterface):
         }
 
     def _parse_frequency(self):
+        """
+        Add docstring
+        """
         # TO DO: Add freq intensities
         # TO DO: Add rotational/translational/vibrational Cv and entropy
         freq = None
@@ -185,6 +204,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_charge(self):
+        """
+        Add docstring
+        """
         # TO DO: Parse molecular charge and atomic charges
         # TO DO: Add type of charge
         # TO DO: Multiple instances of charge analysis seen (two Mulliken and one Lowdin, difference?)
@@ -234,6 +256,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_timing(self):
+        """
+        Add docstring
+        """
         # Init
         indices = []
         preoptTime = 0
@@ -284,6 +309,9 @@ class NWChemParser(FileParserInterface):
         }
 
     def _parse_molden(self):
+        """
+        Add docstring
+        """
         search = splitext(self.path)[0]
         m = glob.glob(search + "*.molden")
 
@@ -293,7 +321,9 @@ class NWChemParser(FileParserInterface):
         return m[0]
 
     def _parse_protocol(self):
-        """Parse out dft protocol"""
+        """
+        Parse out dft protocol
+        """
         functional = []
         basis_set = []
         solvation = []
@@ -338,6 +368,9 @@ class NWChemParser(FileParserInterface):
         }
 
     def _parse_connectivity(self):
+        """
+        Add docstring
+        """
         coor_substr = "internuclear distances"
 
         # Extracting Atoms & Coordinates
@@ -437,21 +470,30 @@ class NWChemParser(FileParserInterface):
 
 
 class ImpactParser(FileParserInterface):
-    """Extract text from an Impact mobility calculation output file."""
+    """
+    Extract text from an Impact mobility calculation output file.
+    """
 
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "rb") as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
 
         # Check CCS results == 1
         count = 0
@@ -488,27 +530,38 @@ class ImpactParser(FileParserInterface):
         return result  # TODO: return CCS?
 
     def save(self, path: str, sep="\t"):
-        """Write parsed object to file"""
+        """
+        Write parsed object to file
+        """
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 
 class MobcalParser(FileParserInterface):
-    """Extract text from a MOBCAL mobility calculation output file."""
+    """
+    Extract text from a MOBCAL mobility calculation output file.
+    """
 
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = {}
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
         done = False
         for line in self.contents:
             # if "average (second order) TM mobility" in line:
@@ -525,41 +578,63 @@ class MobcalParser(FileParserInterface):
         return self.result
 
     def save(self, path: str, sep="\t"):
-        """Write parsed object to file"""
+        """
+        Write parsed object to file
+        """
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 
 class SanderParser(FileParserInterface):
-    """Extract text from an Sander simulated annealing simulation output file."""
+    """
+    Extract text from an Sander simulated annealing simulation output file.
+    """
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         raise NotImplementedError
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
         raise NotImplementedError
 
     def save(self, path: str):
-        """Write parsed object to file"""
+        """
+        Write parsed object to file
+        """
         raise NotImplementedError
 
 
 class XTBParser(FileParserInterface):
+    """
+    Add docstring
+    """
+
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = None
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
         self.path = path
         # return self.contents
 
     def _crest_energy(self):
+        """
+        Add docstring
+        """
         relative_energy = []
         total_energy = []
         population = []
@@ -588,6 +663,10 @@ class XTBParser(FileParserInterface):
         }
 
     def _crest_timing(self):
+        """
+        Add docstring
+        """
+
         def grab_time(line):
             line = line.replace(" ", "")
             line = line.split(":")
@@ -626,6 +705,9 @@ class XTBParser(FileParserInterface):
         }
 
     def _isomer_energy(self):
+        """
+        Add docstring
+        """
         complete = False
         relative_energies = []
         total_energies = []
@@ -647,6 +729,10 @@ class XTBParser(FileParserInterface):
         return {"relative energy": relative_energies, "total energy": total_energies}
 
     def _isomer_timing(self):
+        """
+        Add docstring
+        """
+
         def grab_time(line):
             line = line.replace(" ", "")
             line = line.split(":")
@@ -670,6 +756,9 @@ class XTBParser(FileParserInterface):
         }
 
     def _opt_energy(self):
+        """
+        Add docstring
+        """
         for line in self.contents:
             if "TOTAL ENERGY" in line:
                 energy = line.split()[3] + " Hartrees"
@@ -677,6 +766,10 @@ class XTBParser(FileParserInterface):
         return {"Total energy": energy}
 
     def _opt_timing(self):
+        """
+        Add docstring
+        """
+
         def grab_time(line):
             line = line.replace(" ", "")
             line = line.split(":")
@@ -707,6 +800,9 @@ class XTBParser(FileParserInterface):
         }
 
     def _parse_energy(self):
+        """
+        Add docstring
+        """
         if self.parse_crest == True:
             return self._crest_energy()
         if self.parse_opt == True:
@@ -715,6 +811,9 @@ class XTBParser(FileParserInterface):
             return self._isomer_energy()
 
     def _parse_timing(self):
+        """
+        Add docstring
+        """
         if self.parse_crest == True:
             return self._crest_timing()
         if self.parse_opt == True:
@@ -723,6 +822,9 @@ class XTBParser(FileParserInterface):
             return self._isomer_timing()
 
     def _parse_protocol(self):
+        """
+        Add docstring
+        """
         protocol = None
 
         for line in self.contents:
@@ -755,7 +857,9 @@ class XTBParser(FileParserInterface):
         return isicle.conformers.ConformationalEnsemble(x)
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
 
         # Check that the file is valid first
         if len(self.contents) == 0:
@@ -835,24 +939,67 @@ class XTBParser(FileParserInterface):
         return result
 
     def save(self, path):
+        """
+        Add docstring
+        """
         with open(path, "wb") as f:
             pickle.dump(self, f)
         return
 
 
-class TINKERParser(FileParserInterface):
+class RDKitParser(FileParserInterface):
+    """ """
+
     def __init__(self):
+        """
+        Add docstring
+        """
+        return
+
+    def load(self, path: str):
+        """
+        Add docstring
+        """
+        return
+
+    def parse(self):
+        """
+        Add docstring
+        """
+        return
+
+    def save(self, path: str):
+        """
+        Add docstring
+        """
+        return
+
+
+class TINKERParser(FileParserInterface):
+    """
+    Add docstring
+    """
+
+    def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = None
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
         self.path = path
 
     def _parse_energy(self):
+        """
+        Add docstring
+        """
         inp = self.contents
         if len(inp) < 13:
             quit()
@@ -869,6 +1016,10 @@ class TINKERParser(FileParserInterface):
         return energies
 
     def _parse_conformers(self):
+        """
+        Add docstring
+        """
+
         def parse_atom_symbol(AtomNum):
             Lookup = [
                 "H",
@@ -1444,7 +1595,9 @@ class TINKERParser(FileParserInterface):
         return isicle.conformers.ConformationalEnsemble(x)
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
 
         # Check that the file is valid first
         if len(self.contents) == 0:
@@ -1471,4 +1624,7 @@ class TINKERParser(FileParserInterface):
         return result
 
     def save(self):
+        """
+        Add docstring
+        """
         return
