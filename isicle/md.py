@@ -637,8 +637,16 @@ class RDKitWrapper(Geometry, WrapperInterface):
         """
         Parse RDKit conformers generated.
         """
+        conformers = [
+            isicle.load(i, basename=self.geom.mol.basename)
+            for i in self.geom.mol.GetConformers()
+        ]
 
-        self.conformers = [i for i in self.geom.mol.GetConformers()]
+        confIDs = [i.GetId() for i in self.geom.mol.GetConformers()]
+
+        self.geom = conformers
+        for conf, label in zip(self.geom, confIDs):
+            conf.__dict__.update(conformerID=label)
 
     def run(self, geom, **kwargs):
         """
@@ -675,6 +683,40 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.finish()
 
         return self
+
+    def get_structures(self):
+        """
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        """
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            return self.geom
+
+        raise TypeError(
+            "Object does not contain multiple structures. Use `get_structure` instead."
+        )
+
+    def get_structure(self):
+        """
+        Extract structure from containing object.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.XYZGeometry`
+            Structure instance.
+
+        """
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            raise TypeError(
+                "Object contains multiple structures. Use `get_structures` instead."
+            )
+
+        return self.geom
 
 
 class TINKERWrapper(Geometry, WrapperInterface):
