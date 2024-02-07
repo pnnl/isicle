@@ -973,7 +973,7 @@ class TINKERParser(FileParserInterface):
             self.contents = f.readlines()
         self.path = path
 
-    def _parse_energy(self):
+    def _parse_energy(self) -> list:
         """
         Parse the energy from TINKER simulation
         """
@@ -997,7 +997,7 @@ class TINKERParser(FileParserInterface):
 
     def _parse_conformers(self):
         """
-        Add docstring
+        Parse the conformers from TINKER simulation
         """
 
         conffile = open(self.path.split(".")[0] + ".arc", "r")
@@ -1076,7 +1076,7 @@ class TINKERParser(FileParserInterface):
             result["energy"] = self._parse_energy()
         except:
             pass
-
+        # TODO no self._parse_charge code
         try:
             result["charge"] = self._parse_charge()
         except:
