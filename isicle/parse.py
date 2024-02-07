@@ -393,7 +393,7 @@ class NWChemParser(FileParserInterface):
 
     def parse(self):
         """
-        Extract relevant information from NWChem output
+        Extract relevant information from NWChem output.
 
         Parameters
         ----------
