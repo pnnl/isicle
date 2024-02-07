@@ -519,7 +519,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.geom = geom
         self.basename = self.geom.basename
 
-    def configure(self, method="distance", numConfs=10, **kwargs):
+    def configure(self, method: str = "distance", numConfs: int = 10, **kwargs):
         """
         Set conformer generation parameters.
         Parameters
@@ -545,17 +545,23 @@ class RDKitWrapper(Geometry, WrapperInterface):
             "etkdgv3": self._configure_etkdg3,
             "sretkdgv3": self._configure_etkdg3_variant,
         }
+        method = str(method)
         try:
             lookup[method.lower()](**kwargs)
         except KeyError:
-            raise CustomException(
-                "RDKit supports distance, ETDG, ETKDG, ETKDGv2, ETKDGv3, srETKDGv3 methods."
-            )
+            raise
         self.method = method.lower()
+        try:
+            numConfs = int(numConfs)
+        except ValueError:
+            raise
         self.numConfs = numConfs
 
     def _configure_distance_geometry(
-        self, pruneRmsThresh=-1.0, forceTol=0.001, randomSeed=-1
+        self,
+        pruneRmsThresh: float = -1.0,
+        forceTol: float = 0.001,
+        randomSeed: int = -1,
     ):
         """
         Set parameters for distance geometry based conformer generation.
@@ -625,7 +631,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
                 self.geom.mol, numConfs=self.numConfs, params=self.params
             )
         else:
-            raise CustomException(
+            raise ValueError(
                 "Failure to run RDKit MD, method and/or variant not recognized"
             )
 
