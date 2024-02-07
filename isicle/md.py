@@ -503,7 +503,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
     """
 
-    _defaults = ["geom"]
+    _defaults = ["geom", "method", "numConfs"]
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -525,93 +525,94 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.geom = geom
         self.basename = self.geom.basename
 
-    def configure(self, method="distance", ff="mmff94", **kwargs):
+    def configure(self, method="distance", numConfs=10, **kwargs):
         """
         Set conformer generation parameters.
         Parameters
         ----------
         method: str
             `distance` for distance geometry method (default)
-        ff: str
-            Forcefield used in conformer generation.
+            `etkdg` for ETKDG method
+            `etkdgv2` for ETKDG method
+            `etkdgv3` for ETKDG method
+            `sretkdgv3` for ETKDG method
+        numConfs: int
+            the number of conformers to generate
         **kwargs:
-            Keyword arguments to configure the simulation.
-            See :meth:`~isicle.md.RDKitWrapper._configure_distance_geometry`,
-                :meth:`~isicle.md.RDKitWrapper._configure_etkdg`.
+            Keyword arguments to configure the simulation
+            See :meth:`~isicle.md.RDKitWrapper._configure_distance_geometry`
         """
         lookup = {
             "distance": self._configure_distance_geometry,
-            "etkdg": self._configure_etkdg,
+            "etdg": self._configure_etdg,
+            "etkdg": self._configure_etkdg1,
+            "etkdgv1": self._configure_etkdg1,
+            "etkdgv2": self._configure_etkdg2,
+            "etkdgv3": self._configure_etkdg3,
+            "sretkdgv3": self._configure_etkdg3_variant,
         }
         try:
             lookup[method.lower()](**kwargs)
         except KeyError:
-            raise CustomException("Not a supported RDKit method")
-
-        # TODO run forcefield availability check code found in geometry
-        # self.ff = ff
-        return
+            raise CustomException(
+                "RDKit supports distance, ETDG, ETKDG, ETKDGv2, ETKDGv3, srETKDGv3"
+            )
+        self.method = method.lower()
+        self.numConfs = numConfs
 
     def _configure_distance_geometry(
-        self, numConfs=10, randomSeed=-1, pruneRmsThresh=-1.0, forceTol=0.001
+        self, pruneRmsThresh=-1.0, forceTol=0.001, randomSeed=-1
     ):
         """
         Set parameters for distance geometry based conformer generation.
         Parameters
         ----------
-        numConfs: int
-            Number of conformers to generate.
-        randomSeed: int
-            set seed for randomness, argument of `rdkit.Chem.rdDistGeom.EmbedMultipleConfs`
         pruneRmsThresh: float
             Greedy pruning mainting conformers are <float> apart based upon RMSD of heavy atoms.
             Default: no pruning, -1.0
         forceTol: float
             Tolerance to be used in force-field minimizations
+        randomSeed:  int
+            provide a seed for the random number generator
+            `-1` causes RNG to not be seeded
         """
-        # TODO numThreads argument, look in to multi-thread support in compilation
-        self.method = "distance"
-        self.numConfs = numConfs
-        self.randomSeed = randomSeed
         self.pruneRmsThresh = pruneRmsThresh
         self.forceTol = forceTol
+        self.randomSeed = randomSeed
 
-    def _configure_etkdg(self, version=2, variant=False):
+    def _configure_etdg(self):
+        """
+        Set parameters for ETDG conformer generation.
+        """
+        self.params = rdDistGeom.ETDG()
+
+    def _configure_etkdg1(self):
         """
         Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
-        Parameters
-        ----------
-        version: int
-            Specify version of ETKDG to use.
-            Version 1: RDKit default
-            Version 2: (default) 2016 release, updated torsion angle potentials
-            Version 3: Updated sampling small rings and macrocycles
-        variant: bool
-            Specify if variant of ETKDGv3 should be used (srETKDGv3).
-            True: updated sampling for small rings
-            False: (default) updated sampling for small rings and macrocyles
+        Version 1: RDKit default
         """
-        lookup = {1: "etkdg1", 2: "etkdg2", 3: "etkdg3"}
-        try:
-            self.method = lookup[version]
-            self.variant = variant
-        except KeyError:
-            raise "Version options [1,2,3] for ETKDG method."
+        self.params = rdDistGeom.ETKDG()
 
-        return
+    def _configure_etkdg2(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 2: (default) 2016 release, updated torsion angle potentials
+        """
+        self.params = rdDistGeom.ETKDGv2()
 
-    def _submit_etkdg(self):
-        if self.method == "etkdg1":
-            params = rdDistGeom.ETKDG()
-        elif self.method == "etkdg2":
-            params = rdDistGeom.ETKDGv2()
-        elif self.method == "etkdg3" and self.variant is False:
-            params = rdDistGeom.ETKDGv3()
-        elif self.method == "etkdg3" and self.variant is True:
-            params = rdDistGeom.srETKDGv3()
-        else:
-            raise "Failure to run RDKit MD, method and/or variant not recognized"
-        return params
+    def _configure_etkdg3(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 3: Updated sampling small rings AND macrocycles
+        """
+        self.params = rdDistGeom.ETKDGv3()
+
+    def _configure_etkdg3_variant(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 3 variant: Updated sampling for small rings, NOT macrocycles
+        """
+        self.params = rdDistGeom.srETKDGv3()
 
     def submit(self):
         if self.method == "distance":
@@ -622,10 +623,9 @@ class RDKitWrapper(Geometry, WrapperInterface):
                 pruneRmsThresh=self.pruneRmsThresh,
                 forceTol=self.forceTol,
             )
-        elif "etkdg" in self.method:
-            params = self._submit_etkdg()
+        elif "etkdg" in self.method or "etdg" in self.method:
             rdDistGeom.EmbedMultipleConfs(
-                self.geom.mol, numConfs=self.numconfs, params=params
+                self.geom.mol, numConfs=self.numConfs, params=self.params
             )
         else:
             raise CustomException(
