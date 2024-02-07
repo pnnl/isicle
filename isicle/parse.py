@@ -1,4 +1,5 @@
 from isicle.interfaces import FileParserInterface
+from isicle.utils import atomic_num_lookup
 import pandas as pd
 from os.path import splitext
 import glob
@@ -992,103 +993,6 @@ class TINKERParser(FileParserInterface):
         Add docstring
         """
 
-        def parse_atom_symbol(AtomNum):
-            # TODO: modify lookup to use resources/atomic_masses.tsv
-            Lookup = [
-                "H",
-                "He",
-                "Li",
-                "Be",
-                "B",
-                "C",
-                "N",
-                "O",
-                "F",
-                "Ne",
-                "Na",
-                "Mg",
-                "Al",
-                "Si",
-                "P",
-                "S",
-                "Cl",
-                "Ar",
-                "K",
-                "Ca",
-                "Sc",
-                "Ti",
-                "V",
-                "Cr",
-                "Mn",
-                "Fe",
-                "Co",
-                "Ni",
-                "Cu",
-                "Zn",
-                "Ga",
-                "Ge",
-                "As",
-                "Se",
-                "Br",
-                "Kr",
-                "Rb",
-                "Sr",
-                "Y",
-                "Zr",
-                "Nb",
-                "Mo",
-                "Tc",
-                "Ru",
-                "Rh",
-                "Pd",
-                "Ag",
-                "Cd",
-                "In",
-                "Sn",
-                "Sb",
-                "Te",
-                "I",
-                "Xe",
-                "Cs",
-                "Ba",
-                "La",
-                "Ce",
-                "Pr",
-                "Nd",
-                "Pm",
-                "Sm",
-                "Eu",
-                "Gd",
-                "Tb",
-                "Dy",
-                "Ho",
-                "Er",
-                "Tm",
-                "Yb",
-                "Lu",
-                "Hf",
-                "Ta",
-                "W",
-                "Re",
-                "Os",
-                "Ir",
-                "Pt",
-                "Au",
-                "Hg",
-                "Tl",
-                "Pb",
-                "Bi",
-                "Po",
-                "At",
-                "Rn",
-            ]
-
-            if AtomNum > 0 and AtomNum < len(Lookup):
-                return Lookup[AtomNum - 1]
-            else:
-                print("No such element with atomic number " + str(AtomNum))
-                return 0
-
         conffile = open(self.path.split(".")[0] + ".arc", "r")
         confdata = conffile.readlines()
         conffile.close()
@@ -1098,6 +1002,9 @@ class TINKERParser(FileParserInterface):
         anums = isicle.utils.tinker_lookup()["anums"].to_list()
         atypes = [x[:3] for x in atomtypes]
 
+        # Load dictionary of atomic num key, symbol values
+        atomic_lookup = atomic_num_lookup()
+
         # Parse data from arc file, extract coordinates and atom type
         for line in confdata:
             data = [_f for _f in line.split("  ") if _f]
@@ -1106,7 +1013,7 @@ class TINKERParser(FileParserInterface):
             else:
                 if len(conformers) == 1:
                     anum = anums[atypes.index(data[1][:3])]
-                    atoms.append(parse_atom_symbol(anum))
+                    atoms.append(atomic_lookup[anum])
                 conformers[-1].append([x for x in data[2:5]])
 
         # Convert from TINKER xyz format to standard xyz format
