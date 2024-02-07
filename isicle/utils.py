@@ -104,6 +104,9 @@ def atomic_masses():
 
 
 def atomic_num_lookup():
+    """
+    Lookup dictionary to query atomic number and return atomic symbol.
+    """
     return atomic_masses().set_index("Number").to_dict()["Symbol"]
 
 
@@ -112,6 +115,9 @@ def get_atomic_num(number: int):
 
 
 def atomic_symbol_lookup() -> dict:
+    """
+    Lookup dictionary to query atomic symbol and return atomic number.
+    """
     return atomic_masses().set_index("Symbol").to_dict()["Number"]
 
 
