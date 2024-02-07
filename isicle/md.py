@@ -614,20 +614,19 @@ class RDKitWrapper(Geometry, WrapperInterface):
         return params
 
     def submit(self):
-        mol = self.geom.mol
         if self.method == "distance":
             rdDistGeom.EmbedMultipleConfs(
-                mol,
+                self.geom.mol,
                 numConfs=self.numConfs,
                 randomSeed=self.randomSeed,
                 pruneRmsThresh=self.pruneRmsThresh,
                 forceTol=self.forceTol,
             )
-            self.geom.mol = mol
         elif "etkdg" in self.method:
             params = self._submit_etkdg()
-            rdDistGeom.EmbedMultipleConfs(mol, numConfs=self.numconfs, params=params)
-            self.geom.mol = mol
+            rdDistGeom.EmbedMultipleConfs(
+                self.geom.mol, numConfs=self.numconfs, params=params
+            )
         else:
             raise CustomException(
                 "Failure to run RDKit MD, method and/or variant not recognized"
@@ -637,15 +636,14 @@ class RDKitWrapper(Geometry, WrapperInterface):
         """
         Parse RDKit conformers generated.
         """
+        confCount = self.geom.mol.GetNumConformers()
         conformers = [
-            isicle.load(i, basename=self.geom.mol.basename)
-            for i in self.geom.mol.GetConformers()
+            isicle.load(Chem.Mol(self.geom.mol, confId=i), basename=self.basename)
+            for i in range(confCount)
         ]
 
-        confIDs = [i.GetId() for i in self.geom.mol.GetConformers()]
-
         self.geom = conformers
-        for conf, label in zip(self.geom, confIDs):
+        for conf, label in zip(self.geom, range(confCount)):
             conf.__dict__.update(conformerID=label)
 
     def run(self, geom, **kwargs):
