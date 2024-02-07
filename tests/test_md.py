@@ -17,7 +17,7 @@ def xtb():
 
 
 @pytest.fixture()
-def rdkit():
+def rdw():
     return RDKitWrapper()
 
 
@@ -45,9 +45,9 @@ def test__program_selector_fail(program):
         _program_selector(program)
 
 
-def test_md(xtb):
+def test_md_xtb(xtb):
     # Load geometry externally
-    geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+    geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
     # Run molecular dynamics
     md(
@@ -57,6 +57,18 @@ def test_md(xtb):
         task="optimize",
         forcefield="gff",
         optlevel="Normal",
+    )
+
+
+def test_md_rdkit(rdw):
+    # Load geometry externally
+    geom = isicle.load(localfile("resources/geom_test_3D.mol"))
+
+    # Run molecular dynamics
+    md(
+        geom,
+        program="rdkit",
+        method="etkdgv3",
     )
 
 
@@ -76,7 +88,7 @@ class TestXTBWrapper:
     )
     def test_set_geometry(self, xtb, path, expected):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile(path))
+        geom = isicle.load(localfile(path))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -93,7 +105,7 @@ class TestXTBWrapper:
     @pytest.mark.parametrize("fmt", [("xyz"), ("pdb"), ("mol")])
     def test_save_geometry(self, xtb, fmt):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -132,7 +144,7 @@ class TestXTBWrapper:
     )
     def test_configure(self, xtb, tasks, forcefield, optlevel):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -148,7 +160,7 @@ class TestXTBWrapper:
 
     def test_run(self, xtb):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -167,7 +179,7 @@ class TestXTBWrapper:
 
     def test_finish(self, xtb):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
         xtb.set_geometry(geom)
@@ -196,115 +208,90 @@ class TestRDKitWrapper:
     @pytest.mark.parametrize(
         "path,expected", [("resources/geom_test_3D.mol", "geom_test_3D")]
     )
-    def test_set_geometry(self, xtb, path, expected):
+    def test_set_geometry(self, rdw, path, expected):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile(path))
+        geom = isicle.load(localfile(path))
 
         # Set geometry
-        xtb.set_geometry(geom)
+        rdw.set_geometry(geom)
 
         # Check class instance
-        assert isinstance(xtb.geom, Geometry)
+        assert isinstance(rdw.geom, Geometry)
 
         # Check basename attribute
         assert geom.basename == expected
 
-        # Clean up
-        xtb.temp_dir.cleanup()
+    @pytest.mark.parametrize(
+        "method, numConfs",
+        [("distance", "test"), ("etkdg", "test")],
+    )
+    def test_configure_failure(self, rdw, method, numConfs):
+        with pytest.raises(ValueError):
+            rdw.configure(method=method, numConfs=numConfs)
 
-    @pytest.mark.parametrize("fmt", [("xyz"), ("pdb"), ("mol")])
-    def test_save_geometry(self, xtb, fmt):
+    @pytest.mark.parametrize(
+        "method, numConfs, pruneRmsThresh, forceTol, randomSeed",
+        [
+            ("distance", 10, -1.0, 0.001, -1),
+        ],
+    )
+    def test_configure_distance(
+        self, rdw, method, numConfs, pruneRmsThresh, forceTol, randomSeed
+    ):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
-        xtb.set_geometry(geom)
+        rdw.set_geometry(geom)
 
-        # Save geometry
-        xtb.save_geometry(fmt=fmt)
-
-        # Check if file exists
-        assert os.path.exists(
-            os.path.join(
-                xtb.temp_dir.name, "{}.{}".format(xtb.geom.basename, fmt.lower())
-            )
+        # Set up commandline
+        rdw.configure(
+            method=method,
+            numConfs=numConfs,
+            pruneRmsThresh=pruneRmsThresh,
+            forceTol=forceTol,
+            randomSeed=randomSeed,
         )
 
-        # Clean up
-        xtb.temp_dir.cleanup()
-
     @pytest.mark.parametrize(
-        "tasks, forcefield, optlevel",
-        [
-            ("optimize", ["gff", "gfn2"], ["Normal", "Tight"]),
-            (["crest", "protonate"], "gfn2", "Normal"),
-        ],
+        "method, numConfs",
+        [("etkdg", 10), ("etdg", 10)],
     )
-    def test_configure_failure(self, xtb, tasks, forcefield, optlevel):
-        with pytest.raises(TypeError):
-            xtb.configure(task=tasks, forcefield=forcefield, optlevel=optlevel)
-
-    @pytest.mark.parametrize(
-        "tasks,forcefield,optlevel",
-        [
-            ("optimize", "gff", "Normal"),
-            ("crest", "gff", "Normal"),
-            ("protonate", "gff", "Normal"),
-        ],
-    )
-    def test_configure(self, xtb, tasks, forcefield, optlevel):
+    def test_configure_et(self, rdw, method, numConfs):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
-        xtb.set_geometry(geom)
-
-        # Save geometry
-        xtb.save_geometry(fmt="xyz")
+        rdw.set_geometry(geom)
 
         # Set up commandline
-        xtb.configure(task=tasks, forcefield=forcefield, optlevel=optlevel)
+        rdw.configure(method=method, numConfs=numConfs)
 
-        # Clean up
-        xtb.temp_dir.cleanup()
-
-    def test_run(self, xtb):
+    def test_submit(self, rdw):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
-        xtb.set_geometry(geom)
-
-        # Save geometry
-        xtb.save_geometry(fmt="xyz")
+        rdw.set_geometry(geom)
 
         # Set up commandline
-        xtb.configure()
+        rdw.configure()
 
         # Run
-        xtb.run()
+        rdw.submit()
 
-        # Clean up
-        xtb.temp_dir.cleanup()
-
-    def test_finish(self, xtb):
+    def test_finish(self, rdw):
         # Load geometry externally
-        geom = isicle.geometry.load(localfile("resources/geom_test_3D.mol"))
+        geom = isicle.load(localfile("resources/geom_test_3D.mol"))
 
         # Set geometry
-        xtb.set_geometry(geom)
-
-        # Save geometry
-        xtb.save_geometry(fmt="xyz")
+        rdw.set_geometry(geom)
 
         # Set up commandline
-        xtb.configure()
+        rdw.configure()
 
         # Run
-        xtb.run()
+        rdw.submit()
 
         # Finish
-        xtb.finish()
-
-        # Clean up
-        xtb.temp_dir.cleanup()
+        rdw.finish()
