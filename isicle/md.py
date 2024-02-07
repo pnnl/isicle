@@ -489,18 +489,12 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
     Attributes
     ----------
-    temp_dir : str
-        Path to temporary directory used for simulation.
-    task_map : dict
-        Alias mapper for supported molecular dynamic presets. Includes
-        "optimize", "conformer", "nmr", "protonate", "deprotonate", and "tautomer".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
-    fmt : str
-        File extension indicator.
-    job_list : str
-        List of commands for simulation.
-
+    method: str
+        Method of RDKit conformer generation specified.
+    numConfs: int
+        The number of conformers to generate.
     """
 
     _defaults = ["geom", "method", "numConfs"]
@@ -615,6 +609,9 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.params = rdDistGeom.srETKDGv3()
 
     def submit(self):
+        """
+        Execute conformer generation with user-specifed method, parameters.
+        """
         if self.method == "distance":
             rdDistGeom.EmbedMultipleConfs(
                 self.geom.mol,
@@ -660,7 +657,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
         Returns
         -------
-        :obj:`~isicle.md.XTBWrapper`
+        :obj:`~isicle.md.RDKitWrapper`
             Wrapper object containing relevant outputs from the simulation.
 
         """
