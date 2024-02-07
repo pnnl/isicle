@@ -103,6 +103,22 @@ def atomic_masses():
     return pd.read_csv(path, delim_whitespace=True)
 
 
+def atomic_num_lookup():
+    return atomic_masses().set_index("Number").to_dict()["Symbol"]
+
+
+def get_atomic_num(number: int):
+    return atomic_num_lookup().get(number)
+
+
+def atomic_symbol_lookup() -> dict:
+    return atomic_masses().set_index("Symbol").to_dict()["Number"]
+
+
+def get_atomic_num(symbol: str) -> int:
+    return atomic_symbol_lookup().get(symbol)
+
+
 def tinker_lookup():
     path = resources.files("isicle") / "resources/tinker_lookup.tsv"
     return pd.read_csv(path, sep="\t")
