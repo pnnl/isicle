@@ -549,7 +549,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
             lookup[method.lower()](**kwargs)
         except KeyError:
             raise CustomException(
-                "RDKit supports distance, ETDG, ETKDG, ETKDGv2, ETKDGv3, srETKDGv3"
+                "RDKit supports distance, ETDG, ETKDG, ETKDGv2, ETKDGv3, srETKDGv3 methods."
             )
         self.method = method.lower()
         self.numConfs = numConfs
