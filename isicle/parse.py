@@ -1,3 +1,4 @@
+import isicle
 from isicle.interfaces import FileParserInterface
 from isicle.utils import atomic_num_lookup
 import pandas as pd
@@ -7,7 +8,6 @@ import os
 import pickle
 import numpy as np
 from openbabel import pybel
-import isicle
 
 
 class NWChemParser(FileParserInterface):
@@ -37,7 +37,7 @@ class NWChemParser(FileParserInterface):
         geoms = sorted(glob.glob(os.path.join(search, "*.xyz")))
 
         if len(geoms) > 0:
-            return isicle.io.load(geoms[-1])
+            return isicle.load(geoms[-1])
 
         raise Exception
 
@@ -850,10 +850,10 @@ class XTBParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
-            x = [isicle.io.load(i) for i in geom_list]
+            x = [isicle.load(i) for i in geom_list]
 
         else:
-            x = [isicle.io.load(self.xyz_path)]
+            x = [isicle.load(self.xyz_path)]
 
         return isicle.conformers.ConformationalEnsemble(x)
 
@@ -950,12 +950,12 @@ class XTBParser(FileParserInterface):
 
 class TINKERParser(FileParserInterface):
     """
-    Add docstring
+    Extract text from TINKER simulation output file(s).
     """
 
     def __init__(self):
         """
-        Add docstring
+        Initialize TINKER parse with contents, result, path attributes
         """
         self.contents = None
         self.result = None
@@ -963,7 +963,11 @@ class TINKERParser(FileParserInterface):
 
     def load(self, path: str):
         """
-        Load in the data file
+        Load in the TINKER data file
+        Parameters
+        ----------
+        path : str
+            Path to TINKER data file
         """
         with open(path, "r") as f:
             self.contents = f.readlines()
@@ -971,21 +975,24 @@ class TINKERParser(FileParserInterface):
 
     def _parse_energy(self):
         """
-        Add docstring
+        Parse the energy from TINKER simulation
         """
-        inp = self.contents
-        if len(inp) < 13:
-            quit()
+
+        if len(self.contents) < 13:
+            raise ValueError(
+                "Temporary error statement: exit if length of TINKER sim contents <13"
+            )
 
         # Get the conformer energies from the file
         energies = []
-        for line in inp[13:]:
+        for line in self.contents[13:]:
             data = line[:-1].split("  ")
             data = [_f for _f in data if _f]
             if len(data) >= 3:
                 if "Map" in data[0] and "Minimum" in data[1]:
                     energies.append(float(data[-1]))
-
+        if len(energies) == 0:
+            raise ValueError("No energies were parsed from TINKER")
         return energies
 
     def _parse_conformers(self):
@@ -1041,10 +1048,10 @@ class TINKERParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
-            x = [isicle.io.load(i) for i in geom_list]
+            x = [isicle.load(i) for i in geom_list]
 
         else:
-            x = [isicle.io.load(self.xyz_path)]
+            x = [isicle.load(self.xyz_path)]
 
         return isicle.conformers.ConformationalEnsemble(x)
 
@@ -1077,8 +1084,10 @@ class TINKERParser(FileParserInterface):
 
         return result
 
-    def save(self):
+    def save(self, path: str):
         """
-        Add docstring
+        Save TINKER parse object as pickle to path
         """
-        return
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
+        f.close()
