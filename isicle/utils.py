@@ -110,7 +110,7 @@ def atomic_num_lookup():
     return atomic_masses().set_index("Number").to_dict()["Symbol"]
 
 
-def get_atomic_num(number: int):
+def get_atomic_symbol(number: int):
     return atomic_num_lookup().get(number)
 
 
