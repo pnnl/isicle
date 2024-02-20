@@ -153,7 +153,6 @@ def load_nwchem(path, basename=None):
 
     """
 
-
     dft = isicle.qm.NWChemWrapper()
 
     parser = isicle.parse.NWChemParser()
@@ -161,8 +160,7 @@ def load_nwchem(path, basename=None):
     result = parser.parse()
 
     dft.__dict__.update(result)
-    dft.geom.add___dict__({k: v for k, 
-    v in result.items() if k != 'geom'})
+    dft.geom.add___dict__({k: v for k, v in result.items() if k != "geom"})
     dft.output = parser.load(path)
 
     if basename is None:
@@ -170,7 +168,7 @@ def load_nwchem(path, basename=None):
             basename = Chem.MolToInchiKey(dft.geom.mol)
         except:
             basename = os.path.splitext((os.path.basename(path)))[0]
-    
+
     dft.basename = basename
 
     return dft
@@ -307,7 +305,9 @@ def load_smiles(path, force=False, basename=None):
     """
     extension = os.path.splitext(path)[-1].lower()
     if "smi" in extension:
-        return _load_line_notation(path, func=Chem.MolFromSmiles, force=force, basename=basename)
+        return _load_line_notation(
+            path, func=Chem.MolFromSmiles, force=force, basename=basename
+        )
     else:
         return _load_line_notation(
             path, func=Chem.MolFromSmiles, force=force, string=True, basename=basename
@@ -336,7 +336,9 @@ def load_inchi(path, force=False, basename=None):
             path, func=Chem.MolFromInchi, force=force, string=True, basename=basename
         )
     else:
-        return _load_line_notation(path, func=Chem.MolFromInchi, force=force, basename=basename)
+        return _load_line_notation(
+            path, func=Chem.MolFromInchi, force=force, basename=basename
+        )
 
 
 def load_pickle(path):
@@ -383,11 +385,10 @@ def load_joblib(path):
 
 def _check_mol_obj(mol_obj):
     """ """
-    try:
-        Chem.MolToMolBlock(mol_obj)
-    except ValueError:
-        print("Invalid RDKit mol object")
-        raise
+    if isinstance(mol_obj, Chem.Mol):
+        return
+    else:
+        raise IOError("Not a valid RDKit Mol object passed.")
 
 
 def load_mol_obj(mol_obj, basename=None):
@@ -478,8 +479,6 @@ def load(path, force=False, basename=None):
             return load_mol_obj(path, basename=basename)
         except:
             raise IOError("Not a valid RDKit mol object passed.")
-        
-
 
 
 def save_xyz(path, geom):
