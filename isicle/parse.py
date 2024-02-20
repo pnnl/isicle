@@ -1,12 +1,329 @@
-from isicle.interfaces import FileParserInterface
-import pandas as pd
-from os.path import splitext
 import glob
 import os
 import pickle
+from os.path import splitext
+
 import numpy as np
+import pandas as pd
 from openbabel import pybel
+
 import isicle
+from isicle.interfaces import FileParserInterface
+
+
+class ORCAParser(FileParserInterface):
+    """Extract information from an ORCA simulation output files."""
+
+    def __init__(self, data=None):
+        self.data = data
+
+        self.result = {}
+
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
+
+    def _find_output_by_header(self, header):
+        # Fat regex
+        pattern = (
+            r"(-{2,})\n\s{0,}("
+            + re.escape(header)
+            + ")\s{0,}\n-{2,}\n([\s\S]*?)(?=-{2,}\n[^\n]*\n-{2,}\n|$)"
+        )
+
+        # Search ORCA output file
+        matches = re.findall(pattern, self.data["out"])
+
+        # Return "body" of each match
+        return [x[2].strip() for x in matches]
+
+    def _parse_protocol(self):
+        return self.data["inp"]
+
+    def _parse_geom(self):
+        return self.data["xyz"]
+
+    def _parse_energy(self):
+        # Split text
+        lines = self.data["property"].split("\n")
+
+        # Search for energy values
+        elines = [x for x in lines if "Total DFT Energy" in x]
+
+        # Energy values not found
+        if len(elines) == 0:
+            return None
+
+        # Map float over values
+        evals = [float(x.split()[-1].strip()) for x in elines]
+
+        # Return last energy value
+        return evals[-1]
+
+    def _parse_frequency(self):
+        # Define columns
+        columns = ["wavenumber", "eps", "intensity", "TX", "TY", "TZ"]
+
+        # Split sections by delimiter
+        blocks = self.data["hess"].split("$")
+
+        # Search for frequency values
+        freq_block = [x for x in blocks if x.startswith("ir_spectrum")]
+
+        # Frequency values not found
+        if len(freq_block) == 0:
+            return None
+
+        # Grab last frequency block
+        # Doubtful if more than one, but previous results in list
+        freq_block = freq_block[-1]
+
+        # Split block into lines
+        lines = freq_block.split("\n")
+
+        # Map float over values
+        vals = np.array(
+            [
+                list(map(float, x.split()))
+                for x in lines
+                if len(x.split()) == len(columns)
+            ]
+        )
+
+        # Zip columns and values
+        return dict(zip(columns, vals.T))
+
+    def _parse_timing(self):
+        # Grab only last few lines
+        lines = self.data["out"].split("\n")[-100:]
+
+        # Find start of timing section
+        parts = []
+        start_idx = None
+        for i, line in enumerate(lines):
+            if line.startswith("Timings for individual modules"):
+                start_idx = i + 2
+
+            # Strip out extraneous info
+            parts.append(
+                [x.strip() for x in line.split("  ") if x and x.strip() != "..."]
+            )
+
+        # Timing not found
+        if start_idx is None:
+            return None
+
+        # Split out timing section
+        tlines = lines[start_idx:]
+        tparts = parts[start_idx:]
+
+        # Individual timings
+        timings = [x for x in tparts if any([" sec " in y for y in x])]
+        timings = {x[0].strip("..."): float(x[1].split()[0]) for x in timings}
+
+        # Boolean indication of success
+        success = len([x for x in tlines if "ORCA TERMINATED NORMALLY" in x]) > 0
+        timings["success"] = success
+
+        # Total time
+        total_time = [x for x in tlines if "TOTAL RUN TIME" in x]
+
+        if len(total_time) > 0:
+            total_time = total_time[-1].split(":")[-1].strip()
+            times = list(map(int, total_time.split()[::2]))
+            units = total_time.split()[1::2]
+        else:
+            total_time = None
+
+        timings["Total run time"] = dict(zip(units, times))
+
+        return timings
+
+    def _parse_shielding(self):
+        # Filter comments
+        property = [
+            x.strip()
+            for x in self.data["property"].split("\n")
+            if not x.startswith("#")
+        ]
+        property = "\n".join(property)
+
+        # Split sections by delimiter
+        blocks = property.split("$ ")
+
+        # Search for shielding values
+        shielding_block = [x for x in blocks if x.startswith("EPRNMR_OrbitalShielding")]
+
+        # Shielding values not found
+        if len(shielding_block) == 0:
+            return None
+
+        # Grab last shielding block
+        # Doubtful if more than one, but previous results in list
+        shielding_block = shielding_block[-1]
+
+        # Define a pattern for extracting relevant information
+        pattern = re.compile(
+            r"Nucleus: (\d+) (\w+)\n(Shielding tensor.*?P\(iso\) \s*[-+]?\d*\.\d+)",
+            re.DOTALL,
+        )
+
+        # Match against pattern
+        matches = pattern.findall(shielding_block)
+
+        # Result container
+        shielding = {}
+
+        # Enumerate matches
+        for match in matches:
+            # Per-nucleus info
+            nucleus_index = match[0]
+            nucleus_name = match[1]
+            nucleus_data = match[2]
+
+            # Extracting values using regex
+            tensors = re.findall(r"(-?\d+\.\d+|-?\d+.\d+e[+-]\d+)", nucleus_data)
+            tensors = [float(val) for val in tensors]
+
+            # Creating arrays from extracted values
+            shielding_tensor = np.array(tensors[:9]).reshape(3, 3)
+            p_tensor_eigenvectors = np.array(tensors[9:18]).reshape(3, 3)
+            p_eigenvalues = np.array(tensors[18:21])
+            p_iso = float(tensors[21])
+
+            # Constructing the dictionary with nuclei index and name
+            shielding[f"{nucleus_index}{nucleus_name}"] = {
+                "shielding tensor": shielding_tensor,
+                "P tensor eigenvectors": p_tensor_eigenvectors,
+                "P eigenvalues": p_eigenvalues,
+                "P(iso)": p_iso,
+            }
+
+        # Add shielding summary
+        shielding["shielding_summary"] = self._parse_shielding_summary()
+
+        return shielding
+
+    def _parse_orbital_energies(self):
+        header = "ORBITAL ENERGIES"
+        text = self._find_output_by_header(header)
+
+        # Orbital energies not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        text = [x.strip() for x in text if x.strip() != "" and "*" not in x]
+        columns = text[0].split()
+        body = [x.split() for x in text[1:]]
+
+        # Construct data frame
+        df = pd.DataFrame(body, columns=columns, dtype=float)
+
+        # Map correct types
+        df["NO"] = df["NO"].astype(int)
+
+        # Drop unoccupied orbitals?
+        return df
+
+    def _parse_spin(self):
+        header = "SUMMARY OF ISOTROPIC COUPLING CONSTANTS (Hz)"
+        text = self._find_output_by_header(header)
+
+        # Spin couplings not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        text = [x.strip() for x in text if x.strip() != "" and "*" not in x]
+        columns = [x.replace(" ", "") for x in re.split("\s{2,}", text[0])]
+        body = [re.split("\s{2,}", x)[1:] for x in text[1:-1]]
+
+        # Construct data frame
+        return pd.DataFrame(body, dtype=float, columns=columns, index=columns)
+
+    def _parse_shielding_summary(self):
+        header = "CHEMICAL SHIELDING SUMMARY (ppm)"
+        text = self._find_output_by_header(header)
+
+        # Shielding values not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        text = [x.strip() for x in text if x.strip() != ""]
+
+        # Find stop index
+        stop_idx = -1
+        for i, row in enumerate(text):
+            if all([x == "-" for x in row]):
+                stop_idx = i
+                break
+
+        # Split columns and body
+        columns = text[0].split()
+        body = [x.split() for x in text[2:stop_idx]]
+
+        # Construct data frame
+        df = pd.DataFrame(body, columns=columns)
+
+        # Map correct types
+        for col, dtype in zip(df.columns, (int, str, float, float)):
+            df[col] = df[col].astype(dtype)
+        return df
+
+    def _parse_thermo(self):
+        # In hessian file
+        header = "THERMOCHEMISTRY_Energies"
+
+    def _parse_molden(self):
+        return None
+
+    def _parse_charge(self):
+        return None
+
+    def _parse_connectivity(self):
+        return None
+
+    def parse(self):
+        result = {
+            "protocol": self._parse_protocol(),
+            "geom": self._parse_geom(),
+            "total_dft_energy": self._parse_energy(),
+            "orbital_energies": self._parse_orbital_energies(),
+            "shielding": self._parse_shielding(),
+            "spin": self._parse_spin(),
+            "frequency": self._parse_frequency(),
+            "molden": self._parse_molden(),
+            "charge": self._parse_charge(),
+            "timing": self._parse_timing(),
+            "connectivity": self._parse_connectivity(),
+        }
+
+        # Pop success from timing
+        if result["timing"] is not None:
+            result["success"] = result["timing"].pop("success")
+        else:
+            result["success"] = False
+
+        # Filter empty fields
+        result = {k: v for k, v in result.items() if v is not None}
+
+        # Store attribute
+        self.result = result
+
+        return result
+
+    def save(self, path):
+        isicle.io.save_pickle(path, self.result)
 
 
 class NWChemParser(FileParserInterface):
@@ -365,7 +682,7 @@ class NWChemParser(FileParserInterface):
         Parameters
         ----------
         to_parse : list of str
-            geometry, energy, shielding, spin, frequency, molden, charge, timing 
+            geometry, energy, shielding, spin, frequency, molden, charge, timing
 
         """
 
@@ -760,13 +1077,15 @@ class XTBParser(FileParserInterface):
 
         # Check that the file is valid first
         if len(self.contents) == 0:
-            raise RuntimeError('No contents to parse: {}'.format(self.path))
-        
-        last_lines = ''.join(self.contents[-10:])
-        if ("terminat" not in last_lines) \
-           & ("normal" not in last_lines) \
-           & ("ratio" not in last_lines):
-            raise RuntimeError('XTB job failed: {}'.format(self.path))
+            raise RuntimeError("No contents to parse: {}".format(self.path))
+
+        last_lines = "".join(self.contents[-10:])
+        if (
+            ("terminat" not in last_lines)
+            & ("normal" not in last_lines)
+            & ("ratio" not in last_lines)
+        ):
+            raise RuntimeError("XTB job failed: {}".format(self.path))
 
         self.parse_crest = False
         self.parse_opt = False
@@ -774,10 +1093,10 @@ class XTBParser(FileParserInterface):
 
         # Initialize result object to store info
         result = {}
-        result['protocol'] = self._parse_protocol()
+        result["protocol"] = self._parse_protocol()
 
         try:
-            result['timing'] = self._parse_timing()
+            result["timing"] = self._parse_timing()
         except:
             pass
 
@@ -788,11 +1107,11 @@ class XTBParser(FileParserInterface):
 
         # Parse geometry from assoc. XYZ file
         try:
-            if self.path.endswith('xyz'):
+            if self.path.endswith("xyz"):
                 try:
                     self.xyz_path = self.path
-                    result['geom'] = self._parse_xyz()
-                
+                    result["geom"] = self._parse_xyz()
+
                 except:
                     pass
 
