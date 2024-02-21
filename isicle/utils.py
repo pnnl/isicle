@@ -99,8 +99,13 @@ class TypedList(collections.abc.MutableSequence):
 
 
 def atomic_masses():
-    path = resources.files('isicle') / 'resources/atomic_masses.tsv'
+    path = resources.files("isicle") / "resources/atomic_masses.tsv"
     return pd.read_csv(path, delim_whitespace=True)
+
+
+def tinker_lookup():
+    path = resources.files("isicle") / "resources/tinker_lookup.tsv"
+    return pd.read_csv(path, sep="\t")
 
 
 def gettempdir():
@@ -115,7 +120,6 @@ def gettempdir():
     """
     
     root = os.path.join(tempfile.gettempdir(), 'isicle')
-    
     os.makedirs(root, exist_ok=True)
     
     return root
@@ -138,7 +142,6 @@ def mkdtemp(prefix=None, suffix=None):
     -------
     str
         Path to temporary directory.
-
     """
 
     return tempfile.mkdtemp(dir=gettempdir(), prefix=prefix, suffix=suffix)
