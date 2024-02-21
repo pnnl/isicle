@@ -1,42 +1,41 @@
 import glob
 import os
 import subprocess
-from itertools import combinations, cycle
+from itertools import cycle
 from string import Template
 
 import isicle
-from isicle.geometry import XYZGeometry
 from isicle.interfaces import WrapperInterface
 from isicle.parse import NWChemParser
 from isicle.utils import safelist
 
 
-def _backend_selector(program):
+def _backend_selector(backend):
     """
     Selects a supported quantum mechanical backend for associated simulation.
     Currently only NWChem and ORCA have been implemented.
 
     Parameters
     ----------
-    program : str
+    backend : str
         Alias for backend selection (e.g. NWChem, ORCA).
 
     Returns
     -------
-    program
+    backend
         Wrapped functionality of the selected backend. Must implement
         :class:`~isicle.interfaces.WrapperInterface`.
 
     """
 
-    program_map = {'nwchem': NWChemWrapper,
+    backend_map = {'nwchem': NWChemWrapper,
                    'orca': ORCAWrapper}
 
-    if program.lower() in program_map.keys():
-        return program_map[program.lower()]()
+    if backend.lower() in backend_map.keys():
+        return backend_map[backend.lower()]()
     else:
-        raise ValueError(('{} not a supported quantum mechanical program.')
-                         .format(program))
+        raise ValueError(('{} not a supported quantum mechanical backend.')
+                         .format(backend))
 
 
 def dft(geom, backend='NWChem', **kwargs):
@@ -60,7 +59,7 @@ def dft(geom, backend='NWChem', **kwargs):
 
     """
 
-    # Select program
+    # Select backend
     return _backend_selector(backend).run(geom, **kwargs)
 
 
@@ -859,7 +858,7 @@ class NWChemWrapper(WrapperInterface):
             basis_set='6-31g*', ao_basis='cartesian', charge=0,
             atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
             gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-            mem_stack=600, scratch_dir=None, processes=12, command='nwchem'):
+            mem_stack=600, scratch_dir=None, processes=12):
         """
         Perform density functional theory calculations according to supplied task list
         and configuration parameters.
@@ -928,8 +927,7 @@ class NWChemWrapper(WrapperInterface):
                            cosmo=cosmo, solvent=solvent, gas=gas,
                            max_iter=max_iter, mem_global=mem_global,
                            mem_heap=mem_heap, mem_stack=mem_stack,
-                           scratch_dir=scratch_dir, processes=processes,
-                           command=command)
+                           scratch_dir=scratch_dir, processes=processes)
 
         # Run QM simulation
         self.submit()
