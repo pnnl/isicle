@@ -31,8 +31,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         """
 
-        self.__dict__.update(dict.fromkeys(
-            self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
     def get_basename(self):
@@ -69,13 +68,15 @@ class XYZGeometry(XYZGeometryInterface):
         # Add to attributes
         self.__dict__.update(d)
 
-    def dft(self, program='NWChem', **kwargs):
+    def dft(self, backend="NWChem", **kwargs):
         """
         Perform density functional theory calculations according to supplied task list
-        and configuration parameters for specified program (currently only NWChem).
+        and configuration parameters for specified backend.
 
         Parameters
         ----------
+        backend : str
+            Alias for backend selection (NWChem, ORCA).
         kwargs
             Keyword arguments supplied to selected program. See `run` method of relevant
             wrapper for configuration parameters, e.g. :meth:`~isicle.qm.NWChemWrapper.run`.
@@ -87,7 +88,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         """
 
-        return isicle.qm.dft(self, program=program, **kwargs)
+        return isicle.qm.dft(self, backend=backend, **kwargs)
 
     def md(self, program="xtb", **kwargs):
         """
@@ -240,8 +241,8 @@ class XYZGeometry(XYZGeometryInterface):
         d = self.__dict__.copy()
 
         # Safely copy mol if present
-        if 'mol' in d:
-            d['mol'] = self.to_mol()
+        if "mol" in d:
+            d["mol"] = self.to_mol()
 
         # Build self instance from scratch
         instance = type(self)(**d)
@@ -254,7 +255,7 @@ class XYZGeometry(XYZGeometryInterface):
     def to_xyzblock(self):
         """
         Get XYZ text for this structure.
-        
+
         Returns
         -------
         str
@@ -275,9 +276,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         self.temp_dir = isicle.utils.mkdtemp()
 
-        geomfile = os.path.join(self.temp_dir,
-                                '{}.{}'.format(self.basename,
-                                               "xyz"))
+        geomfile = os.path.join(self.temp_dir, "{}.{}".format(self.basename, "xyz"))
         isicle.io.save(geomfile, self)
 
         mols = list(pybel.readfile("xyz", geomfile))
@@ -297,8 +296,7 @@ class Geometry(XYZGeometry, GeometryInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(
-            self._defaults, self._default_value))
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
     def _is_embedded(self):
@@ -317,8 +315,7 @@ class Geometry(XYZGeometry, GeometryInterface):
             return True
         except:
             return False
-        
-    
+
     def addHs(self):
         """
         Add implicit hydrogens to molecule.
@@ -370,8 +367,7 @@ class Geometry(XYZGeometry, GeometryInterface):
                 if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
                     return Chem.AllChem.UFFOptimizeMolecule
                 else:
-                    raise ValueError(
-                        "UFF is not available for all atoms in molecule.")
+                    raise ValueError("UFF is not available for all atoms in molecule.")
             elif forcefield in ["mmff", "mmff94", "mmff94s"]:
                 if Chem.rdForceFieldHelpers.MMFFHasAllMoleculeParams(mw) is True:
                     return Chem.rdForceFieldHelpers.MMFFOptimizeMolecule
@@ -399,10 +395,8 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         # Optimize according to supplied forcefield
         if forcefield is not None:
-
             # Check if embedded
             if self._is_embedded():
-
                 # Forcefield selection
                 if "mmff94s" in forcefield.lower():
                     _forcefield_selector(forcefield, mol)(
@@ -410,10 +404,10 @@ class Geometry(XYZGeometry, GeometryInterface):
                     )
                 else:
                     _forcefield_selector(forcefield, mol)(mol, maxIters=ff_iter)
-            
+
             # Not embedded
             else:
-                raise ValueError('Molecule must have embedded 3D coordinates.')
+                raise ValueError("Molecule must have embedded 3D coordinates.")
 
         # Return copy with updated mol
         return self.__copy__(mol=mol)
@@ -525,8 +519,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         res = [mol]
         tauts = enumerator.Enumerate(mol)
         smis = [Chem.MolToSmiles(x) for x in tauts]
-        s_smis = sorted((x, y)
-                        for x, y in zip(smis, tauts) if x != self.to_smiles())
+        s_smis = sorted((x, y) for x, y in zip(smis, tauts) if x != self.to_smiles())
         res += [y for x, y in s_smis]
 
         # Ensure res is a list of mol objects
@@ -557,7 +550,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         Parameters
         ----------
         ion_path : str
-            Filepath to text file containing ions with charge (eg. `H+`) to be 
+            Filepath to text file containing ions with charge (eg. `H+`) to be
             considered. Either ion_path or ion_list must be specified.
         ion_list : list
             List of strings of adducts to be considered. Must be specifed in
@@ -588,7 +581,7 @@ class Geometry(XYZGeometry, GeometryInterface):
     def get_natoms(self):
         """
         Calculate total number of atoms.
-        
+
         Returns
         -------
         int
@@ -650,7 +643,7 @@ class Geometry(XYZGeometry, GeometryInterface):
     def get_charge(self):
         """
         Get formal charge of the molecule.
-        
+
         Returns
         -------
         int
@@ -668,12 +661,12 @@ class Geometry(XYZGeometry, GeometryInterface):
         ----------
         charge : int
             Formal charge of molecule.
-        
+
         """
 
         if charge is None:
             charge = self.get_charge()
-        
+
         self.__dict__.update(charge=int(charge))
 
     def __copy__(self, **kwargs):
@@ -684,7 +677,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         ----------
         kwargs
             Keyword arguments to update copy.
-        
+
         Returns
         -------
         :obj:`~isicle.geometry.Geometry`
@@ -696,12 +689,12 @@ class Geometry(XYZGeometry, GeometryInterface):
         d = self.__dict__.copy()
 
         # Safely copy mol if present
-        if 'mol' in d:
-            d['mol'] = self.to_mol()
+        if "mol" in d:
+            d["mol"] = self.to_mol()
 
         # Build self instance from scratch
         instance = type(self)(**d)
-        
+
         # Update from kwargs
         instance.__dict__.update(kwargs)
 
@@ -775,7 +768,7 @@ class Geometry(XYZGeometry, GeometryInterface):
     def to_pdbblock(self):
         """
         Get PDB text for this structure.
-        
+
         Returns
         -------
         str
@@ -788,7 +781,7 @@ class Geometry(XYZGeometry, GeometryInterface):
     def to_molblock(self):
         """
         Get :obj:`~rdkit.Chem.rdchem.Mol` text for this structure.
-        
+
         Returns
         -------
         str
