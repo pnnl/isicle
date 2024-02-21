@@ -31,7 +31,7 @@ def _program_selector(program):
     -------
     program
         Wrapped functionality of the selected program. Must implement
-        :class:`~isicle.interfaces.MDWrapperInterface`.
+        :class:`~isicle.interfaces.WrapperInterface`.
 
     """
 

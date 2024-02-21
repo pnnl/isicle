@@ -2,10 +2,10 @@ import abc
 
 
 class FileParserInterface(metaclass=abc.ABCMeta):
-    '''
+    """
     Abstract base class for file parser interface. All file parsers
     conform to this definition.
-    '''
+    """
 
     @classmethod
     def __subclasshook__(cls, subclass):
@@ -19,17 +19,17 @@ class FileParserInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def load(self, path: str):
-        '''Load in the data file'''
+        """Load in the data file"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def parse(self):
-        '''Extract relevant information from data'''
+        """Extract relevant information from data"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, path: str):
-        '''Write parsed object to file'''
+        """Write parsed object to file"""
         raise NotImplementedError
 
 
@@ -51,47 +51,41 @@ class XYZGeometryInterface(metaclass=abc.ABCMeta):
                 and callable(subclass.__copy__)
                 and hasattr(subclass, 'to_xyzblock')
                 and callable(subclass.to_xyzblock)
-                and hasattr(subclass, 'save_xyz')
-                and callable(subclass.save_xyz)
-                and hasattr(subclass, 'save_pickle')
-                and callable(subclass.save_pickle)
-                and hasattr(subclass, 'save')
-                and callable(subclass.save)
                 or NotImplemented)
 
     @abc.abstractmethod
     def dft(self):
-        '''Optimize geometry using density function theory (DFT) methods.'''
+        """Optimize geometry using density function theory (DFT) methods."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def md(self):
-        '''Optimize geometry using molecule dynamics methods (MD).'''
+        """Optimize geometry using molecule dynamics methods (MD)."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_natoms(self):
-        '''Count number of atoms'''
+        """Count number of atoms"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_atom_indices(self):
-        '''Extract indices of each atom from the internal geometry.'''
+        """Extract indices of each atom from the internal geometry."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def get___dict__(self):
-        '''Return a copy of this object's attributes dictionary'''
+        """Return a copy of this object's attributes dictionary"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def __copy__(self):
-        '''Return hard copy of this class instance.'''
+        """Return hard copy of this class instance."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def to_xyzblock(self):
-        '''Get XYZ text for this structure.'''
+        """Get XYZ text for this structure."""
         raise NotImplementedError
 
 
@@ -113,35 +107,34 @@ class GeometryInterface(XYZGeometryInterface):
 
     @abc.abstractmethod
     def to_mol(self, path: str):
-        '''Returns RDKit Mol object for this Geometry.'''
+        """Returns RDKit Mol object for this Geometry."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_total_partial_charge(self):
-        '''Determine total partial charge of molecule'''
+        """Determine total partial charge of molecule"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def to_smiles(self, path: str):
-        '''Return SMILES representation'''
+        """Return SMILES representation"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def to_inchi(self, path: str):
-        '''Return InChI representation'''
+        """Return InChI representation"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def to_smarts(self, path: str):
-        '''Return SMARTS representation'''
+        """Return SMARTS representation"""
         raise NotImplementedError
 
 
 class WrapperInterface(metaclass=abc.ABCMeta):
-    '''
-    Abstract base class for wrapper interface. All QM
-    wrappers conform to this definition.
-    '''
+    """
+    Abstract base class for wrapper interfaces.
+    """
 
     @classmethod
     def __subclasshook__(cls, subclass):
@@ -159,64 +152,25 @@ class WrapperInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_geometry(self):
-        '''Load the input geometry file'''
+        """Assign the input geometry."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def configure(self):
-        '''Configure the run.'''
+        """Configure the run."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def submit(self):
-        '''Configure the run.'''
+        """Configure the run."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def run(self):
-        '''Execute/submit the run.'''
+        """Execute/submit the run."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def finish(self, path: str):
-        '''Finalize, parse, return result object.'''
-        raise NotImplementedError
-
-
-class MDWrapperInterface(metaclass=abc.ABCMeta):
-    '''
-    Abstract base class for molecular dynamics wrapper interface. All QM
-    wrappers conform to this definition.
-    '''
-
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'set_geometry')
-                and callable(subclass.set_geometry)
-                and hasattr(subclass, 'job_type')
-                and callable(subclass.job_type)
-                and hasattr(subclass, 'run')
-                and callable(subclass.run)
-                and hasattr(subclass, 'finish')
-                and callable(subclass.finish)
-                or NotImplemented)
-
-    @abc.abstractmethod
-    def set_geometry(self):
-        '''Load the input geometry file'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def job_type(self):
-        '''Make list of jobs.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def run(self):
-        '''Execute/submit the run.'''
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def finish(self, path: str):
-        '''Finalize, parse, return result object.'''
+        """Finalize, parse, return result object."""
         raise NotImplementedError
