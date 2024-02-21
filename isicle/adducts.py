@@ -301,7 +301,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
 
         if self.geom.__dict__.get('charge') is None:
-            self.geom.__dict__.update(charge=self.geom.get_formal_charge())
+            self.geom.__dict__.update(charge=self.geom.get_charge())
 
     def _set_ions(self, ion_path=None, ion_list=None):
         '''
@@ -472,7 +472,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         '''
 
-        geom.__dict__.update(charge=geom.get_formal_charge())
+        geom.__dict__.update(charge=geom.get_charge())
 
     def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
@@ -983,9 +983,9 @@ class CRESTIonizationWrapper(WrapperInterface):
             if self.geom.load.get('filetype') == '.xyz':
                 # self.geom.__dict__.update(charge=charge)
                 raise ValueError(
-                    'Must first run geom.set_formal_charge for an xyz structure')
+                    'Must first run geom.set_charge for an xyz structure')
             else:
-                self.geom.__dict__.update(charge=self.geom.get_formal_charge())
+                self.geom.__dict__.update(charge=self.geom.get_charge())
 
     def _set_ions(self, ion_path=None, ion_list=None):
         cations, anions, complex = _parse_ions(

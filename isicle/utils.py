@@ -140,18 +140,16 @@ def gettempdir():
         Path to temporary directory.
 
     """
-
-    root = os.path.join(tempfile.gettempdir(), "isicle")
-
-    if not os.path.exists(root):
-        os.makedirs(root)
-
+    
+    root = os.path.join(tempfile.gettempdir(), 'isicle')
+    os.makedirs(root, exist_ok=True)
+    
     return root
 
 
 def mkdtemp(prefix=None, suffix=None):
     """
-    An ISiCLE-specific wrapper of :func:`~tempfile.mkdtemp` to create a
+    An ISiCLE-specific wrapper of :func:`~tempfile.mkdtemp` to create a 
     temporary directory for temporary ISiCLE files. The temporary directory
     is not automatically removed.
 
@@ -166,8 +164,6 @@ def mkdtemp(prefix=None, suffix=None):
     -------
     str
         Path to temporary directory.
-
-
     """
 
     return tempfile.mkdtemp(dir=gettempdir(), prefix=prefix, suffix=suffix)
