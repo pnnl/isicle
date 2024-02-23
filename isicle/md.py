@@ -10,6 +10,7 @@ import isicle
 from isicle.geometry import Geometry, XYZGeometry
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser, TINKERParser
+from isicle.utils import tinkerxyz_lookup
 
 """
 Files resulting from an xtb job always run in the same directory that the command is
@@ -762,233 +763,53 @@ class TINKERWrapper(Geometry, WrapperInterface):
         """
 
         # getting MMFF values for large atom types
-        def getMMFF_large_atom_type(mmff_props, atom, m):
-            small_to_large_list = [
-                [[]],
-                [[1]],
-                [[3, "C"], [2, "C=C"]],
-                [
-                    [4, "C=O"],
-                    [5, "C=N"],
-                    [6, "NC(N)=N"],
-                    [7, "CC=O"],
-                    [8, "NC=O"],
-                    [10, "NC(=O)N"],
-                    [11, "OC=O"],
-                    [12, "NC(=O)O"],
-                    [13, "NC(=O)O"],
-                    [14, "OC(=O)O"],
-                    [15, "SC=O"],
-                    [16, "NC=S"],
-                    [17, "C=S(O)O"],
-                    [18, "C=S=O"],
-                    [19, "SC=S"],
-                    [20, "C=P"],
-                ],
-                [[21, "C#[C,N]"], [22, "[C,N,O]=C=[C,N,O]"]],
-                [[23, "C[H]"], [24, "[Si][H]"]],
-                [
-                    [41, "O"],
-                    [25, "OC"],
-                    [26, "OC=O"],
-                    [27, "OC=C"],
-                    [27, "Occ"],
-                    [28, "OC=N"],
-                    [29, "OC=S"],
-                    [31, "ON=O"],
-                    [30, "O[N+]([O-])=O"],
-                    [36, "OS"],
-                    [34, "OSO"],
-                    [35, "OS=O"],
-                    [33, "OS(O)=O"],
-                    [32, "OS(O)(=O)=O"],
-                    [40, "OP"],
-                    [39, "OPO"],
-                    [38, "OP(=O)O"],
-                    [37, "OP(=O)(=O)O"],
-                ],
-                [
-                    [42, "C=O"],
-                    [44, "CC=O"],
-                    [43, "NC=O"],
-                    [45, "OC=O"],
-                    [46, "O=N"],
-                    [47, "S=O"],
-                    [48, "[C,N]=S=O"],
-                ],
-                [[49]],
-                [[50, "C=N"], [51, "N=N"]],
-                [[52, "NC=O"], [53, "NC=S"], [54, "NN=C"], [55, "NN=N"]],
-                [[56]],
-                [[57]],
-                [[58]],
-                [[59]],
-                [[60]],
-                [[61]],
-                [[62, "S=O"], [63, "S=N"]],
-                [
-                    [64, "O=S=O"],
-                    [70, "OSN"],
-                    [65, "N-S(=O)=O"],
-                    [66, "OS(O)O"],
-                    [67, "C"],
-                    [68, "OS(O)(O)O"],
-                    [69, "CS(O)(O)C"],
-                ],
-                [[71]],
-                [[72]],
-                [[74, "[H]O"], [73, "[H]OC"], [75, "[H][O-]"]],
-                [[76]],
-                [
-                    [82, "[H]N"],
-                    [77, "[H]N(C)C"],
-                    [78, "[H]N([H])[H]"],
-                    [79, "[H]n1cccc1"],
-                    [80, "[H]NO"],
-                    [81, "[H][N-]"],
-                ],
-                [[83, "[H]OC=O"], [84, "[H]OP"]],
-                [[89, "P"], [88, "PO"], [87, "OPO"], [86, "OP(O)O"], [89, "OP(O)(O)O"]],
-                [[90]],
-                [[91, "[H]N=N"], [92, "[H]N=C"]],
-                [
-                    [102, "[H]N"],
-                    [93, "[H]NC=O"],
-                    [94, "[H]NC=S"],
-                    [95, "[H]NC=C"],
-                    [96, "[H]NC=N"],
-                    [97, "[H]NN=C"],
-                    [98, "[H]NN=N"],
-                    [99, "[H]NS=O"],
-                    [100, "[H]NP=O"],
-                    [101, "[H]N#[C,N]"],
-                ],
-                [[103, "[H]OC=C"], [104, "[C]OC=N"]],
-                [[105]],
-                [[106]],
-                [
-                    [107, "[O-]C=O"],
-                    [108, "NO"],
-                    [109, "ON=O"],
-                    [110, "O[N+]([O-])=O"],
-                    [111, "[O-][N+]([O-])=O"],
-                    [112, "OS"],
-                    [113, "OS=O"],
-                    [114, "OS(=O)=O"],
-                    [115, "OS(=O)(=O)O"],
-                    [116, "O=[S-]S"],
-                    [117, "OP"],
-                    [118, "OPO"],
-                    [119, "OP(=O)O"],
-                    [120, "OP(=O)(=O)"],
-                    [121, "OCl(=O)(=O)[O-]"],
-                ],
-                [[122]],
-                [[123]],
-                [[124, "[O-]"], [125, "[O-]C=[C,N]"]],
-                [
-                    [126, "[H][N+][H,C][H,C][H,C]"],
-                    [127, "C1=[NH+]C=CN1"],
-                    [128, "C1=C[NH+]=CC=C1"],
-                    [129, "CC(N)=[NH2+]"],
-                    [130, "C=[NH2+]"],
-                    [131, "NC(N)=[NH2+]"],
-                    [132, "[H]N([H])([H])([H])[H]"],
-                ],
-                [[133]],
-                [[134]],
-                [[135]],
-                [[136, "NC=C"], [137, "NC=N"], [138, "NC=P"], [139, "NC#C"]],
-                [[140, "[O-]C=O"], [141, "[S-]C=S"]],
-                [[142]],
-                [
-                    [143, "NS(=O)O"],
-                    [144, "NS(=O)(=O)O"],
-                    [145, "NP(=O)O"],
-                    [146, "NP(=O)(=O)O"],
-                    [147, "NC#N"],
-                ],
-                [[148]],
-                [[149, "ON=O"], [150, "O[N+][O-]=O"]],
-                [[151]],
-                [[152]],
-                [[153]],
-                [[154]],
-                [[155]],
-                [[156]],
-                [[157]],
-                [[158]],
-                [[159, "[N+]=C"], [160, "[N+]=N"]],
-                [[161]],
-                [[162]],
-                [[163, "NC(N)=[NH2+]"], [164, "[N+]=CN"]],
-                [[165]],
-                [[166]],
-                [[167]],
-                [[168]],
-                [[169]],
-                [[170]],
-                [[171]],
-                [[172]],
-                [[173]],
-                [[174]],
-                [[175]],
-                [[176]],
-                [[177]],
-                [[178, "[H]S"], [179, "[H]S=N"], [180, "[H]P"]],
-                [[181, "SP"], [183, "[S-]"], [182, "[S-]C=S"], [184, "[S-]S(=O)"]],
-                [[185, "[O-]S=O"], [186, "[O-]S=S"]],
-                [[187]],
-                [[188]],
-                [[189]],
-                [[190]],
-                [[191]],
-                [[192]],
-                [[193]],
-                [
-                    [194, "N[N+]1=CNC=C1"],
-                    [195, "[H][N+]([H])([H])([H])[H]"],
-                    [196, "[H][N+]([H])([H])([H])[H]"],
-                    [197, "[H][N+]([H])([H])([H])[H]"],
-                ],
-                [
-                    [198, "[H][N+]([H])([H])([H])[H]"],
-                    [199, "[H][N+]([H])([H])([H])[H]"],
-                    [200, "[H][N+]([H])([H])([H])[H]"],
-                ],
-                [[-1]],
-                [[-1]],
-                [[-1]],
-                [[-1]],
-                [[201]],
-                [[202]],
-                [[203]],
-                [[204]],
-                [[205]],
-                [[206]],
-                [[207]],
-                [[208]],
-                [[209, "[Zn]"], [210, "[Zn++]"]],
-                [[211]],
-                [[212]],
-                [[213]],
-                [[214]],
-            ]
+        def getMMFF_large_atom_type(mmff_props, atom, mol, xyzref):
+            def split_lookup(x):
+                if len(x) == 2:
+                    return [x[0], x[1]]
+                elif len(x) == 1:
+                    return [x[0], ""]
+                elif len(x) == 0:
+                    return [None, ""]
+                else:
+                    raise ValueError("Unexpected length from lookup file.")
+
+            def substructure_check(x, m):
+                substruc = Chem.MolFromSmarts(x)
+                return m.GetSubstructMatches(substruc)
+
+            def update_large_atom(x, atom):
+                for elem in x["check"]:
+                    if elem.count(atom.GetIdx()) > 0:
+                        return 1
+                return 0
 
             MMFF_small_atom_type = mmff_props.GetMMFFAtomType(atom.GetIdx())
-            MMFF_large_atom_type = small_to_large_list[MMFF_small_atom_type][0][0]
-            if len(small_to_large_list[MMFF_small_atom_type]) > 1:
-                for atom_info in small_to_large_list[MMFF_small_atom_type]:
-                    substructure = Chem.MolFromSmarts(atom_info[1])
-                    for substructure_match in m.GetSubstructMatches(substructure):
-                        if substructure_match.count(atom.GetIdx()) > 0:
-                            MMFF_large_atom_type = atom_info[0]
-            return MMFF_large_atom_type
+            xyzref_subset = xyzref.loc[MMFF_small_atom_type,]
+            xyzref_subset = xyzref_subset.reset_index()
+            check_len = len(xyzref_subset)
+            if check_len > 1:
+                xyzref_subset[["id", "substructure"]] = xyzref_subset.apply(
+                    lambda x: split_lookup(x.lookup),
+                    axis="columns",
+                    result_type="expand",
+                )
+                xyzref_subset["check"] = xyzref_subset["substructure"].apply(
+                    lambda x: substructure_check(x, mol)
+                )
+                xyzref_subset["update"] = xyzref_subset.apply(
+                    lambda x: update_large_atom(x, atom), axis="columns"
+                )
+                return (
+                    xyzref_subset[xyzref_subset["update"] > 0].tail(1)["id"].values[0]
+                )
+            else:
+                return xyzref_subset["lookup"].values[0][0]
 
         mol = self.geom.mol
         conf = mol.GetConformer()
         mmff_props = AllChem.MMFFGetMoleculeProperties(mol)
-
+        xyzref = tinkerxyz_lookup()
         xyz = ""
 
         # Set header line with number of atoms and basename
@@ -1011,13 +832,13 @@ class TINKERWrapper(Geometry, WrapperInterface):
                 list(conf.GetAtomPosition(atom.GetIdx()))[0],
                 list(conf.GetAtomPosition(atom.GetIdx()))[1],
                 list(conf.GetAtomPosition(atom.GetIdx()))[2],
-                getMMFF_large_atom_type(mmff_props, atom, mol),
+                getMMFF_large_atom_type(mmff_props, atom, mol, xyzref),
                 attached_atoms,
             )
 
         return xyz
 
-    def set_geometry(self, geom):
+    def set_geometry(self, geom, forcefield="UFF", ff_iter=200):
         """
         Set :obj:`~isicle.geometry.Geometry` instance for simulation.
 
@@ -1029,6 +850,11 @@ class TINKERWrapper(Geometry, WrapperInterface):
         """
 
         # Assign geometry
+        if not geom._is_embedded(geom.mol):
+            geom = geom.initial_optimize(
+                embed=True, forcefield=forcefield, ff_iter=ff_iter
+            )
+
         self.geom = geom
         self.basename = self.geom.basename
 
