@@ -687,20 +687,6 @@ class ConfpassEnsemble(ConformationalEnsemble):
         assert len(value) == 1, "all basenames are not equal"
         self.basename = value[0]
 
-    def _save_sdf(self, MolObjs):
-        """
-        Save conformational ensemble as multi-molecule SDF file.
-
-        Parameters
-        ----------
-        path : str
-            Path to output file.
-        """
-        w = Chem.SDWriter(self.sdf_file)
-        for m in MolObjs:
-            w.write(m)
-        w = None
-
     def save_geometry(self):
         """
         Save internal conformational ensemble geometry representation to SDF file.
@@ -714,7 +700,7 @@ class ConfpassEnsemble(ConformationalEnsemble):
         # create, save temporary multi-molecule sdf file
         self.temp_dir = mkdtemp()
         self.sdf_file = join(self.temp_dir, "{}.{}".format(self.basename, "sdf"))
-        self._save_sdf(pms)
+        io.save(self.sdf_file, pms)
 
     def _apply_preopt(self, method, x=0.8, x_as=0.2, n=3):
         """
