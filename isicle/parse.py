@@ -1,16 +1,336 @@
-from isicle.interfaces import FileParserInterface
-import pandas as pd
-from os.path import splitext
 import glob
 import os
 import pickle
+import re
+from os.path import splitext
+
 import numpy as np
+import pandas as pd
 from openbabel import pybel
+
 import isicle
+from isicle.interfaces import FileParserInterface
+
+
+class ORCAParser(FileParserInterface):
+    """Extract information from an ORCA simulation output files."""
+
+    def __init__(self, data=None):
+        self.data = data
+
+        self.result = {}
+
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
+
+    def _find_output_by_header(self, header):
+        # Fat regex
+        pattern = (
+            r"(-{2,})\n\s{0,}("
+            + re.escape(header)
+            + ")\s{0,}\n-{2,}\n([\s\S]*?)(?=-{2,}\n[^\n]*\n-{2,}\n|$)"
+        )
+
+        # Search ORCA output file
+        matches = re.findall(pattern, self.data["out"])
+
+        # Return "body" of each match
+        return [x[2].strip() for x in matches]
+
+    def _parse_protocol(self):
+        return self.data["inp"]
+
+    def _parse_geom(self):
+        return self.data["xyz"]
+
+    def _parse_energy(self):
+        # Split text
+        lines = self.data["property"].split("\n")
+
+        # Search for energy values
+        elines = [x for x in lines if "Total DFT Energy" in x]
+
+        # Energy values not found
+        if len(elines) == 0:
+            return None
+
+        # Map float over values
+        evals = [float(x.split()[-1].strip()) for x in elines]
+
+        # Return last energy value
+        return evals[-1]
+
+    def _parse_frequency(self):
+        # Define columns
+        columns = ["wavenumber", "eps", "intensity", "TX", "TY", "TZ"]
+
+        # Split sections by delimiter
+        blocks = self.data["hess"].split("$")
+
+        # Search for frequency values
+        freq_block = [x for x in blocks if x.startswith("ir_spectrum")]
+
+        # Frequency values not found
+        if len(freq_block) == 0:
+            return None
+
+        # Grab last frequency block
+        # Doubtful if more than one, but previous results in list
+        freq_block = freq_block[-1]
+
+        # Split block into lines
+        lines = freq_block.split("\n")
+
+        # Map float over values
+        vals = np.array(
+            [
+                list(map(float, x.split()))
+                for x in lines
+                if len(x.split()) == len(columns)
+            ]
+        )
+
+        # Zip columns and values
+        return dict(zip(columns, vals.T))
+
+    def _parse_timing(self):
+        # Grab only last few lines
+        lines = self.data["out"].split("\n")[-100:]
+
+        # Find start of timing section
+        parts = []
+        start_idx = None
+        for i, line in enumerate(lines):
+            if line.startswith("Timings for individual modules"):
+                start_idx = i + 2
+
+            # Strip out extraneous info
+            parts.append(
+                [x.strip() for x in line.split("  ") if x and x.strip() != "..."]
+            )
+
+        # Timing not found
+        if start_idx is None:
+            return None
+
+        # Split out timing section
+        tlines = lines[start_idx:]
+        tparts = parts[start_idx:]
+
+        # Individual timings
+        timings = [x for x in tparts if any([" sec " in y for y in x])]
+        timings = {x[0].strip("..."): float(x[1].split()[0]) for x in timings}
+
+        # Boolean indication of success
+        success = len([x for x in tlines if "ORCA TERMINATED NORMALLY" in x]) > 0
+        timings["success"] = success
+
+        # Total time
+        total_time = [x for x in tlines if "TOTAL RUN TIME" in x]
+
+        if len(total_time) > 0:
+            total_time = total_time[-1].split(":")[-1].strip()
+            times = list(map(int, total_time.split()[::2]))
+            units = total_time.split()[1::2]
+        else:
+            total_time = None
+
+        timings["Total run time"] = dict(zip(units, times))
+
+        return timings
+
+    def _parse_shielding(self):
+        # Filter comments
+        property = [
+            x.strip()
+            for x in self.data["property"].split("\n")
+            if not x.startswith("#")
+        ]
+        property = "\n".join(property)
+
+        # Split sections by delimiter
+        blocks = property.split("$ ")
+
+        # Search for shielding values
+        shielding_block = [x for x in blocks if x.startswith("EPRNMR_OrbitalShielding")]
+
+        # Shielding values not found
+        if len(shielding_block) == 0:
+            return None
+
+        # Grab last shielding block
+        # Doubtful if more than one, but previous results in list
+        shielding_block = shielding_block[-1]
+
+        # Define a pattern for extracting relevant information
+        pattern = re.compile(
+            r"Nucleus: (\d+) (\w+)\n(Shielding tensor.*?P\(iso\) \s*[-+]?\d*\.\d+)",
+            re.DOTALL,
+        )
+
+        # Match against pattern
+        matches = pattern.findall(shielding_block)
+
+        # Result container
+        shielding = {}
+
+        # Enumerate matches
+        for match in matches:
+            # Per-nucleus info
+            nucleus_index = match[0]
+            nucleus_name = match[1]
+            nucleus_data = match[2]
+
+            # Extracting values using regex
+            tensors = re.findall(r"(-?\d+\.\d+|-?\d+.\d+e[+-]\d+)", nucleus_data)
+            tensors = [float(val) for val in tensors]
+
+            # Creating arrays from extracted values
+            shielding_tensor = np.array(tensors[:9]).reshape(3, 3)
+            p_tensor_eigenvectors = np.array(tensors[9:18]).reshape(3, 3)
+            p_eigenvalues = np.array(tensors[18:21])
+            p_iso = float(tensors[21])
+
+            # Constructing the dictionary with nuclei index and name
+            shielding[f"{nucleus_index}{nucleus_name}"] = {
+                "shielding tensor": shielding_tensor,
+                "P tensor eigenvectors": p_tensor_eigenvectors,
+                "P eigenvalues": p_eigenvalues,
+                "P(iso)": p_iso,
+            }
+
+        # Add shielding summary
+        shielding["shielding_summary"] = self._parse_shielding_summary()
+
+        return shielding
+
+    def _parse_orbital_energies(self):
+        header = "ORBITAL ENERGIES"
+        text = self._find_output_by_header(header)
+
+        # Orbital energies not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        text = [x.strip() for x in text if x.strip() != "" and "*" not in x]
+        columns = text[0].split()
+        body = [x.split() for x in text[1:]]
+
+        # Construct data frame
+        df = pd.DataFrame(body, columns=columns, dtype=float)
+
+        # Map correct types
+        df["NO"] = df["NO"].astype(int)
+
+        # Drop unoccupied orbitals?
+        return df
+
+    def _parse_spin(self):
+        header = "SUMMARY OF ISOTROPIC COUPLING CONSTANTS (Hz)"
+        text = self._find_output_by_header(header)
+
+        # Spin couplings not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        text = [x.strip() for x in text if x.strip() != "" and "*" not in x]
+        columns = [x.replace(" ", "") for x in re.split("\s{2,}", text[0])]
+        body = [re.split("\s{2,}", x)[1:] for x in text[1:-1]]
+
+        # Construct data frame
+        return pd.DataFrame(body, dtype=float, columns=columns, index=columns)
+
+    def _parse_shielding_summary(self):
+        header = "CHEMICAL SHIELDING SUMMARY (ppm)"
+        text = self._find_output_by_header(header)
+
+        # Shielding values not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        text = [x.strip() for x in text if x.strip() != ""]
+
+        # Find stop index
+        stop_idx = -1
+        for i, row in enumerate(text):
+            if all([x == "-" for x in row]):
+                stop_idx = i
+                break
+
+        # Split columns and body
+        columns = text[0].split()
+        body = [x.split() for x in text[2:stop_idx]]
+
+        # Construct data frame
+        df = pd.DataFrame(body, columns=columns)
+
+        # Map correct types
+        for col, dtype in zip(df.columns, (int, str, float, float)):
+            df[col] = df[col].astype(dtype)
+        return df
+
+    def _parse_thermo(self):
+        # In hessian file
+        header = "THERMOCHEMISTRY_Energies"
+
+    def _parse_molden(self):
+        return None
+
+    def _parse_charge(self):
+        return None
+
+    def _parse_connectivity(self):
+        return None
+
+    def parse(self):
+        result = {
+            "protocol": self._parse_protocol(),
+            "geom": self._parse_geom(),
+            "total_dft_energy": self._parse_energy(),
+            "orbital_energies": self._parse_orbital_energies(),
+            "shielding": self._parse_shielding(),
+            "spin": self._parse_spin(),
+            "frequency": self._parse_frequency(),
+            "molden": self._parse_molden(),
+            "charge": self._parse_charge(),
+            "timing": self._parse_timing(),
+            "connectivity": self._parse_connectivity(),
+        }
+
+        # Pop success from timing
+        if result["timing"] is not None:
+            result["success"] = result["timing"].pop("success")
+        else:
+            result["success"] = False
+
+        # Filter empty fields
+        result = {k: v for k, v in result.items() if v is not None}
+
+        # Store attribute
+        self.result = result
+
+        return result
+
+    def save(self, path):
+        isicle.io.save_pickle(path, self.result)
 
 
 class NWChemParser(FileParserInterface):
-    """Extract text from an NWChem simulation output file."""
+    """
+    Extract text from an NWChem simulation output file.
+    """
 
     def __init__(self):
         self.contents = None
@@ -18,13 +338,18 @@ class NWChemParser(FileParserInterface):
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
         self.path = path
         return self.contents
 
     def _parse_geometry(self):
+        """
+        Add docstring
+        """
         search = os.path.dirname(self.path)
         geoms = sorted(glob.glob(os.path.join(search, "*.xyz")))
 
@@ -34,6 +359,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_energy(self):
+        """
+        Add docstring
+        """
         # TO DO: Add Initial energy and final energy if different
 
         # Init
@@ -48,6 +376,9 @@ class NWChemParser(FileParserInterface):
         return energy
 
     def _parse_shielding(self):
+        """
+        Add docstring
+        """
         # Init
         ready = False
         shield_idxs = []
@@ -78,6 +409,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_spin(self):
+        """
+        Add docstring
+        """
         # TO DO: Add g-factors
 
         # Declaring couplings
@@ -117,6 +451,9 @@ class NWChemParser(FileParserInterface):
         }
 
     def _parse_frequency(self):
+        """
+        Add docstring
+        """
         # TO DO: Add freq intensities
         # TO DO: Add rotational/translational/vibrational Cv and entropy
         freq = None
@@ -185,6 +522,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_charge(self):
+        """
+        Add docstring
+        """
         # TO DO: Parse molecular charge and atomic charges
         # TO DO: Add type of charge
         # TO DO: Multiple instances of charge analysis seen (two Mulliken and one Lowdin, difference?)
@@ -234,6 +574,9 @@ class NWChemParser(FileParserInterface):
         raise Exception
 
     def _parse_timing(self):
+        """
+        Add docstring
+        """
         # Init
         indices = []
         preoptTime = 0
@@ -284,6 +627,9 @@ class NWChemParser(FileParserInterface):
         }
 
     def _parse_molden(self):
+        """
+        Add docstring
+        """
         search = splitext(self.path)[0]
         m = glob.glob(search + "*.molden")
 
@@ -293,7 +639,9 @@ class NWChemParser(FileParserInterface):
         return m[0]
 
     def _parse_protocol(self):
-        """Parse out dft protocol"""
+        """
+        Parse out dft protocol
+        """
         functional = []
         basis_set = []
         solvation = []
@@ -338,6 +686,9 @@ class NWChemParser(FileParserInterface):
         }
 
     def _parse_connectivity(self):
+        """
+        Add docstring
+        """
         coor_substr = "internuclear distances"
 
         # Extracting Atoms & Coordinates
@@ -360,12 +711,13 @@ class NWChemParser(FileParserInterface):
 
     def parse(self):
         """
-        Extract relevant information from NWChem output
+        Extract relevant information from NWChem output.
 
         Parameters
         ----------
         to_parse : list of str
             geometry, energy, shielding, spin, frequency, molden, charge, timing
+
         """
 
         # Check that the file is valid first
@@ -437,21 +789,30 @@ class NWChemParser(FileParserInterface):
 
 
 class ImpactParser(FileParserInterface):
-    """Extract text from an Impact mobility calculation output file."""
+    """
+    Extract text from an Impact mobility calculation output file.
+    """
 
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "rb") as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
 
         # Check CCS results == 1
         count = 0
@@ -488,27 +849,38 @@ class ImpactParser(FileParserInterface):
         return result  # TODO: return CCS?
 
     def save(self, path: str, sep="\t"):
-        """Write parsed object to file"""
+        """
+        Write parsed object to file
+        """
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 
 class MobcalParser(FileParserInterface):
-    """Extract text from a MOBCAL mobility calculation output file."""
+    """
+    Extract text from a MOBCAL mobility calculation output file.
+    """
 
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = {}
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
 
         return self.contents
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
         done = False
         for line in self.contents:
             # if "average (second order) TM mobility" in line:
@@ -525,41 +897,63 @@ class MobcalParser(FileParserInterface):
         return self.result
 
     def save(self, path: str, sep="\t"):
-        """Write parsed object to file"""
+        """
+        Write parsed object to file
+        """
         pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
         return
 
 
 class SanderParser(FileParserInterface):
-    """Extract text from an Sander simulated annealing simulation output file."""
+    """
+    Extract text from an Sander simulated annealing simulation output file.
+    """
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         raise NotImplementedError
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
         raise NotImplementedError
 
     def save(self, path: str):
-        """Write parsed object to file"""
+        """
+        Write parsed object to file
+        """
         raise NotImplementedError
 
 
 class XTBParser(FileParserInterface):
+    """
+    Add docstring
+    """
+
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = None
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
         self.path = path
         # return self.contents
 
     def _crest_energy(self):
+        """
+        Add docstring
+        """
         relative_energy = []
         total_energy = []
         population = []
@@ -588,6 +982,10 @@ class XTBParser(FileParserInterface):
         }
 
     def _crest_timing(self):
+        """
+        Add docstring
+        """
+
         def grab_time(line):
             line = line.replace(" ", "")
             line = line.split(":")
@@ -626,6 +1024,9 @@ class XTBParser(FileParserInterface):
         }
 
     def _isomer_energy(self):
+        """
+        Add docstring
+        """
         complete = False
         relative_energies = []
         total_energies = []
@@ -647,6 +1048,10 @@ class XTBParser(FileParserInterface):
         return {"relative energy": relative_energies, "total energy": total_energies}
 
     def _isomer_timing(self):
+        """
+        Add docstring
+        """
+
         def grab_time(line):
             line = line.replace(" ", "")
             line = line.split(":")
@@ -670,6 +1075,9 @@ class XTBParser(FileParserInterface):
         }
 
     def _opt_energy(self):
+        """
+        Add docstring
+        """
         for line in self.contents:
             if "TOTAL ENERGY" in line:
                 energy = line.split()[3] + " Hartrees"
@@ -677,6 +1085,10 @@ class XTBParser(FileParserInterface):
         return {"Total energy": energy}
 
     def _opt_timing(self):
+        """
+        Add docstring
+        """
+
         def grab_time(line):
             line = line.replace(" ", "")
             line = line.split(":")
@@ -707,6 +1119,9 @@ class XTBParser(FileParserInterface):
         }
 
     def _parse_energy(self):
+        """
+        Add docstring
+        """
         if self.parse_crest == True:
             return self._crest_energy()
         if self.parse_opt == True:
@@ -715,6 +1130,9 @@ class XTBParser(FileParserInterface):
             return self._isomer_energy()
 
     def _parse_timing(self):
+        """
+        Add docstring
+        """
         if self.parse_crest == True:
             return self._crest_timing()
         if self.parse_opt == True:
@@ -723,6 +1141,9 @@ class XTBParser(FileParserInterface):
             return self._isomer_timing()
 
     def _parse_protocol(self):
+        """
+        Add docstring
+        """
         protocol = None
 
         for line in self.contents:
@@ -755,14 +1176,21 @@ class XTBParser(FileParserInterface):
         return isicle.conformers.ConformationalEnsemble(x)
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
 
         # Check that the file is valid first
         if len(self.contents) == 0:
             raise RuntimeError("No contents to parse: {}".format(self.path))
-        if "terminated normally" not in self.contents[-1]:
-            if "ratio" not in self.contents[-2]:
-                raise RuntimeError("XTB job failed: {}".format(self.path))
+
+        last_lines = "".join(self.contents[-10:])
+        if (
+            ("terminat" not in last_lines)
+            & ("normal" not in last_lines)
+            & ("ratio" not in last_lines)
+        ):
+            raise RuntimeError("XTB job failed: {}".format(self.path))
 
         self.parse_crest = False
         self.parse_opt = False
@@ -770,11 +1198,8 @@ class XTBParser(FileParserInterface):
 
         # Initialize result object to store info
         result = {}
+        result["protocol"] = self._parse_protocol()
 
-        try:
-            result["protocol"] = self._parse_protocol()
-        except:
-            pass
         try:
             result["timing"] = self._parse_timing()
         except:
@@ -788,13 +1213,12 @@ class XTBParser(FileParserInterface):
         # Parse geometry from assoc. XYZ file
         try:
             if self.path.endswith("xyz"):
-                if "geometry" in to_parse:
-                    try:
-                        self.xyz_path = self.path
-                        result["geom"] = self._parse_xyz()
+                try:
+                    self.xyz_path = self.path
+                    result["geom"] = self._parse_xyz()
 
-                    except:
-                        pass
+                except:
+                    pass
 
             if self.path.endswith("out") or self.path.endswith("log"):
                 # try geometry parsing
@@ -835,24 +1259,39 @@ class XTBParser(FileParserInterface):
         return result
 
     def save(self, path):
+        """
+        Add docstring
+        """
         with open(path, "wb") as f:
             pickle.dump(self, f)
         return
 
 
 class TINKERParser(FileParserInterface):
+    """
+    Add docstring
+    """
+
     def __init__(self):
+        """
+        Add docstring
+        """
         self.contents = None
         self.result = None
         self.path = None
 
     def load(self, path: str):
-        """Load in the data file"""
+        """
+        Load in the data file
+        """
         with open(path, "r") as f:
             self.contents = f.readlines()
         self.path = path
 
     def _parse_energy(self):
+        """
+        Add docstring
+        """
         inp = self.contents
         if len(inp) < 13:
             quit()
@@ -869,7 +1308,12 @@ class TINKERParser(FileParserInterface):
         return energies
 
     def _parse_conformers(self):
+        """
+        Add docstring
+        """
+
         def parse_atom_symbol(AtomNum):
+            # TODO: modify lookup to use resources/atomic_masses.tsv
             Lookup = [
                 "H",
                 "He",
@@ -970,434 +1414,8 @@ class TINKERParser(FileParserInterface):
         conffile.close()
         conformers = []
         atoms = []
-        atomtypes = [
-            "CR",
-            "C=C",
-            "CSP",
-            "C=O",
-            "C=N",
-            "CGD",
-            "C=O",
-            "C=O",
-            "CON",
-            "COO",
-            "COO",
-            "COO",
-            "C=O",
-            "C=S",
-            "C=S",
-            "CSO",
-            "CS=",
-            "CSS",
-            "C=P",
-            "CSP",
-            "=C=",
-            "HC",
-            "HSI",
-            "OR",
-            "OC=",
-            "OC=",
-            "OC=",
-            "OC=",
-            "ONO",
-            "ON=",
-            "OSO",
-            "OSO",
-            "OSO",
-            "OS=",
-            "-OS",
-            "OPO",
-            "OPO",
-            "OPO",
-            "-OP",
-            "-O-",
-            "O=C",
-            "O=C",
-            "O=C",
-            "O=C",
-            "O=N",
-            "O=S",
-            "O=S",
-            "NR",
-            "N=C",
-            "N=N",
-            "NC=",
-            "NC=",
-            "NN=",
-            "NN=",
-            "F",
-            "CL",
-            "BR",
-            "I",
-            "S",
-            "S=C",
-            "S=O",
-            ">S=",
-            "SO2",
-            "SO2",
-            "SO3",
-            "SO4",
-            "=SO",
-            "SNO",
-            "SI",
-            "CR4",
-            "HOR",
-            "HO",
-            "HOM",
-            "CR3",
-            "HNR",
-            "H3N",
-            "HPY",
-            "HNO",
-            "HNM",
-            "HN",
-            "HOC",
-            "HOP",
-            "PO4",
-            "PO3",
-            "PO2",
-            "PO",
-            "PTE",
-            "P",
-            "HN=",
-            "HN=",
-            "HNC",
-            "HNC",
-            "HNC",
-            "HNC",
-            "HNN",
-            "HNN",
-            "HNS",
-            "HNP",
-            "HNC",
-            "HSP",
-            "HOC",
-            "HOC",
-            "CE4",
-            "HOH",
-            "O2C",
-            "OXN",
-            "O2N",
-            "O2N",
-            "O3N",
-            "O-S",
-            "O2S",
-            "O3S",
-            "O4S",
-            "OSM",
-            "OP",
-            "O2P",
-            "O3P",
-            "O4P",
-            "O4C",
-            "HOS",
-            "NR+",
-            "OM",
-            "OM2",
-            "HNR",
-            "HIM",
-            "HPD",
-            "HNN",
-            "HNC",
-            "HGD",
-            "HN5",
-            "CB",
-            "NPY",
-            "NPY",
-            "NC=",
-            "NC=",
-            "NC=",
-            "NC%",
-            "CO2",
-            "CS2",
-            "NSP",
-            "NSO",
-            "NSO",
-            "NPO",
-            "NPO",
-            "NC%",
-            "STH",
-            "NO2",
-            "NO3",
-            "N=O",
-            "NAZ",
-            "NSO",
-            "O+",
-            "HO+",
-            "O=+",
-            "HO=",
-            "=N=",
-            "N+=",
-            "N+=",
-            "NCN",
-            "NGD",
-            "CGD",
-            "CNN",
-            "NPD",
-            "OFU",
-            "C%",
-            "NR%",
-            "NM",
-            "C5A",
-            "C5B",
-            "N5A",
-            "N5B",
-            "N2O",
-            "N3O",
-            "NPO",
-            "OH2",
-            "HS",
-            "HS=",
-            "HP",
-            "S-P",
-            "S2C",
-            "SM",
-            "SSM",
-            "SO2",
-            "SSO",
-            "=S=",
-            "-P=",
-            "N5M",
-            "CLO",
-            "C5",
-            "N5",
-            "CIM",
-            "NIM",
-            "N5A",
-            "N5B",
-            "N5+",
-            "N5A",
-            "N5B",
-            "N5O",
-            "FE+",
-            "FE+",
-            "F-",
-            "CL-",
-            "BR-",
-            "LI+",
-            "NA+",
-            "K+",
-            "ZIN",
-            "ZN+",
-            "CA+",
-            "CU+",
-            "CU+",
-            "MG+",
-        ]
-        anums = [
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            6,
-            1,
-            1,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            9,
-            17,
-            35,
-            53,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            14,
-            6,
-            1,
-            1,
-            1,
-            6,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            15,
-            15,
-            15,
-            15,
-            15,
-            15,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            6,
-            1,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            1,
-            7,
-            8,
-            8,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            6,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            6,
-            6,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            16,
-            7,
-            7,
-            7,
-            7,
-            7,
-            8,
-            1,
-            8,
-            1,
-            7,
-            7,
-            7,
-            7,
-            7,
-            6,
-            6,
-            7,
-            8,
-            6,
-            7,
-            7,
-            6,
-            6,
-            7,
-            7,
-            7,
-            7,
-            7,
-            8,
-            1,
-            1,
-            1,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            16,
-            15,
-            7,
-            17,
-            6,
-            7,
-            6,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            26,
-            26,
-            9,
-            17,
-            35,
-            3,
-            11,
-            19,
-            30,
-            30,
-            20,
-            29,
-            29,
-            12,
-        ]
+        atomtypes = isicle.utils.tinker_lookup()["atomtypes"].to_list()
+        anums = isicle.utils.tinker_lookup()["anums"].to_list()
         atypes = [x[:3] for x in atomtypes]
 
         # Parse data from arc file, extract coordinates and atom type
@@ -1444,7 +1462,9 @@ class TINKERParser(FileParserInterface):
         return isicle.conformers.ConformationalEnsemble(x)
 
     def parse(self):
-        """Extract relevant information from data"""
+        """
+        Extract relevant information from data
+        """
 
         # Check that the file is valid first
         if len(self.contents) == 0:
@@ -1471,4 +1491,7 @@ class TINKERParser(FileParserInterface):
         return result
 
     def save(self):
+        """
+        Add docstring
+        """
         return

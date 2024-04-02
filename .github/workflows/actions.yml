@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Apply formatting
         uses: github/super-linter@v4
@@ -29,13 +29,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-variant: Mambaforge
-          miniforge-version: latest
+          miniforge-version: 4.9.2-4
           use-mamba: true
           environment-file: envs/linux.yml
           use-only-tar-bz2: true
@@ -59,13 +59,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-variant: Mambaforge
-          miniforge-version: latest
+          miniforge-version: 4.9.2-4
           use-mamba: true
           environment-file: envs/osx.yml
           use-only-tar-bz2: true
@@ -91,13 +91,13 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-variant: Mambaforge
-          miniforge-version: latest
+          miniforge-version: 4.9.2-4
           use-mamba: true
           python-version: 3.9
           channels: conda-forge,bioconda

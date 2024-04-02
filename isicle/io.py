@@ -303,6 +303,7 @@ def load_smiles(path, force=False, basename=None):
         Molecule representation.
 
     """
+
     extension = os.path.splitext(path)[-1].lower()
     if "smi" in extension:
         return _load_line_notation(
@@ -331,6 +332,7 @@ def load_inchi(path, force=False, basename=None):
         Molecule representation.
 
     """
+
     if "inchi=" in path.lower():
         return _load_line_notation(
             path, func=Chem.MolFromInchi, force=force, string=True, basename=basename
@@ -385,11 +387,11 @@ def load_joblib(path):
 
 def _check_mol_obj(mol_obj):
     """ """
-    try:
-        Chem.MolToMolBlock(mol_obj)
-    except ValueError:
-        print("Invalid RDKit mol object")
-        raise
+    
+    if isinstance(mol_obj, Chem.Mol):
+        return
+    else:
+        raise IOError("Not a valid RDKit Mol object passed.")
 
 
 def load_mol_obj(mol_obj, basename=None):
@@ -445,6 +447,7 @@ def load(path, force=False, basename=None):
         Molecule representation.
 
     """
+
     if (type(path)) == str:
         path = path.strip()
         extension = os.path.splitext(path)[-1].lower()

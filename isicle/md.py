@@ -4,6 +4,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdForceFieldHelpers
 from rdkit.Chem import ChemicalForceFields
+from rdkit.Chem import rdDistGeom
 
 import isicle
 from isicle.geometry import Geometry, XYZGeometry
@@ -30,7 +31,7 @@ def _program_selector(program):
     -------
     program
         Wrapped functionality of the selected program. Must implement
-        :class:`~isicle.interfaces.MDWrapperInterface`.
+        :class:`~isicle.interfaces.WrapperInterface`.
 
     """
 
@@ -482,47 +483,241 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 class RDKitWrapper(Geometry, WrapperInterface):
 
     """
-    Wrapper for rdkit functionality.
+    Wrapper for RDKit functionality.
 
     Implements :class:`~isicle.interfaces.WrapperInterface` to ensure required methods are exposed.
 
     Attributes
     ----------
-    temp_dir : str
-        Path to temporary directory used for simulation.
-    task_map : dict
-        Alias mapper for supported molecular dynamic presets. Includes
-        "optimize", "conformer", "nmr", "protonate", "deprotonate", and "tautomer".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
-    fmt : str
-        File extension indicator.
-    job_list : str
-        List of commands for simulation.
-
+    method: str
+        Method of RDKit conformer generation specified.
+    numConfs: int
+        The number of conformers to generate.
     """
 
-    _defaults = ["geom"]
+    _defaults = ["geom", "method", "numConfs"]
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
 
-    def set_geometry(self):
-        return
+    def set_geometry(self, geom):
+        """
+        Set :obj:`~isicle.geometry.Geometry` instance for simulation.
 
-    def configure(self):
-        return
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+
+        # Assign geometry
+        self.geom = geom
+        self.basename = self.geom.basename
+
+    def configure(self, method: str = "distance", numConfs: int = 10, **kwargs):
+        """
+        Set conformer generation parameters.
+        Parameters
+        ----------
+        method: str
+            `distance` for distance geometry method (default)
+            `etkdg` for ETKDG method
+            `etkdgv2` for ETKDG method
+            `etkdgv3` for ETKDG method
+            `sretkdgv3` for ETKDG method
+        numConfs: int
+            the number of conformers to generate
+        **kwargs:
+            Keyword arguments to configure the simulation
+            See :meth:`~isicle.md.RDKitWrapper._configure_distance_geometry`
+        """
+        lookup = {
+            "distance": self._configure_distance_geometry,
+            "etdg": self._configure_etdg,
+            "etkdg": self._configure_etkdg1,
+            "etkdgv1": self._configure_etkdg1,
+            "etkdgv2": self._configure_etkdg2,
+            "etkdgv3": self._configure_etkdg3,
+            "sretkdgv3": self._configure_etkdg3_variant,
+        }
+        method = str(method)
+        try:
+            lookup[method.lower()](**kwargs)
+        except KeyError:
+            raise
+        self.method = method.lower()
+        try:
+            numConfs = int(numConfs)
+        except ValueError:
+            raise
+        self.numConfs = numConfs
+
+    def _configure_distance_geometry(
+        self,
+        pruneRmsThresh: float = -1.0,
+        forceTol: float = 0.001,
+        randomSeed: int = -1,
+    ):
+        """
+        Set parameters for distance geometry based conformer generation.
+        Parameters
+        ----------
+        pruneRmsThresh: float
+            Greedy pruning mainting conformers are <float> apart based upon RMSD of heavy atoms.
+            Default: no pruning, -1.0
+        forceTol: float
+            Tolerance to be used in force-field minimizations
+        randomSeed:  int
+            provide a seed for the random number generator
+            `-1` causes RNG to not be seeded
+        """
+        self.pruneRmsThresh = pruneRmsThresh
+        self.forceTol = forceTol
+        self.randomSeed = randomSeed
+
+    def _configure_etdg(self):
+        """
+        Set parameters for ETDG conformer generation.
+        """
+        self.params = rdDistGeom.ETDG()
+
+    def _configure_etkdg1(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 1: RDKit default
+        """
+        self.params = rdDistGeom.ETKDG()
+
+    def _configure_etkdg2(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 2: (default) 2016 release, updated torsion angle potentials
+        """
+        self.params = rdDistGeom.ETKDGv2()
+
+    def _configure_etkdg3(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 3: Updated sampling small rings AND macrocycles
+        """
+        self.params = rdDistGeom.ETKDGv3()
+
+    def _configure_etkdg3_variant(self):
+        """
+        Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
+        Version 3 variant: Updated sampling for small rings, NOT macrocycles
+        """
+        self.params = rdDistGeom.srETKDGv3()
 
     def submit(self):
-        return
-
-    def run(self):
-        return
+        """
+        Execute conformer generation with user-specifed method, parameters.
+        """
+        if self.method == "distance":
+            rdDistGeom.EmbedMultipleConfs(
+                self.geom.mol,
+                numConfs=self.numConfs,
+                randomSeed=self.randomSeed,
+                pruneRmsThresh=self.pruneRmsThresh,
+                forceTol=self.forceTol,
+            )
+        elif "etkdg" in self.method or "etdg" in self.method:
+            rdDistGeom.EmbedMultipleConfs(
+                self.geom.mol, numConfs=self.numConfs, params=self.params
+            )
+        else:
+            raise ValueError(
+                "Failure to run RDKit MD, method and/or variant not recognized"
+            )
 
     def finish(self):
-        return
+        """
+        Parse RDKit conformers generated.
+        """
+        confCount = self.geom.mol.GetNumConformers()
+        conformers = [
+            isicle.load(Chem.Mol(self.geom.mol, confId=i), basename=self.basename)
+            for i in range(confCount)
+        ]
+
+        self.geom = conformers
+        for conf, label in zip(self.geom, range(confCount)):
+            conf.__dict__.update(conformerID=label)
+
+    def run(self, geom, **kwargs):
+        """
+        Generate conformers using RKDit and supplied parameters.
+
+        Parameters
+        ----------
+        geom : :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+        **kwargs
+            Keyword arguments to configure the simulation.
+            See :meth:`~isicle.md.RDKitWrapper.configure`.
+
+        Returns
+        -------
+        :obj:`~isicle.md.RDKitWrapper`
+            Wrapper object containing relevant outputs from the simulation.
+
+        """
+
+        # New instance
+        self = RDKitWrapper()
+
+        # Set geometry
+        self.set_geometry(geom)
+
+        # Configure
+        self.configure(**kwargs)
+
+        # Run QM simulation
+        self.submit()
+
+        # Finish/clean up
+        self.finish()
+
+        return self
+
+    def get_structures(self):
+        """
+        Extract all structures from containing object as a conformational ensemble.
+
+        Returns
+        -------
+        :obj:`~isicle.conformers.ConformationalEnsemble`
+            Conformational ensemble.
+
+        """
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            return self.geom
+
+        raise TypeError(
+            "Object does not contain multiple structures. Use `get_structure` instead."
+        )
+
+    def get_structure(self):
+        """
+        Extract structure from containing object.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.XYZGeometry`
+            Structure instance.
+
+        """
+        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
+            raise TypeError(
+                "Object contains multiple structures. Use `get_structures` instead."
+            )
+
+        return self.geom
 
 
 class TINKERWrapper(Geometry, WrapperInterface):
