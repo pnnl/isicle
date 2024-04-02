@@ -387,7 +387,7 @@ def load_joblib(path):
 
 def _check_mol_obj(mol_obj):
     """ """
-    
+
     if isinstance(mol_obj, Chem.Mol):
         return
     else:
@@ -704,7 +704,7 @@ def save_sdf(path, geom):
         w.write(geom.mol)
         w = None
 
-    elif isinstance(geom, isicle.geometry.Geometry):
+    elif isinstance(geom, isicle.conformers.ConformationalEnsemble):
         w = Chem.SDWriter(path)
         for m in geom.geom:
             w.write(m.mol)
@@ -753,5 +753,8 @@ def save(path, data):
 
     if extension == ".inchi":
         return save_inchi(path, data)
+
+    if extension == ".sdf":
+        return save_sdf(path, data)
 
     raise IOError("Extension {} not recognized.".format(extension))
