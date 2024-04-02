@@ -9,6 +9,11 @@ from isicle.utils import TypedList, safelist, mkdtemp
 from rdkit import Chem
 from rdkit.Chem import PropertyMol
 
+try:
+    from confpass import confpass
+except ImportError:
+    confpass = None
+
 
 def _function_selector(func):
     """
@@ -621,12 +626,16 @@ class ConfpassEnsemble(ConformationalEnsemble):
     in Python path.
     """
 
-    from confpass import confpass
-
     _defaults = ["temp_dir", "basename", "sdf_file", "priority", "cp"]
     _default_value = None
 
     def __init__(self, *args, **kwargs):
+        if confpass is None:
+            raise ImportError(
+                "The confpass module is required to use this feature."
+                "Please install it with 'pip install isicle[confpass]'."
+            )
+
         super().__init__(*args)
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
