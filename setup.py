@@ -29,6 +29,7 @@ setup(
     packages=pkgs,
     python_requires="==3.9.*",
     install_requires=install_requires,
+    extras_requires={"confpass": ["git+https://github.com/Goodman-lab/CONFPASS.git"]},
     classifiers=[
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Chemistry",
