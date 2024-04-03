@@ -17,4 +17,4 @@ dependencies:
   - statsmodels >=0.11.1
   - xtb >=6.5.1
   - pip:
-    - git+https://github.com/Goodman-lab/CONFPASS.git
+    - git+https://github.com/jessbade/CONFPASS.git

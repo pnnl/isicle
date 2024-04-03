@@ -5,4 +5,4 @@ pandas >= 1.1.4
 # rdkit >= 2023.09.1
 snakemake >= 6.3.0
 statsmodels >= 0.11.1
-git+https://github.com/Goodman-lab/CONFPASS.git
+git+https://github.com/jessbade/CONFPASS.git
