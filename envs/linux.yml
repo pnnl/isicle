@@ -18,3 +18,5 @@ dependencies:
   - snakemake >=6.3.0
   - statsmodels >=0.11.1
   - xtb >=6.5.1
+  - pip:
+    - git+https://github.com/Goodman-lab/CONFPASS.git
