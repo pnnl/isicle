@@ -1,12 +1,12 @@
 import glob
 import os
 import subprocess
+from collections import OrderedDict
 from itertools import cycle
 from string import Template
 
 import isicle
 from isicle.interfaces import WrapperInterface
-from isicle.parse import NWChemParser
 from isicle.utils import safelist
 
 
@@ -842,17 +842,53 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        # Initialize parser
-        parser = NWChemParser()
+        # Get list of outputs
+        outfiles = glob.glob(os.path.join(self.temp_dir, '*'))
 
-        # Open output file
-        self.output = parser.load(os.path.join(self.temp_dir,
-                                               self.basename + '.out'))
+        # Result container
+        result = {}
 
-        # Parse results
-        result = parser.parse()
+        # Split out geometry files
+        geomfiles = sorted([x for x in outfiles if x.endswith('.xyz')])
+        outfiles = sorted([x for x in outfiles if not x.endswith('.xyz')])
 
-        return result
+        # Enumerate geometry files
+        result['xyz'] = OrderedDict()
+        indices = []
+        for geomfile in geomfiles:
+            # Read output content
+            with open(geomfile, 'rb') as f:
+                contents = f.read()
+            
+            if '_geom-' in geomfile:
+                idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
+                result['xyz'][idx] = contents
+                indices.append(idx)
+
+            else:
+                result['xyz']['input'] = contents
+
+        # Rename final geometry
+        result['xyz']['final'] = result['xyz'].pop(max(indices))
+
+        # Enumerate output files
+        for outfile in outfiles:
+            # Split name and extension
+            basename, ext = os.path.basename(outfile).rsplit('.', 1)
+
+            # Read output content
+            with open(outfile, 'rb') as f:
+                contents = f.read()
+
+            # Attempt utf-8 decode
+            try:
+                result[ext] = contents.decode('utf-8')
+            except UnicodeDecodeError:
+                result[ext] = contents
+
+        # Assign to attribute
+        self.result = result
+        return self.result
 
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
             basis_set='6-31g*', ao_basis='cartesian', charge=0,
@@ -936,6 +972,22 @@ class NWChemWrapper(WrapperInterface):
         result = self.finish()
 
         return result
+
+    def save(self, path):
+        """
+        Save result as pickle file.
+
+        Parameters
+        ----------
+        path : str
+            Path to output file.
+
+        """
+
+        if hasattr(self, 'result'):
+            isicle.io.save_pickle(path, self.result)
+        else:
+            raise AttributeError("Object must have `result` attribute")
 
 
 class ORCAWrapper(WrapperInterface):
