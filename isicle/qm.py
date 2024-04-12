@@ -858,7 +858,7 @@ class NWChemWrapper(WrapperInterface):
         for geomfile in geomfiles:
             # Read output content
             with open(geomfile, 'rb') as f:
-                contents = f.read()
+                contents = f.read().decode('utf-8')
             
             if '_geom-' in geomfile:
                 idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])

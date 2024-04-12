@@ -40,8 +40,8 @@ class ORCAParser(FileParserInterface):
     def _parse_protocol(self):
         return self.data["inp"]
 
-    def _parse_geom(self):
-        return self.data["xyz"]
+    def _parse_geometry(self):
+        return isicle.geometry.XYZGeometry(xyz=self.data["xyz"].split("\n"))
 
     def _parse_energy(self):
         # Split text
@@ -297,7 +297,7 @@ class ORCAParser(FileParserInterface):
     def parse(self):
         result = {
             "protocol": self._parse_protocol(),
-            "geom": self._parse_geom(),
+            "geometry": self._parse_geometry(),
             "total_dft_energy": self._parse_energy(),
             "orbital_energies": self._parse_orbital_energies(),
             "shielding": self._parse_shielding(),
@@ -318,6 +318,11 @@ class ORCAParser(FileParserInterface):
         # Filter empty fields
         result = {k: v for k, v in result.items() if v is not None}
 
+        # Add result info to geometry object
+        if 'geometry' in result:
+            result['geometry'].add___dict__(
+                {k: v for k, v in result.items() if k != 'geometry'})
+
         # Store attribute
         self.result = result
 
@@ -328,35 +333,22 @@ class ORCAParser(FileParserInterface):
 
 
 class NWChemParser(FileParserInterface):
-    """
-    Extract text from an NWChem simulation output file.
-    """
+    """Extract information from NWChem simulation output files."""
 
-    def __init__(self):
-        self.contents = None
-        self.result = None
-        self.path = None
+    def __init__(self, data=None):
+        self.data = data
 
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        with open(path, "r") as f:
-            self.contents = f.readlines()
-        self.path = path
-        return self.contents
+        self.result = {}
+
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
 
     def _parse_geometry(self):
         """
         Add docstring
         """
-        search = os.path.dirname(self.path)
-        geoms = sorted(glob.glob(os.path.join(search, "*.xyz")))
 
-        if len(geoms) > 0:
-            return isicle.io.load(geoms[-1])
-
-        raise Exception
+        return isicle.geometry.XYZGeometry(xyz=list(self.data['xyz'].values())[-1].split("\n"))
 
     def _parse_energy(self):
         """
@@ -368,7 +360,7 @@ class NWChemParser(FileParserInterface):
         energy = None
 
         # Cycle through file
-        for line in self.contents:
+        for line in self.data['out'].split("\n"):
             if "Total DFT energy" in line:
                 # Overwrite last saved energy
                 energy = float(line.split()[-1])
@@ -385,7 +377,7 @@ class NWChemParser(FileParserInterface):
         shield_atoms = []
         shields = []
 
-        for line in self.contents:
+        for line in self.data['out'].split("\n"):
             if " SHIELDING" in line:
                 shield_idxs = [int(x) for x in line.split()[2:]]
                 if len(shield_idxs) == 0:
@@ -406,12 +398,18 @@ class NWChemParser(FileParserInterface):
         if len(shields) > 1:
             return {"index": shield_idxs, "atom": shield_atoms, "shielding": shields}
 
-        raise Exception
+        # No shielding data found
+        return None
 
     def _parse_spin(self):
         """
         Add docstring
         """
+
+        # No spin
+        if "SPINSPIN" not in self.data['nw']:
+            return None
+
         # TO DO: Add g-factors
 
         # Declaring couplings
@@ -421,7 +419,7 @@ class NWChemParser(FileParserInterface):
         g_factor = []
         ready = False
 
-        for line in self.contents:
+        for line in self.data['out'].split("\n"):
             if "Atom  " in line:
                 line = line.split()
                 idx1 = int((line[1].split(":"))[0])
@@ -443,12 +441,16 @@ class NWChemParser(FileParserInterface):
                     g = float(line[5])
                     g_factor.append(g)
 
-        return {
-            "pair indices": coup_pairs,
-            "spin couplings": coup,
-            "index": index,
-            "g-tensors": g_factor,
-        }
+        if len(coup_pairs) > 0:
+            return {
+                "pair indices": coup_pairs,
+                "spin couplings": coup,
+                "index": index,
+                "g-tensors": g_factor,
+            }
+
+        # No spin data found
+        return None
 
     def _parse_frequency(self):
         """
@@ -466,7 +468,8 @@ class NWChemParser(FileParserInterface):
         natoms = None
         has_frequency = None
 
-        for i, line in enumerate(self.contents):
+        lines = self.data['out'].split("\n")
+        for i, line in enumerate(lines):
             if ("geometry" in line) and (natoms is None):
                 atom_start = i + 7
             if ("Atomic Mass" in line) and (natoms is None):
@@ -492,19 +495,19 @@ class NWChemParser(FileParserInterface):
 
         if has_frequency is True:
             freq = np.array(
-                [float(x.split()[1]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[1]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_au = np.array(
-                [float(x.split()[3]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[3]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_debyeangs = np.array(
-                [float(x.split()[4]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[4]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_KMmol = np.array(
-                [float(x.split()[5]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[5]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_arbitrary = np.array(
-                [float(x.split()[6]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[6]) for x in lines[freq_start : freq_stop + 1]]
             )
 
             return {
@@ -519,7 +522,8 @@ class NWChemParser(FileParserInterface):
                 "zero-point correction": zpe,
             }
 
-        raise Exception
+        # No frequency data found
+        return None
 
     def _parse_charge(self):
         """
@@ -531,7 +535,7 @@ class NWChemParser(FileParserInterface):
         charges = []
         ready = False
 
-        for line in self.contents:
+        for line in self.data['out'].split("\n"):
             # Load charges from table
             if "Atom       Charge   Shell Charges" in line:
                 # Table header found. Overwrite anything saved previously
@@ -571,7 +575,8 @@ class NWChemParser(FileParserInterface):
 
             return df.Charge.values
 
-        raise Exception
+        # No charge data found
+        return None
 
     def _parse_timing(self):
         """
@@ -588,7 +593,7 @@ class NWChemParser(FileParserInterface):
         opt = False
         freq = False
 
-        for i, line in enumerate(self.contents):
+        for i, line in enumerate(self.data['out'].split("\n")):
             # ?
             if "No." in line and len(indices) == 0:
                 indices.append(i + 2)  # 0
@@ -619,87 +624,56 @@ class NWChemParser(FileParserInterface):
 
         # natoms = int(self.contents[indices[1] - 1].split()[0])
 
-        return {
-            "single point": preoptTime,
-            "geometry optimization": geomoptTime,
-            "frequency": freqTime,
-            "total": cpuTime,
-        }
+        if cpuTime != 0:
+            return {
+                "single point": preoptTime,
+                "geometry optimization": geomoptTime,
+                "frequency": freqTime,
+                "total": cpuTime,
+                "success": True,
+            }
+        return None
 
     def _parse_molden(self):
         """
         Add docstring
         """
-        search = splitext(self.path)[0]
-        m = glob.glob(search + "*.molden")
+        if 'molden' in self.data:
+            return self['molden']
 
-        if len(m) != 1:
-            raise Exception
-
-        return m[0]
+        return None
 
     def _parse_protocol(self):
         """
         Parse out dft protocol
         """
-        functional = []
-        basis_set = []
-        solvation = []
-        tasks = []
-        basis = None
-        func = None
-        solvent = None
-
-        for line in self.contents:
-            if "* library" in line:
-                basis = line.split()[-1]
-            if " xc " in line:
-                func = line.split(" xc ")[-1].strip()
-            if "solvent " in line:
-                solvent = line.split()[-1]
-            if "task dft optimize" in line:
-                tasks.append("optimize")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-            if "SHIELDING" in line:
-                tasks.append("shielding")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-            if "SPINSPIN" in line:
-                tasks.append("spin")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-            if "freq " in line:
-                tasks.append("frequency")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-
-        return {
-            "functional": functional,
-            "basis set": basis_set,
-            "solvation": solvation,
-            "tasks": tasks,
-        }
+        return self.data["nw"]
 
     def _parse_connectivity(self):
         """
         Add docstring
         """
-        coor_substr = "internuclear distances"
+        
+        # Split lines
+        lines = self.data['out'].split("\n")
 
         # Extracting Atoms & Coordinates
-        ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
+        coor_substr = "internuclear distances"
+        ii = [i for i in range(len(lines)) if coor_substr in lines[i]]
+
+        # Exit condition
+        if len(ii) == 0:
+            return None
+
+        # Sort hits
         ii.sort()
 
+        # Iterate connectivity
         g = ii[0] + 4
         connectivity = []
-        while g <= len(self.contents) - 1:
-            if "-" not in self.contents[g]:
-                line = self.contents[g].split()
+        while g <= len(lines) - 1:
+            if "-" not in lines[g]:
+                line = lines[g].split()
                 pair = [line[1], line[4], int(line[0]), int(line[3])]
                 connectivity.append(pair)
 
@@ -707,85 +681,48 @@ class NWChemParser(FileParserInterface):
                 break
             g += 1
 
-        return connectivity
+        # Check for result
+        if len(connectivity) > 0:
+            return connectivity
+        
+        return None
 
     def parse(self):
-        """
-        Extract relevant information from NWChem output.
+        result = {
+            "protocol": self._parse_protocol(),
+            "geometry": self._parse_geometry(),
+            "total_dft_energy": self._parse_energy(),
+            # "orbital_energies": self._parse_orbital_energies(),
+            "shielding": self._parse_shielding(),
+            "spin": self._parse_spin(),
+            "frequency": self._parse_frequency(),
+            "molden": self._parse_molden(),
+            "charge": self._parse_charge(),
+            "timing": self._parse_timing(),
+            "connectivity": self._parse_connectivity(),
+        }
 
-        Parameters
-        ----------
-        to_parse : list of str
-            geometry, energy, shielding, spin, frequency, molden, charge, timing
+        # Pop success from timing
+        if result["timing"] is not None:
+            result["success"] = result["timing"].pop("success")
+        else:
+            result["success"] = False
 
-        """
+        # Filter empty fields
+        result = {k: v for k, v in result.items() if v is not None}
 
-        # Check that the file is valid first
-        if len(self.contents) == 0:
-            raise RuntimeError("No contents to parse: {}".format(self.path))
-        if "Total times  cpu" not in self.contents[-1]:
-            raise RuntimeError("Incomplete NWChem run: {}".format(self.path))
+        # Add result info to geometry object
+        if 'geometry' in result:
+            result['geometry'].add___dict__(
+                {k: v for k, v in result.items() if k != 'geometry'})
 
-        # Initialize result object to store info
-        result = {}
-
-        try:
-            result["protocol"] = self._parse_protocol()
-        except:
-            pass
-
-        try:
-            result["geom"] = self._parse_geometry()
-
-        except:
-            pass
-
-        try:
-            result["energy"] = self._parse_energy()
-        except:
-            pass
-
-        try:
-            result["shielding"] = self._parse_shielding()
-        except:  # Must be no shielding info
-            pass
-
-        try:
-            result["spin"] = self._parse_spin()
-        except:
-            pass
-
-        try:
-            result["frequency"] = self._parse_frequency()
-        except:
-            pass
-
-        try:
-            result["molden"] = self._parse_molden()
-        except:
-            pass
-
-        try:
-            result["charge"] = self._parse_charge()
-        except:
-            pass
-
-        try:
-            result["timing"] = self._parse_timing()
-        except:
-            pass
-
-        try:
-            result["connectivity"] = self._parse_connectivity()
-        except:
-            pass
+        # Store attribute
+        self.result = result
 
         return result
 
     def save(self, path):
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-        return
+        isicle.io.save_pickle(path, self.result)
 
 
 class ImpactParser(FileParserInterface):
