@@ -854,20 +854,18 @@ class NWChemWrapper(WrapperInterface):
 
         # Enumerate geometry files
         result['xyz'] = OrderedDict()
-        indices = []
         for geomfile in geomfiles:
             geom = isicle.load(geomfile)
             
             if '_geom-' in geomfile:
                 idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
                 result['xyz'][idx] = geom
-                indices.append(idx)
 
             else:
                 result['xyz']['input'] = geom
 
         # Rename final geometry
-        result['xyz']['final'] = result['xyz'].pop(max(indices))
+        result['xyz']['final'] = list(result['xyz'].values())[-1]
 
         # Enumerate output files
         for outfile in outfiles:
@@ -1054,7 +1052,7 @@ class ORCAWrapper(WrapperInterface):
         # Store path
         self.geom.path = geomfile
 
-    def configure(self, simple_input=[], block_input={}, processes=1, **kwargs):
+    def configure(self, simple_input=[], block_input={}, charge=0, spin_multiplicity=1, processes=1, **kwargs):
         """
         Configure ORCA simulation.
 
@@ -1069,6 +1067,10 @@ class ORCAWrapper(WrapperInterface):
             directly, include as a complete string. Include key:value pairs as tuples. 
             See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
             section of the ORCA docs.
+        charge : int
+            Nominal charge of the molecule.
+        spin_multiplicity : int
+            Spin multiplicity of the molecule.
         processes : int
             Number of parallel processes.
         kwargs
@@ -1092,7 +1094,7 @@ class ORCAWrapper(WrapperInterface):
             config += '%PAL NPROCS {} END\n'.format(processes)
 
         # Add geometry context
-        config += '* xyzfile 0 1 {}\n'.format(self.geom.path)
+        config += '* xyzfile {:d} {:d} {}\n'.format(charge, spin_multiplicity, self.geom.path)
 
         # Expand keyword args
         for k, v in kwargs.items():

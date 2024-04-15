@@ -41,7 +41,7 @@ class ORCAParser(FileParserInterface):
         return self.data["inp"]
 
     def _parse_geometry(self):
-        return self.data["xyz"]
+        return self.data["xyz"]["final"]
 
     def _parse_energy(self):
         # Split text
