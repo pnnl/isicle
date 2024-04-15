@@ -856,17 +856,15 @@ class NWChemWrapper(WrapperInterface):
         result['xyz'] = OrderedDict()
         indices = []
         for geomfile in geomfiles:
-            # Read output content
-            with open(geomfile, 'rb') as f:
-                contents = f.read().decode('utf-8')
+            geom = isicle.load(geomfile)
             
             if '_geom-' in geomfile:
                 idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
-                result['xyz'][idx] = contents
+                result['xyz'][idx] = geom
                 indices.append(idx)
 
             else:
-                result['xyz']['input'] = contents
+                result['xyz']['input'] = geom
 
         # Rename final geometry
         result['xyz']['final'] = result['xyz'].pop(max(indices))
@@ -1189,15 +1187,21 @@ class ORCAWrapper(WrapperInterface):
             else:
                 var_name = ext
 
-            # Read output content
-            with open(outfile, 'rb') as f:
-                contents = f.read()
+            # Load geometry
+            if var_name == 'xyz':
+                result[var_name] = isicle.load(outfile)
 
-            # Attempt utf-8 decode
-            try:
-                result[var_name] = contents.decode('utf-8')
-            except UnicodeDecodeError:
-                result[var_name] = contents
+            # Load other files
+            else:
+                # Read output content
+                with open(outfile, 'rb') as f:
+                    contents = f.read()
+
+                # Attempt utf-8 decode
+                try:
+                    result[var_name] = contents.decode('utf-8')
+                except UnicodeDecodeError:
+                    result[var_name] = contents
 
         # Assign to attribute
         self.result = result

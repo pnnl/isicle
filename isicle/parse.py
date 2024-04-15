@@ -41,7 +41,7 @@ class ORCAParser(FileParserInterface):
         return self.data["inp"]
 
     def _parse_geometry(self):
-        return isicle.geometry.XYZGeometry(xyz=self.data["xyz"].split("\n"))
+        return self.data["xyz"]
 
     def _parse_energy(self):
         # Split text
@@ -348,7 +348,7 @@ class NWChemParser(FileParserInterface):
         Add docstring
         """
 
-        return isicle.geometry.XYZGeometry(xyz=list(self.data['xyz'].values())[-1].split("\n"))
+        return self.data['xyz']
 
     def _parse_energy(self):
         """
