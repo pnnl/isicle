@@ -852,7 +852,14 @@ class NWChemWrapper(WrapperInterface):
         # Parse results
         result = parser.parse()
 
-        return result
+        # Update this instance attributes
+        self.__dict__.update(result)
+
+        # Update geom attributes
+        self.geom.add___dict__(
+            {k: v for k, v in result.items() if k != 'geom'})
+
+        return self
 
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
             basis_set='6-31g*', ao_basis='cartesian', charge=0,
