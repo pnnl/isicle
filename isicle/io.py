@@ -4,6 +4,7 @@ import joblib
 from io import StringIO
 
 import isicle
+from isicle.utils import TypedList
 import pandas as pd
 from rdkit import Chem
 from openbabel import pybel
@@ -709,6 +710,21 @@ def save_sdf(path, geom):
         for m in geom.geom:
             w.write(m.mol)
         w = None
+
+    elif isinstance(
+        TypedList(Chem.PropertyMol.PropertyMol, geom),
+        TypedList,
+    ):
+        w = Chem.SDWriter(path)
+        for m in TypedList(Chem.PropertyMol.PropertyMol, geom):
+            w.write(m)
+        w = None
+    else:
+        raise TypeError(
+            "Must be of type `isicle.geometry.Geometry`, \
+            `isicle.conformers.ConformationalEnsemble`, or \
+            `rdkit.Chem.PropertyMol.PropertyMol` to save in sdf format."
+        )
 
 
 def save(path, data):
