@@ -348,7 +348,7 @@ class NWChemParser(FileParserInterface):
         Add docstring
         """
 
-        return self.data['xyz']
+        return self.data['xyz']['final']
 
     def _parse_energy(self):
         """
