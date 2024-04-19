@@ -695,6 +695,19 @@ class ConfpassEnsemble(ConformationalEnsemble):
     def _apply_preopt(self, method, x=0.8, x_as=0.2, n=3):
         """
         Run the pre-optimization CONFPASS module.
+        Parameters
+        ----------
+        method : str
+            Priority list assembling method
+        x : float
+            Hyperparameter for the pipe_x method, default=0.8.
+            Select clustering result when n_clusters=total_conformer_no*x
+        x_as : float
+            Hyperparameter for the pipe_x_as method, default=0.2.
+            Ex: 20% (pipe x priority list) + 80% (pipe d priority list)
+        n : int
+            Hyperparamter for the nth method, default = 3.
+            Prioritise every nth conformer.
         """
         cp = confpass.conp([self.sdf_file])
         cp.get_priority(method=method, x=x, x_as=x_as, n=n)
