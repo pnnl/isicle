@@ -519,7 +519,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.geom = geom
         self.basename = self.geom.basename
 
-    def configure(self, method: str = "distance", numConfs: int = 10, **kwargs):
+    def configure(self, method: str = "etkdgv3", numConfs: int = 10, **kwargs):
         """
         Set conformer generation parameters.
         Parameters
