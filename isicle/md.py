@@ -7,7 +7,7 @@ from rdkit.Chem import ChemicalForceFields
 from rdkit.Chem import rdDistGeom
 
 import isicle
-from isicle.geometry import Geometry, XYZGeometry
+from isicle.geometry import Geometry
 from isicle.interfaces import WrapperInterface
 from isicle.parse import XTBParser, TINKERParser
 
@@ -66,7 +66,7 @@ def md(geom, program="xtb", **kwargs):
     return _program_selector(program).run(geom, **kwargs)
 
 
-class XTBWrapper(XYZGeometry, WrapperInterface):
+class XTBWrapper(WrapperInterface):
     """
     Wrapper for xtb functionality.
 
@@ -108,7 +108,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         # Assign geometry
         self.geom = geom
-        self.basename = self.geom.basename
 
         # Save geometry
         self.save_geometry()
@@ -128,7 +127,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
         geomfile = os.path.join(
-            self.temp_dir, "{}.{}".format(self.basename, self.fmt.lower())
+            self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower())
         )
 
         # All other formats
@@ -136,7 +135,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self.geom.path = geomfile
 
     def _configure_xtb(
-        self, forcefield="gfn2", optlevel="normal", charge=None, solvation=None
+        self, forcefield="gfn2", optlevel="normal", solvation=None
     ):
         """
         Set command line for xtb simulations.
@@ -151,9 +150,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
             Optimization convergence level
             Default : normal
             Supported : crude, sloppy, loose, lax, normal, tight, vtight extreme
-        charge : int
-            Charge of molecular system.
-            Default : 0 (Neutral charge)
 
         """
 
@@ -161,7 +157,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         s = "xtb "
 
         # Add geometry
-        s += "{}.{}".format(self.basename, self.fmt.lower())
+        s += "{}.{}".format(self.geom.basename, self.fmt.lower())
 
         # Add optimize tag
         s += " --opt " + optlevel + " "
@@ -169,9 +165,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add forcefield
         s += "--" + forcefield + " "
 
-        # Add optional charge
-        if charge is not None:
-            s += "--chrg " + charge + " "
+        # Add charge
+        s += "--chrg " + self.geom.get_charge() + " "
 
         # Add optional implicit solvation
         if solvation is not None:
@@ -180,7 +175,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add output
         s += "&>" + " "
 
-        s += "{}.{}".format(self.basename, "out")
+        s += "{}.{}".format(self.geom.basename, "out")
         return s
 
     def _configure_crest(
@@ -192,7 +187,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         deprotonate=False,
         tautomerize=False,
         ion=None,
-        charge=None,
         dryrun=False,
         processes=1,
         solvation=None,
@@ -226,9 +220,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         ion : str
             Keyword to couple with protonate to ionize molecule with an ion other than a proton.
             See :obj:`~isicle.adduct.parse_ion` for list of ion options.
-        charge : int
-            Charge of molecular system.
-            Default : 0 (Neutral charge)
+
         """
 
         # Start base command
@@ -236,7 +228,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         # Add geometry
         s += str(
-            os.path.join(self.temp_dir, "{}.{}".format(self.basename, self.fmt.lower()))
+            os.path.join(self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower()))
         )
 
         s += " "
@@ -251,8 +243,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         if ion is not None:
             s += "-swel " + ion + " "
 
-        if charge is not None:
-            s += "-chrg " + str(charge) + " "
+        # Add charge
+        s += "-chrg " + str(self.geom.get_charge()) + " "
 
         # Add dryrun option
         if dryrun:
@@ -280,7 +272,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         # Add output
         s += "&>" + " "
 
-        s += os.path.join(self.temp_dir, "{}.{}".format(self.basename, "out"))
+        s += os.path.join(self.temp_dir, "{}.{}".format(self.geom.basename, "out"))
 
         return s
 
@@ -288,7 +280,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         self,
         task="optimize",
         forcefield="gfn2",
-        charge=None,
         ewin=6,
         ion=None,
         optlevel="Normal",
@@ -319,9 +310,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
         ion : str
             Keyword to couple with protonate to ionize molecule with an ion other than a proton.
             See :obj:`~isicle.adduct.parse_ion` for list of ion options.
-        charge : int
-            Charge of molecular system.
-            Default : 0 (Neutral charge)
+
         """
 
         if type(task) == list:
@@ -356,7 +345,6 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
                     deprotonate=d,
                     tautomerize=t,
                     ion=i,
-                    charge=charge,
                     dryrun=dryrun,
                     processes=processes,
                     solvation=solvation,
@@ -388,8 +376,8 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         parser = XTBParser()
 
-        parser.load(os.path.join(self.temp_dir, self.basename + ".out"))
-        self.output = parser.load(os.path.join(self.temp_dir, self.basename + ".out"))
+        parser.load(os.path.join(self.temp_dir, self.geom.basename + ".out"))
+        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + ".out"))
 
         result = parser.parse()
 
@@ -397,7 +385,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != "geom"})
-            i.__dict__.update(basename=self.basename)
+            i.__dict__.update(basename=self.geom.basename)
 
         if self.task != "optimize":
             conformerID = 1
@@ -468,7 +456,7 @@ class XTBWrapper(XYZGeometry, WrapperInterface):
 
         Returns
         -------
-        :obj:`~isicle.geometry.XYZGeometry`
+        :obj:`~isicle.geometry.Geometry`
             Structure instance.
 
         """
@@ -517,7 +505,6 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
         # Assign geometry
         self.geom = geom
-        self.basename = self.geom.basename
 
     def configure(self, method: str = "distance", numConfs: int = 10, **kwargs):
         """
@@ -641,10 +628,15 @@ class RDKitWrapper(Geometry, WrapperInterface):
         """
         confCount = self.geom.mol.GetNumConformers()
         conformers = [
-            isicle.load(Chem.Mol(self.geom.mol, confId=i), basename=self.basename)
+            isicle.load(Chem.Mol(self.geom.mol, confId=i))
             for i in range(confCount)
         ]
 
+        # Override conformer basename
+        for conformer in conformers:
+            conformer.basename = self.geom.basename
+
+        # TODO: not an ideal overwrite of self.geom
         self.geom = conformers
         for conf, label in zip(self.geom, range(confCount)):
             conf.__dict__.update(conformerID=label)
@@ -708,7 +700,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
         Returns
         -------
-        :obj:`~isicle.geometry.XYZGeometry`
+        :obj:`~isicle.geometry.Geometry`
             Structure instance.
 
         """
@@ -992,7 +984,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         xyz = ""
 
         # Set header line with number of atoms and basename
-        xyz += "{:>6}  {}\n".format(mol.GetNumAtoms(), self.basename)
+        xyz += "{:>6}  {}\n".format(mol.GetNumAtoms(), self.geom.basename)
 
         for atom in mol.GetAtoms():
             bond_list = []
@@ -1030,7 +1022,6 @@ class TINKERWrapper(Geometry, WrapperInterface):
 
         # Assign geometry
         self.geom = geom
-        self.basename = self.geom.basename
 
         self.tinkerxyz = self._convert_to_tinkerxyz()
 
@@ -1052,7 +1043,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         self.temp_dir = isicle.utils.mkdtemp()
         self.fmt = fmt.lower()
         geomfile = os.path.join(
-            self.temp_dir, "{}.{}".format(self.basename, self.fmt.lower())
+            self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower())
         )
 
         with open(geomfile, "w+") as f:
@@ -1064,7 +1055,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
     def configure(self, task="scan", tinker_path="~/tinker"):
         config = tinker_path + "/bin/" + task + " " + self.geom.path + " "
         config += tinker_path + "/params/mmff.prm 0 10 20 0.00001 "
-        config += "| tee ./" + self.basename + ".tout"
+        config += "| tee ./" + self.geom.basename + ".tout"
 
         self.config = config
 
@@ -1078,8 +1069,8 @@ class TINKERWrapper(Geometry, WrapperInterface):
     def finish(self):
         parser = TINKERParser()
 
-        parser.load(os.path.join(self.temp_dir, self.basename + ".tout"))
-        self.output = parser.load(os.path.join(self.temp_dir, self.basename + ".tout"))
+        parser.load(os.path.join(self.temp_dir, self.geom.basename + ".tout"))
+        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + ".tout"))
 
         result = parser.parse()
 
@@ -1088,7 +1079,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
         conformerID = 1
         for i in self.geom:
             i.add___dict__({k: v for k, v in result.items() if k != "geom"})
-            i.__dict__.update(basename=self.basename)
+            i.__dict__.update(basename=self.geom.basename)
             i.__dict__.update(conformerID=conformerID)
             conformerID += 1
             return self
@@ -1154,7 +1145,7 @@ class TINKERWrapper(Geometry, WrapperInterface):
 
         Returns
         -------
-        :obj:`~isicle.geometry.XYZGeometry`
+        :obj:`~isicle.geometry.Geometry`
             Structure instance.
 
         """

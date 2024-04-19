@@ -1105,6 +1105,8 @@ class XTBParser(FileParserInterface):
                 geom_list.append("%s_%d.xyz" % (XYZ, count))
                 count += 1
 
+            # TODO: charge needs to propagate to here
+            # Improve loading scheme as well
             x = [isicle.io.load(i) for i in geom_list]
 
         else:
