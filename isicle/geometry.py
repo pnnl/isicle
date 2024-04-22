@@ -395,9 +395,7 @@ class Geometry(GeometryInterface):
 
         """
 
-        natoms = Chem.Mol.GetNumAtoms(self.to_mol())
-        self.__dict__["natoms"] = natoms
-        return self.__dict__["natoms"]
+        return Chem.Mol.GetNumAtoms(self.to_mol())
 
     def get_atom_indices(
         self, atoms=["C", "H"], lookup={"C": 6, "H": 1, "N": 7, "O": 8, "F": 9, "P": 15}
