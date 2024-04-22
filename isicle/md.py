@@ -381,20 +381,17 @@ class XTBWrapper(WrapperInterface):
 
         result = parser.parse()
 
-        self.__dict__.update(result)
-
-        for i in self.geom:
-            i.add___dict__({k: v for k, v in result.items() if k != "geom"})
-            i.__dict__.update(basename=self.geom.basename)
+        for i in result['geometry']:
+            i.add___dict__({k: v for k, v in result.items() if k != "geometry"})
+            # i.__dict__.update(basename=self.geom.basename)
 
         if self.task != "optimize":
             conformerID = 1
-            for i in self.geom:
+            for i in result['geometry']:
                 i.__dict__.update(conformerID=conformerID)
                 conformerID += 1
-            return self
-        else:
-            self.geom = self.geom[0]
+        
+        return result
 
     def run(self, geom, **kwargs):
         """
@@ -429,9 +426,9 @@ class XTBWrapper(WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        self.finish()
+        result = self.finish()
 
-        return self
+        return result
 
     def get_structures(self):
         """
