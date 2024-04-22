@@ -1,15 +1,14 @@
+import glob
 import os
 import subprocess
+
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdForceFieldHelpers
-from rdkit.Chem import ChemicalForceFields
-from rdkit.Chem import rdDistGeom
+from rdkit.Chem import AllChem, rdDetermineBonds, rdDistGeom
 
 import isicle
 from isicle.geometry import Geometry
 from isicle.interfaces import WrapperInterface
-from isicle.parse import XTBParser, TINKERParser
+from isicle.parse import TINKERParser, XTBParser
 
 """
 Files resulting from an xtb job always run in the same directory that the command is
@@ -92,6 +91,7 @@ class XTBWrapper(WrapperInterface):
     _default_value = None
 
     def __init__(self, **kwargs):
+        self.temp_dir = isicle.utils.mkdtemp()
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(**kwargs)
 
@@ -123,8 +123,7 @@ class XTBWrapper(WrapperInterface):
             ".pdb", ".pkl".
 
         """
-        # Path operationspyth
-        self.temp_dir = isicle.utils.mkdtemp()
+        # Path operations
         self.fmt = fmt.lower()
         geomfile = os.path.join(
             self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower())
@@ -166,7 +165,7 @@ class XTBWrapper(WrapperInterface):
         s += "--" + forcefield + " "
 
         # Add charge
-        s += "--chrg " + self.geom.get_charge() + " "
+        s += "--chrg " + str(self.geom.get_charge()) + " "
 
         # Add optional implicit solvation
         if solvation is not None:
@@ -313,11 +312,11 @@ class XTBWrapper(WrapperInterface):
 
         """
 
-        if type(task) == list:
+        if isinstance(task, list):
             raise TypeError("Initiate one xtb or crest job at a time.")
-        if type(forcefield) == list:
+        if isinstance(forcefield, list):
             raise TypeError("Initiate one forcefield at a time.")
-        if type(optlevel) == list:
+        if isinstance(optlevel, list):
             raise TypeError("Initiate one opt level at a time.")
 
         if task == "optimize":
@@ -351,7 +350,7 @@ class XTBWrapper(WrapperInterface):
                     ignore_topology=ignore_topology,
                 )
             else:
-                raise Error(
+                raise ValueError(
                     "Task not assigned properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize"
                 )
 
@@ -363,34 +362,114 @@ class XTBWrapper(WrapperInterface):
         """
         Run xtb or crest simulation according to configured inputs.
         """
-        owd = os.getcwd()
+        cwd = os.getcwd()
         os.chdir(self.temp_dir)
-        job = self.config
-        subprocess.call(job, shell=True)
-        os.chdir(owd)
+        subprocess.call(self.config, shell=True)
+        os.chdir(cwd)
 
     def finish(self):
         """
         Parse results, save xtb output files, and clean temporary directory
         """
 
-        parser = XTBParser()
+        # Get list of outputs
+        outfiles = glob.glob(os.path.join(self.temp_dir, "*"))
 
-        parser.load(os.path.join(self.temp_dir, self.geom.basename + ".out"))
-        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + ".out"))
 
-        result = parser.parse()
+        # Result container
+        result = {}
 
-        for i in result['geometry']:
-            i.add___dict__({k: v for k, v in result.items() if k != "geometry"})
-            # i.__dict__.update(basename=self.geom.basename)
+        # Split out geometry files
+        geomfiles = sorted([x for x in outfiles if x.endswith(".xyz")])
+        outfiles = sorted([x for x in outfiles if not x.endswith(".xyz")])
 
-        if self.task != "optimize":
-            conformerID = 1
-            for i in result['geometry']:
-                i.__dict__.update(conformerID=conformerID)
-                conformerID += 1
-        
+        # Atom count
+        n_atoms = self.geom.get_natoms()
+
+        # Enumerate geometry files
+        for geomfile in geomfiles:
+            # Extract unique basename
+            # Replace ancillary "crest_"
+            basename = os.path.splitext(os.path.basename(geomfile).replace("crest_", ""))[0]
+
+            # Open file
+            with open(geomfile, "r") as f:
+                contents = f.readlines()
+
+            # Single-structure outputs
+            if (basename == "struc") or (basename == "best") or (basename == "xtbopt"):
+                xyzblock = "".join(contents)
+                
+                raw_mol = Chem.MolFromXYZBlock(xyzblock)
+                mol = Chem.Mol(raw_mol)
+                rdDetermineBonds.DetermineBonds(mol, charge=self.geom.get_charge())
+
+                # Initialize Geometry instance
+                geom = isicle.geometry.Geometry(mol=mol,
+                                                basename=self.geom.basename)
+
+                # Add to result container
+                result[basename] = geom
+
+            # Multi-structure outputs
+            elif "crest" in geomfile:
+                contents = ["".join(contents[i:i + n_atoms + 2]) for i in range(0, len(contents), n_atoms + 2)]
+
+                # Iterate XYZ content
+                geoms = []
+                for xyzblock in contents:
+                    # Construct mol from XYZ
+                    raw_mol = Chem.MolFromXYZBlock(xyzblock)
+                    mol = Chem.Mol(raw_mol)
+                    rdDetermineBonds.DetermineBonds(mol, charge=self.geom.get_charge())
+
+                    # Initialize Geometry instance
+                    geom = isicle.geometry.Geometry(mol=mol,
+                                                    basename=self.geom.basename)
+
+                    # Append to list of geometries
+                    geoms.append(geom)
+
+                # Add to result container
+                result[basename] = geoms
+
+        # Enumerate output files
+        for outfile in outfiles:
+            # Split name and extension
+            if "." in outfile:
+                basename, ext = os.path.basename(outfile).rsplit(".", 1)
+            
+            # No extension
+            else:
+                basename = os.path.basename(outfile)
+                ext = None
+
+            # Key management
+            if (ext is None) or (ext == "tmp"):
+                key = basename
+            else:
+                key = ext
+            
+            # Read output content
+            with open(outfile, "rb") as f:
+                contents = f.read()
+
+            # Attempt utf-8 decode
+            try:
+                result[key] = contents.decode("utf-8")
+            except UnicodeDecodeError:
+                result[key] = contents
+
+        # Rename select keys
+        if "struc" in result:
+            result["input"] = result.pop("struc")
+
+        if "xtbopt" in result:
+            result["final"] = result.pop("xtbopt")
+
+        if "original" in result:
+            result["coord_original"] = result.pop("original")
+
         return result
 
     def run(self, geom, **kwargs):
@@ -429,40 +508,6 @@ class XTBWrapper(WrapperInterface):
         result = self.finish()
 
         return result
-
-    def get_structures(self):
-        """
-        Extract all structures from containing object as a conformational ensemble.
-
-        Returns
-        -------
-        :obj:`~isicle.conformers.ConformationalEnsemble`
-            Conformational ensemble.
-
-        """
-        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
-            return self.geom
-
-        raise TypeError(
-            "Object does not contain multiple structures. Use `get_structure` instead."
-        )
-
-    def get_structure(self):
-        """
-        Extract structure from containing object.
-
-        Returns
-        -------
-        :obj:`~isicle.geometry.Geometry`
-            Structure instance.
-
-        """
-        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
-            raise TypeError(
-                "Object contains multiple structures. Use `get_structures` instead."
-            )
-
-        return self.geom
 
 
 class RDKitWrapper(Geometry, WrapperInterface):
@@ -623,20 +668,16 @@ class RDKitWrapper(Geometry, WrapperInterface):
         """
         Parse RDKit conformers generated.
         """
-        confCount = self.geom.mol.GetNumConformers()
+        conf_count = self.geom.mol.GetNumConformers()
         conformers = [
             isicle.load(Chem.Mol(self.geom.mol, confId=i))
-            for i in range(confCount)
+            for i in range(conf_count)
         ]
 
-        # Override conformer basename
-        for conformer in conformers:
-            conformer.basename = self.geom.basename
+        for conf, label in zip(conformers, range(conf_count)):
+            conf.__dict__.update(conformerID=label, basename=self.geom.basename)
 
-        # TODO: not an ideal overwrite of self.geom
-        self.geom = conformers
-        for conf, label in zip(self.geom, range(confCount)):
-            conf.__dict__.update(conformerID=label)
+        return isicle.conformers.ConformationalEnsemble(conformers)
 
     def run(self, geom, **kwargs):
         """
@@ -673,40 +714,6 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.finish()
 
         return self
-
-    def get_structures(self):
-        """
-        Extract all structures from containing object as a conformational ensemble.
-
-        Returns
-        -------
-        :obj:`~isicle.conformers.ConformationalEnsemble`
-            Conformational ensemble.
-
-        """
-        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
-            return self.geom
-
-        raise TypeError(
-            "Object does not contain multiple structures. Use `get_structure` instead."
-        )
-
-    def get_structure(self):
-        """
-        Extract structure from containing object.
-
-        Returns
-        -------
-        :obj:`~isicle.geometry.Geometry`
-            Structure instance.
-
-        """
-        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
-            raise TypeError(
-                "Object contains multiple structures. Use `get_structures` instead."
-            )
-
-        return self.geom
 
 
 class TINKERWrapper(Geometry, WrapperInterface):
@@ -1118,37 +1125,3 @@ class TINKERWrapper(Geometry, WrapperInterface):
         self.finish()
 
         return self
-
-    def get_structures(self):
-        """
-        Extract all structures from containing object as a conformational ensemble.
-
-        Returns
-        -------
-        :obj:`~isicle.conformers.ConformationalEnsemble`
-            Conformational ensemble.
-
-        """
-        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
-            return self.geom
-
-        raise TypeError(
-            "Object does not contain multiple structures. Use `get_structure` instead."
-        )
-
-    def get_structure(self):
-        """
-        Extract structure from containing object.
-
-        Returns
-        -------
-        :obj:`~isicle.geometry.Geometry`
-            Structure instance.
-
-        """
-        if isinstance(self.geom, isicle.conformers.ConformationalEnsemble):
-            raise TypeError(
-                "Object contains multiple structures. Use `get_structures` instead."
-            )
-
-        return self.geom
