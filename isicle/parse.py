@@ -319,8 +319,8 @@ class ORCAParser(FileParserInterface):
         result = {k: v for k, v in result.items() if v is not None}
 
         # Add result info to geometry object
-        if 'geometry' in result:
-            result['geometry'].add___dict__(
+        if "geometry" in result:
+            result["geometry"].add___dict__(
                 {k: v for k, v in result.items() if k != 'geometry'})
 
         # Store attribute
@@ -1107,12 +1107,9 @@ class XTBParser(FileParserInterface):
 
             # TODO: charge needs to propagate to here
             # Improve loading scheme as well
-            x = [isicle.io.load(i) for i in geom_list]
+            return isicle.conformers.ConformationalEnsemble([isicle.io.load(i) for i in geom_list])
 
-        else:
-            x = [isicle.io.load(self.xyz_path)]
-
-        return isicle.conformers.ConformationalEnsemble(x)
+        return isicle.io.load(self.xyz_path)
 
     def parse(self):
         """
@@ -1150,51 +1147,45 @@ class XTBParser(FileParserInterface):
             pass
 
         # Parse geometry from assoc. XYZ file
-        try:
-            if self.path.endswith("xyz"):
-                try:
-                    self.xyz_path = self.path
-                    result["geom"] = self._parse_xyz()
+        if self.path.endswith("xyz"):
+            try:
+                result["geometry"] = self._parse_xyz()
 
-                except:
-                    pass
+            except:
+                pass
 
-            if self.path.endswith("out") or self.path.endswith("log"):
-                # try geometry parsing
-                try:
-                    XYZ = None
-                    if result["protocol"].split()[0] == "xtb":
-                        self.parse_opt = True
-                        XYZ = "xtbopt.xyz"
-                    if result["protocol"].split()[1] == "crest":
-                        if "-deprotonate" in result["protocol"]:
-                            self.parse_isomer = True
-                            XYZ = "deprotonated.xyz"
-                        elif "-protonate" in result["protocol"]:
-                            self.parse_isomer = True
-                            XYZ = "protonated.xyz"
-                        elif "-tautomer" in result["protocol"]:
-                            self.parse_isomer = True
-                            XYZ = "tautomers.xyz"
-                        else:
-                            self.parse_crest = True
-                            XYZ = "crest_conformers.xyz"
+        if self.path.endswith("out") or self.path.endswith("log"):
+            # try geometry parsing
+            XYZ = None
+            if result["protocol"].split()[0] == "xtb":
+                self.parse_opt = True
+                XYZ = "xtbopt.xyz"
+            if result["protocol"].split()[1] == "crest":
+                if "-deprotonate" in result["protocol"]:
+                    self.parse_isomer = True
+                    XYZ = "deprotonated.xyz"
+                elif "-protonate" in result["protocol"]:
+                    self.parse_isomer = True
+                    XYZ = "protonated.xyz"
+                elif "-tautomer" in result["protocol"]:
+                    self.parse_isomer = True
+                    XYZ = "tautomers.xyz"
+                else:
+                    self.parse_crest = True
+                    XYZ = "crest_conformers.xyz"
 
-                    if XYZ is None:
-                        raise RuntimeError(
-                            "XYZ file associated with XTB job not available,\
-                                        please parse separately."
-                        )
+            if XYZ is None:
+                raise RuntimeError(
+                    "XYZ file associated with XTB job not available,\
+                                please parse separately."
+                )
 
-                    else:
-                        temp_dir = os.path.dirname(self.path)
-                        self.xyz_path = os.path.join(temp_dir, XYZ)
+            else:
+                temp_dir = os.path.dirname(self.path)
+                self.xyz_path = os.path.join(temp_dir, XYZ)
 
-                        result["geom"] = self._parse_xyz()
-                except:
-                    pass
-        except:
-            pass
+                result["geometry"] = self._parse_xyz()
+
         return result
 
     def save(self, path):
