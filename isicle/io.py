@@ -61,7 +61,7 @@ def load_xyz(path, charge=None):
     basename = os.path.splitext(os.path.basename(path))[0]
 
     # Initialize Geometry instance
-    geom = isicle.geometry.Geometry(mol=mol, charge=charge, basename=basename)
+    geom = isicle.geometry.Geometry(mol=mol, basename=basename)
 
     return geom
 
