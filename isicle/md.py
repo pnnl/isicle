@@ -375,7 +375,6 @@ class XTBWrapper(WrapperInterface):
         # Get list of outputs
         outfiles = glob.glob(os.path.join(self.temp_dir, "*"))
 
-
         # Result container
         result = {}
 
