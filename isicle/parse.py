@@ -321,7 +321,8 @@ class ORCAParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {k: v for k, v in result.items() if k != 'geometry'})
+                {k: v for k, v in result.items() if k != "geometry"}
+            )
 
         # Store attribute
         self.result = result
@@ -348,7 +349,7 @@ class NWChemParser(FileParserInterface):
         Add docstring
         """
 
-        return self.data['xyz']['final']
+        return self.data["xyz"]["final"]
 
     def _parse_energy(self):
         """
@@ -360,7 +361,7 @@ class NWChemParser(FileParserInterface):
         energy = None
 
         # Cycle through file
-        for line in self.data['out'].split("\n"):
+        for line in self.data["out"].split("\n"):
             if "Total DFT energy" in line:
                 # Overwrite last saved energy
                 energy = float(line.split()[-1])
@@ -377,7 +378,7 @@ class NWChemParser(FileParserInterface):
         shield_atoms = []
         shields = []
 
-        for line in self.data['out'].split("\n"):
+        for line in self.data["out"].split("\n"):
             if " SHIELDING" in line:
                 shield_idxs = [int(x) for x in line.split()[2:]]
                 if len(shield_idxs) == 0:
@@ -407,7 +408,7 @@ class NWChemParser(FileParserInterface):
         """
 
         # No spin
-        if "SPINSPIN" not in self.data['nw']:
+        if "SPINSPIN" not in self.data["nw"]:
             return None
 
         # TO DO: Add g-factors
@@ -419,7 +420,7 @@ class NWChemParser(FileParserInterface):
         g_factor = []
         ready = False
 
-        for line in self.data['out'].split("\n"):
+        for line in self.data["out"].split("\n"):
             if "Atom  " in line:
                 line = line.split()
                 idx1 = int((line[1].split(":"))[0])
@@ -468,7 +469,7 @@ class NWChemParser(FileParserInterface):
         natoms = None
         has_frequency = None
 
-        lines = self.data['out'].split("\n")
+        lines = self.data["out"].split("\n")
         for i, line in enumerate(lines):
             if ("geometry" in line) and (natoms is None):
                 atom_start = i + 7
@@ -535,7 +536,7 @@ class NWChemParser(FileParserInterface):
         charges = []
         ready = False
 
-        for line in self.data['out'].split("\n"):
+        for line in self.data["out"].split("\n"):
             # Load charges from table
             if "Atom       Charge   Shell Charges" in line:
                 # Table header found. Overwrite anything saved previously
@@ -593,7 +594,7 @@ class NWChemParser(FileParserInterface):
         opt = False
         freq = False
 
-        for i, line in enumerate(self.data['out'].split("\n")):
+        for i, line in enumerate(self.data["out"].split("\n")):
             # ?
             if "No." in line and len(indices) == 0:
                 indices.append(i + 2)  # 0
@@ -638,8 +639,8 @@ class NWChemParser(FileParserInterface):
         """
         Add docstring
         """
-        if 'molden' in self.data:
-            return self['molden']
+        if "molden" in self.data:
+            return self["molden"]
 
         return None
 
@@ -653,9 +654,9 @@ class NWChemParser(FileParserInterface):
         """
         Add docstring
         """
-        
+
         # Split lines
-        lines = self.data['out'].split("\n")
+        lines = self.data["out"].split("\n")
 
         # Extracting Atoms & Coordinates
         coor_substr = "internuclear distances"
@@ -684,7 +685,7 @@ class NWChemParser(FileParserInterface):
         # Check for result
         if len(connectivity) > 0:
             return connectivity
-        
+
         return None
 
     def parse(self):
@@ -712,9 +713,10 @@ class NWChemParser(FileParserInterface):
         result = {k: v for k, v in result.items() if v is not None}
 
         # Add result info to geometry object
-        if 'geometry' in result:
-            result['geometry'].add___dict__(
-                {k: v for k, v in result.items() if k != 'geometry'})
+        if "geometry" in result:
+            result["geometry"].add___dict__(
+                {k: v for k, v in result.items() if k != "geometry"}
+            )
 
         # Store attribute
         self.result = result
@@ -870,22 +872,15 @@ class XTBParser(FileParserInterface):
     Add docstring
     """
 
-    def __init__(self):
-        """
-        Add docstring
-        """
-        self.contents = None
-        self.result = None
-        self.path = None
+    def __init__(self, data=None):
+        self.data = data
 
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        with open(path, "r") as f:
-            self.contents = f.readlines()
-        self.path = path
-        # return self.contents
+        self.result = {}
+
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
+
+        self.lines = self.data["out"].split("\n")
 
     def _crest_energy(self):
         """
@@ -896,11 +891,11 @@ class XTBParser(FileParserInterface):
         population = []
 
         ready = False
-        for h in range(len(self.contents), 0, -1):
-            if "Erel/kcal" in self.contents[h]:
+        for h in range(len(self.lines), 0, -1):
+            if "Erel/kcal" in self.lines[h]:
                 g = h + 1
-                for j in range(g, len(self.contents)):
-                    line = self.contents[j].split()
+                for j in range(g, len(self.lines)):
+                    line = self.lines[j].split()
                     if len(line) == 8:
                         relative_energy.append(float(line[1]))
                         total_energy.append(float(line[2]))
@@ -909,7 +904,7 @@ class XTBParser(FileParserInterface):
 
                     if "/K" in line[1]:
                         break
-            if ready == True:
+            if ready is True:
                 break
 
         return {
@@ -930,7 +925,7 @@ class XTBParser(FileParserInterface):
             return ":".join(line[1:]).strip("\n")
 
         ready = False
-        for line in self.contents:
+        for line in self.lines:
             if "test MD wall time" in line:
                 test_MD = grab_time(line)
                 ready = True
@@ -941,7 +936,7 @@ class XTBParser(FileParserInterface):
             if "multilevel OPT wall time" in line:
                 multilevel_OPT = grab_time(line)
 
-            if "MD wall time" in line and ready == True:
+            if "MD wall time" in line and ready is True:
                 MD = grab_time(line)
                 ready = False
 
@@ -967,19 +962,19 @@ class XTBParser(FileParserInterface):
         complete = False
         relative_energies = []
         total_energies = []
-        for i in range(len(self.contents), 0, -1):
-            if "structure    ΔE(kcal/mol)   Etot(Eh)" in self.contents[i]:
+        for i in range(len(self.lines), 0, -1):
+            if "structure    ΔE(kcal/mol)   Etot(Eh)" in self.lines[i]:
                 h = i + 1
-                for j in range(h, len(self.contents)):
-                    if self.contents[j] != " \n":
-                        line = self.contents[j].split()
+                for j in range(h, len(self.lines)):
+                    if self.lines[j] != " \n":
+                        line = self.lines[j].split()
                         relative_energies.append(float(line[1]))
                         total_energies.append(float(line[2]))
                     else:
                         complete = True
                         break
 
-            if complete == True:
+            if complete is True:
                 break
 
         return {"relative energy": relative_energies, "total energy": total_energies}
@@ -995,7 +990,7 @@ class XTBParser(FileParserInterface):
 
             return ":".join(line[1:]).strip("\n")
 
-        for line in self.contents:
+        for line in self.lines:
             if "LMO calc. wall time" in line:
                 LMO_time = grab_time(line)
 
@@ -1015,7 +1010,7 @@ class XTBParser(FileParserInterface):
         """
         Add docstring
         """
-        for line in self.contents:
+        for line in self.lines:
             if "TOTAL ENERGY" in line:
                 energy = line.split()[3] + " Hartrees"
 
@@ -1036,7 +1031,7 @@ class XTBParser(FileParserInterface):
         scf = False
         anc = False
 
-        for line in self.contents:
+        for line in self.lines:
             if "wall-time" in line and tot is False:
                 total_time = grab_time(line)
                 tot = True
@@ -1055,28 +1050,6 @@ class XTBParser(FileParserInterface):
             "ANC optimizer wall time": anc_time,
         }
 
-    def _parse_energy(self):
-        """
-        Add docstring
-        """
-        if self.parse_crest == True:
-            return self._crest_energy()
-        if self.parse_opt == True:
-            return self._opt_energy()
-        if self.parse_isomer == True:
-            return self._isomer_energy()
-
-    def _parse_timing(self):
-        """
-        Add docstring
-        """
-        if self.parse_crest == True:
-            return self._crest_timing()
-        if self.parse_opt == True:
-            return self._opt_timing()
-        if self.parse_isomer == True:
-            return self._isomer_timing()
-
     def _parse_protocol(self):
         """
         Add docstring
@@ -1090,26 +1063,25 @@ class XTBParser(FileParserInterface):
                 protocol = (line.split(":")[1]).strip("\n")
         return protocol
 
-    def _parse_xyz(self):
+    def _parse_geometry(self):
         """
         Split .xyz into separate XYZGeometry instances
         """
-
-        FILE = self.xyz_path
-        if len(list(pybel.readfile("xyz", FILE))) > 1:
-            geom_list = []
-            count = 1
-            XYZ = FILE.split(".")[0]
-            for geom in pybel.readfile("xyz", FILE):
-                geom.write("xyz", "%s_%d.xyz" % (XYZ, count))
-                geom_list.append("%s_%d.xyz" % (XYZ, count))
-                count += 1
-
-            # TODO: charge needs to propagate to here
-            # Improve loading scheme as well
-            return isicle.conformers.ConformationalEnsemble([isicle.io.load(i) for i in geom_list])
-
-        return isicle.io.load(self.xyz_path)
+        geometries = {}
+        # Add geometry info
+        for key in [
+            "conformers",
+            "rotamers",
+            "final",
+            "best",
+            "protonated",
+            "deprotonated",
+            "tautomers",
+        ]:
+            if key in self.data:
+                geometries[key] = self.data[key]
+        
+        return geometries
 
     def parse(self):
         """
@@ -1128,63 +1100,30 @@ class XTBParser(FileParserInterface):
         ):
             raise RuntimeError("XTB job failed: {}".format(self.path))
 
-        self.parse_crest = False
-        self.parse_opt = False
-        self.parse_isomer = False
-
         # Initialize result object to store info
-        result = {}
-        result["protocol"] = self._parse_protocol()
+        result = {
+            "protocol": self._parse_protocol(),
+            "timing": self._parse_timing(),
+            "energy": self._parse_energy(),
+            "geometry": self._parse_geometry()
+        }
 
-        try:
-            result["timing"] = self._parse_timing()
-        except:
-            pass
+        if result["protocol"].split()[0] == "xtb":
+            result["timing"] = self._opt_timing()
+            result["energy"] = self._opt_energy()
 
-        try:
-            result["energy"] = self._parse_energy()
-        except:
-            pass
-
-        # Parse geometry from assoc. XYZ file
-        if self.path.endswith("xyz"):
-            try:
-                result["geometry"] = self._parse_xyz()
-
-            except:
-                pass
-
-        if self.path.endswith("out") or self.path.endswith("log"):
-            # try geometry parsing
-            XYZ = None
-            if result["protocol"].split()[0] == "xtb":
-                self.parse_opt = True
-                XYZ = "xtbopt.xyz"
-            if result["protocol"].split()[1] == "crest":
-                if "-deprotonate" in result["protocol"]:
-                    self.parse_isomer = True
-                    XYZ = "deprotonated.xyz"
-                elif "-protonate" in result["protocol"]:
-                    self.parse_isomer = True
-                    XYZ = "protonated.xyz"
-                elif "-tautomer" in result["protocol"]:
-                    self.parse_isomer = True
-                    XYZ = "tautomers.xyz"
-                else:
-                    self.parse_crest = True
-                    XYZ = "crest_conformers.xyz"
-
-            if XYZ is None:
-                raise RuntimeError(
-                    "XYZ file associated with XTB job not available,\
-                                please parse separately."
-                )
-
+        if result["protocol"].split()[1] == "crest":
+            if any(
+                [
+                    x in result["protocol"]
+                    for x in ["-deprotonate", "-protonate", "-tautomer"]
+                ]
+            ):
+                result["timing"] = self._isomer_timing()
+                result["energy"] = self._isomer_energy()
             else:
-                temp_dir = os.path.dirname(self.path)
-                self.xyz_path = os.path.join(temp_dir, XYZ)
-
-                result["geometry"] = self._parse_xyz()
+                result["timing"] = self._crest_timing()
+                result["energy"] = self._crest_energy()
 
         return result
 
