@@ -299,7 +299,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
-    def _is_embedded(self):
+    def _is_embedded(self, mol):
         """
         Check if molecule has embedded 3D coordinates.
 
@@ -311,7 +311,7 @@ class Geometry(XYZGeometry, GeometryInterface):
         """
 
         try:
-            self.mol.GetConformers()
+            mol.GetConformer().Is3D()
             return True
         except:
             return False
@@ -386,17 +386,17 @@ class Geometry(XYZGeometry, GeometryInterface):
         # Embed molecule 3D coordinates
         if embed is True:
             # Attempt embedding
-            try:
-                Chem.AllChem.EmbedMolecule(mol)
-
-            # Use random coordinates
-            except:
-                Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+            res = Chem.AllChem.EmbedMolecule(mol)
+            if res == -1:
+                # Use random coordinates
+                res = Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+                if res == -1:
+                    raise ValueError("Embedding failure.")
 
         # Optimize according to supplied forcefield
         if forcefield is not None:
             # Check if embedded
-            if self._is_embedded():
+            if self._is_embedded(mol):
                 # Forcefield selection
                 if "mmff94s" in forcefield.lower():
                     _forcefield_selector(forcefield, mol)(
