@@ -1059,7 +1059,7 @@ class XTBParser(FileParserInterface):
         """
         protocol = None
 
-        for line in self.contents:
+        for line in self.lines:
             if " > " in line:
                 protocol = line.strip("\n")
             if "program call" in line:
@@ -1087,7 +1087,7 @@ class XTBParser(FileParserInterface):
         if len(geometries) > 1:
             return geometries
         
-        return geometries[geometries.keys()[0]]
+        return geometries.popitem()[1]
 
     def parse(self):
         """
@@ -1095,10 +1095,10 @@ class XTBParser(FileParserInterface):
         """
 
         # Check that the file is valid first
-        if len(self.contents) == 0:
+        if len(self.lines) == 0:
             raise RuntimeError("No contents to parse: {}".format(self.path))
 
-        last_lines = "".join(self.contents[-10:])
+        last_lines = "".join(self.lines[-10:])
         if (
             ("terminat" not in last_lines)
             & ("normal" not in last_lines)
@@ -1109,7 +1109,6 @@ class XTBParser(FileParserInterface):
         # Initialize result object to store info
         result = {
             "protocol": self._parse_protocol(),
-            "energy": self._parse_energy(),
             "geometry": self._parse_geometry()
         }
 
@@ -1117,7 +1116,7 @@ class XTBParser(FileParserInterface):
             result["timing"] = self._opt_timing()
             result["energy"] = self._opt_energy()
 
-        if result["protocol"].split()[1] == "crest":
+        elif result["protocol"].split()[1] == "crest":
             if any(
                 [
                     x in result["protocol"]
