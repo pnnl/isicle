@@ -24,8 +24,8 @@ class Geometry(GeometryInterface):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
 
-        if self.charge is None:
-            self.charge = self.get_charge()
+        # if self.charge is None:
+        #     self.charge = self.get_charge()
 
     def get_basename(self):
         """
