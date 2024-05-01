@@ -1,8 +1,5 @@
-import glob
-import os
 import pickle
 import re
-from os.path import splitext
 
 import numpy as np
 import pandas as pd
@@ -41,7 +38,7 @@ class ORCAParser(FileParserInterface):
         return self.data["inp"]
 
     def _parse_geometry(self):
-        return self.data["xyz"]["final"]
+        return self.data["xyz"]
 
     def _parse_energy(self):
         # Split text
@@ -61,37 +58,41 @@ class ORCAParser(FileParserInterface):
         return evals[-1]
 
     def _parse_frequency(self):
-        # Define columns
-        columns = ["wavenumber", "eps", "intensity", "TX", "TY", "TZ"]
+        if "hess" in self.data:
+            # Define columns
+            columns = ["wavenumber", "eps", "intensity", "TX", "TY", "TZ"]
 
-        # Split sections by delimiter
-        blocks = self.data["hess"].split("$")
+            # Split sections by delimiter
+            blocks = self.data["hess"].split("$")
 
-        # Search for frequency values
-        freq_block = [x for x in blocks if x.startswith("ir_spectrum")]
+            # Search for frequency values
+            freq_block = [x for x in blocks if x.startswith("ir_spectrum")]
 
-        # Frequency values not found
-        if len(freq_block) == 0:
-            return None
+            # Frequency values not found
+            if len(freq_block) == 0:
+                return None
 
-        # Grab last frequency block
-        # Doubtful if more than one, but previous results in list
-        freq_block = freq_block[-1]
+            # Grab last frequency block
+            # Doubtful if more than one, but previous results in list
+            freq_block = freq_block[-1]
 
-        # Split block into lines
-        lines = freq_block.split("\n")
+            # Split block into lines
+            lines = freq_block.split("\n")
 
-        # Map float over values
-        vals = np.array(
-            [
-                list(map(float, x.split()))
-                for x in lines
-                if len(x.split()) == len(columns)
-            ]
-        )
+            # Map float over values
+            vals = np.array(
+                [
+                    list(map(float, x.split()))
+                    for x in lines
+                    if len(x.split()) == len(columns)
+                ]
+            )
 
-        # Zip columns and values
-        return dict(zip(columns, vals.T))
+            # Zip columns and values
+            return dict(zip(columns, vals.T))
+        
+        # No frequency info
+        return None
 
     def _parse_timing(self):
         # Grab only last few lines
@@ -894,7 +895,7 @@ class XTBParser(FileParserInterface):
         population = []
 
         ready = False
-        for h in range(len(self.lines), 0, -1):
+        for h in range(len(self.lines) - 1, -1, -1):
             if "Erel/kcal" in self.lines[h]:
                 g = h + 1
                 for j in range(g, len(self.lines)):
@@ -965,7 +966,7 @@ class XTBParser(FileParserInterface):
         complete = False
         relative_energies = []
         total_energies = []
-        for i in range(len(self.lines), 0, -1):
+        for i in range(len(self.lines) - 1, -1, -1):
             if "structure    ΔE(kcal/mol)   Etot(Eh)" in self.lines[i]:
                 h = i + 1
                 for j in range(h, len(self.lines)):
