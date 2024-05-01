@@ -117,7 +117,6 @@ class NWChemWrapper(WrapperInterface):
 
         # Assign geometry
         self.geom = geom.__copy__()
-        self.basename = self.geom.basename
 
         # Save
         self._save_geometry()
@@ -180,14 +179,9 @@ class NWChemWrapper(WrapperInterface):
                 'echo\n'
                 'print low\n').format(**d)
 
-    def _configure_load(self, charge=0):
+    def _configure_load(self):
         """
         Generate geometry load block of NWChem configuration.
-
-        Parameters
-        ----------
-        charge : int
-            Nominal charge of the molecule to be optimized.
 
         Returns
         -------
@@ -198,7 +192,7 @@ class NWChemWrapper(WrapperInterface):
 
         d = {'basename': self.geom.basename,
              'dirname': self.temp_dir,
-             'charge': charge}
+             'charge': self.geom.get_charge()}
 
         return ('\ncharge {charge}\n'
                 'geometry noautoz noautosym\n'
@@ -625,7 +619,7 @@ class NWChemWrapper(WrapperInterface):
         return s
 
     def configure(self, tasks='energy', functional='b3lyp',
-                  basis_set='6-31g*', ao_basis='cartesian', charge=0,
+                  basis_set='6-31g*', ao_basis='cartesian',
                   atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
                   mem_stack=600, scratch_dir=None, processes=12):
@@ -644,8 +638,6 @@ class NWChemWrapper(WrapperInterface):
         ao_basis : str or list of str
             Angular function selection ("spherical", "cartesian"). Supply
             globally or per task.
-        charge : int
-            Nominal charge of the molecule to be optimized.
         atoms : list of str
             Atom types of interest. Only used for `spin` and `shielding` tasks.
         temp : float
@@ -721,7 +713,7 @@ class NWChemWrapper(WrapperInterface):
                                          mem_stack=mem_stack)
 
         # Load geometry
-        config += self._configure_load(charge=charge)
+        config += self._configure_load(charge=self.geom.get_charge())
 
         # Configure tasks
         for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
@@ -855,7 +847,7 @@ class NWChemWrapper(WrapperInterface):
         # Enumerate geometry files
         result['xyz'] = OrderedDict()
         for geomfile in geomfiles:
-            geom = isicle.load(geomfile)
+            geom = isicle.load(geomfile, charge=self.geom.get_charge())
             
             if '_geom-' in geomfile:
                 idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
@@ -887,7 +879,7 @@ class NWChemWrapper(WrapperInterface):
         return self.result
 
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
-            basis_set='6-31g*', ao_basis='cartesian', charge=0,
+            basis_set='6-31g*', ao_basis='cartesian',
             atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
             gas=False, max_iter=150, mem_global=1600, mem_heap=100,
             mem_stack=600, scratch_dir=None, processes=12):
@@ -911,8 +903,6 @@ class NWChemWrapper(WrapperInterface):
         ao_basis : str or list of str
             Angular function selection ("spherical", "cartesian"). Supply
             globally or per task.
-        charge : int
-            Nominal charge of the molecule to be optimized.
         atoms : list of str
             Atom types of interest. Only used for `spin` and `shielding` tasks.
         temp : float
@@ -954,9 +944,8 @@ class NWChemWrapper(WrapperInterface):
         else:
             self.configure(tasks=tasks,
                            functional=functional, basis_set=basis_set,
-                           ao_basis=ao_basis, charge=charge,
-                           atoms=atoms, bonds=bonds, temp=temp,
-                           cosmo=cosmo, solvent=solvent, gas=gas,
+                           ao_basis=ao_basis,atoms=atoms, bonds=bonds,
+                           temp=temp, cosmo=cosmo, solvent=solvent, gas=gas,
                            max_iter=max_iter, mem_global=mem_global,
                            mem_heap=mem_heap, mem_stack=mem_stack,
                            scratch_dir=scratch_dir, processes=processes)
@@ -1029,8 +1018,7 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Assign geometry
-        self.geom = geom.__copy__()
-        self.basename = self.geom.basename
+        self.geom = geom.__copy__()        
 
         # Save
         self._save_geometry()
@@ -1052,7 +1040,7 @@ class ORCAWrapper(WrapperInterface):
         # Store path
         self.geom.path = geomfile
 
-    def configure(self, simple_input=[], block_input={}, charge=0, spin_multiplicity=1, processes=1, **kwargs):
+    def configure(self, simple_input=[], block_input={}, spin_multiplicity=1, processes=1, **kwargs):
         """
         Configure ORCA simulation.
 
@@ -1067,8 +1055,6 @@ class ORCAWrapper(WrapperInterface):
             directly, include as a complete string. Include key:value pairs as tuples. 
             See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
             section of the ORCA docs.
-        charge : int
-            Nominal charge of the molecule.
         spin_multiplicity : int
             Spin multiplicity of the molecule.
         processes : int
@@ -1094,7 +1080,7 @@ class ORCAWrapper(WrapperInterface):
             config += '%PAL NPROCS {} END\n'.format(processes)
 
         # Add geometry context
-        config += '* xyzfile {:d} {:d} {}\n'.format(charge, spin_multiplicity, self.geom.path)
+        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.get_charge(), spin_multiplicity, self.geom.path)
 
         # Expand keyword args
         for k, v in kwargs.items():
@@ -1191,7 +1177,7 @@ class ORCAWrapper(WrapperInterface):
 
             # Load geometry
             if var_name == 'xyz':
-                result[var_name] = isicle.load(outfile)
+                result[var_name] = isicle.load(outfile, charge=self.geom.get_charge())
 
             # Load other files
             else:
