@@ -133,9 +133,7 @@ class XTBWrapper(WrapperInterface):
         isicle.io.save(geomfile, self.geom)
         self.geom.path = geomfile
 
-    def _configure_xtb(
-        self, forcefield="gfn2", optlevel="normal", solvation=None
-    ):
+    def _configure_xtb(self, forcefield="gfn2", optlevel="normal", solvation=None):
         """
         Set command line for xtb simulations.
 
@@ -227,7 +225,9 @@ class XTBWrapper(WrapperInterface):
 
         # Add geometry
         s += str(
-            os.path.join(self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower()))
+            os.path.join(
+                self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower())
+            )
         )
 
         s += " "
@@ -382,37 +382,41 @@ class XTBWrapper(WrapperInterface):
         geomfiles = sorted([x for x in outfiles if x.endswith(".xyz")])
         outfiles = sorted([x for x in outfiles if not x.endswith(".xyz")])
 
-        # Atom count
-        n_atoms = self.geom.get_natoms()
+        # # Atom count
+        # n_atoms = xtbw.geom.get_natoms()
+
+        # Charge lookup
+        charge_lookup = defaultdict(lambda: 0, {"protonated": 1, "deprotonated": -1})
 
         # Enumerate geometry files
         for geomfile in geomfiles:
             # Extract unique basename
             # Replace ancillary "crest_"
-            basename = os.path.splitext(os.path.basename(geomfile).replace("crest_", ""))[0]
+            basename = os.path.splitext(
+                os.path.basename(geomfile).replace("crest_", "")
+            )[0]
 
-            # Open file
-            with open(geomfile, "r") as f:
-                contents = f.readlines()
+            # Only process of-interest structures
+            if basename in [
+                "struc",
+                "best",
+                "xtbopt",
+                "protonated",
+                "deprotonated",
+                "tautomers",
+            ]:
+                # Open file
+                with open(geomfile, "r") as f:
+                    contents = f.readlines()
 
-            # Single-structure outputs
-            if basename in ["struc", "best", "xtbopt"]:
-                xyzblock = "".join(contents)
-                
-                raw_mol = Chem.MolFromXYZBlock(xyzblock)
-                mol = Chem.Mol(raw_mol)
-                rdDetermineBonds.DetermineBonds(mol, charge=self.geom.get_charge())
+                # Get file-specific atom count
+                n_atoms = int(contents[0].strip())
 
-                # Initialize Geometry instance
-                geom = isicle.geometry.Geometry(mol=mol,
-                                                basename=self.geom.basename)
-
-                # Add to result container
-                result[basename] = geom
-
-            # Multi-structure outputs
-            elif "crest" in geomfile:
-                contents = ["".join(contents[i:i + n_atoms + 2]) for i in range(0, len(contents), n_atoms + 2)]
+                # Split into individual xyz
+                contents = [
+                    "".join(contents[i : i + n_atoms + 2])
+                    for i in range(0, len(contents), n_atoms + 2)
+                ]
 
                 # Iterate XYZ content
                 geoms = []
@@ -420,35 +424,41 @@ class XTBWrapper(WrapperInterface):
                     # Construct mol from XYZ
                     raw_mol = Chem.MolFromXYZBlock(xyzblock)
                     mol = Chem.Mol(raw_mol)
-                    rdDetermineBonds.DetermineBonds(mol, charge=self.geom.get_charge())
+                    rdDetermineBonds.DetermineBonds(
+                        mol, charge=self.geom.get_charge() + charge_lookup[basename]
+                    )
 
                     # Initialize Geometry instance
-                    geom = isicle.geometry.Geometry(mol=mol,
-                                                    basename=self.geom.basename)
+                    geom = isicle.geometry.Geometry(
+                        mol=mol, basename=self.geom.basename
+                    )
 
                     # Append to list of geometries
                     geoms.append(geom)
 
                 # Add to result container
-                result[basename] = geoms
+                if len(geoms) > 1:
+                    result[basename] = geoms
+                else:
+                    result[basename] = geoms[0]
 
         # Enumerate output files
         for outfile in outfiles:
             # Split name and extension
             if "." in outfile:
                 basename, ext = os.path.basename(outfile).rsplit(".", 1)
-            
+
             # No extension
             else:
                 basename = os.path.basename(outfile)
                 ext = None
 
             # Key management
-            if ext in [None, "tmp"]:
+            if ext in [None, "tmp", "0"]:
                 key = basename
             else:
                 key = ext
-            
+
             # Read output content
             with open(outfile, "rb") as f:
                 contents = f.read()
@@ -459,15 +469,18 @@ class XTBWrapper(WrapperInterface):
             except UnicodeDecodeError:
                 result[key] = contents
 
-        # Rename select keys
-        if "struc" in result:
-            result["input"] = result.pop("struc")
+        # Renaming key
+        rename = {
+            "struc": "input",
+            "xtbopt": "final",
+            "original": "coord_original",
+            "protonated": "cations",
+            "deprotonated": "anions",
+        }
 
-        if "xtbopt" in result:
-            result["final"] = result.pop("xtbopt")
-
-        if "original" in result:
-            result["coord_original"] = result.pop("original")
+        # Rename matching keys
+        for key in result.keys() & rename.keys():
+            result[rename[key]] = result.pop(key)
 
         return result
 
@@ -510,7 +523,6 @@ class XTBWrapper(WrapperInterface):
 
 
 class RDKitWrapper(Geometry, WrapperInterface):
-
     """
     Wrapper for RDKit functionality.
 
@@ -669,8 +681,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         """
         conf_count = self.geom.mol.GetNumConformers()
         conformers = [
-            isicle.load(Chem.Mol(self.geom.mol, confId=i))
-            for i in range(conf_count)
+            isicle.load(Chem.Mol(self.geom.mol, confId=i)) for i in range(conf_count)
         ]
 
         for conf, label in zip(conformers, range(conf_count)):
@@ -716,7 +727,6 @@ class RDKitWrapper(Geometry, WrapperInterface):
 
 
 class TINKERWrapper(Geometry, WrapperInterface):
-
     """
     Wrapper for TINKER functionality.
 
@@ -1073,7 +1083,9 @@ class TINKERWrapper(Geometry, WrapperInterface):
         parser = TINKERParser()
 
         parser.load(os.path.join(self.temp_dir, self.geom.basename + ".tout"))
-        self.output = parser.load(os.path.join(self.temp_dir, self.geom.basename + ".tout"))
+        self.output = parser.load(
+            os.path.join(self.temp_dir, self.geom.basename + ".tout")
+        )
 
         result = parser.parse()
 
