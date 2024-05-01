@@ -3,7 +3,7 @@ import pandas as pd
 from statsmodels.stats.weightstats import DescrStatsW
 
 from isicle import io
-from isicle.geometry import Geometry, XYZGeometry
+from isicle.geometry import Geometry
 from isicle.utils import TypedList, safelist
 
 
@@ -382,7 +382,7 @@ class ConformationalEnsemble(TypedList):
 
         '''
 
-        super().__init__((Geometry, XYZGeometry), *args)
+        super().__init__(Geometry, *args)
 
     def _check_attributes(self, attr):
         '''

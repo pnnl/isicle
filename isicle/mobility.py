@@ -4,7 +4,6 @@ import subprocess
 from importlib import resources
 
 import isicle
-from isicle.geometry import XYZGeometry
 from isicle.interfaces import WrapperInterface
 
 
@@ -21,7 +20,7 @@ def _mobcal_selector():
     raise OSError('mobcal installation not found')
 
 
-class MobcalWrapper(XYZGeometry, WrapperInterface):
+class MobcalWrapper(WrapperInterface):
 
     def __init__(self):
         pass

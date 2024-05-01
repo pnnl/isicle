@@ -93,16 +93,30 @@ class GeometryInterface(XYZGeometryInterface):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'to_mol')
-                and callable(subclass.to_mol)
+        return (hasattr(subclass, 'get___dict__')
+                and callable(subclass.get___dict__)
+                and hasattr(subclass, '__copy__')
+                and callable(subclass.__copy__)
                 and hasattr(subclass, 'get_total_partial_charge')
                 and callable(subclass.get_total_partial_charge)
+                and hasattr(subclass, 'dft')
+                and callable(subclass.dft)
+                and hasattr(subclass, 'md')
+                and callable(subclass.md)
+                and hasattr(subclass, 'get_natoms')
+                and callable(subclass.get_natoms)
+                and hasattr(subclass, 'get_atom_indices')
+                and callable(subclass.get_atom_indices)
+                and hasattr(subclass, 'to_mol')
+                and callable(subclass.to_mol)
                 and hasattr(subclass, 'to_smiles')
                 and callable(subclass.to_smiles)
                 and hasattr(subclass, 'to_inchi')
                 and callable(subclass.to_inchi)
                 and hasattr(subclass, 'to_smarts')
                 and callable(subclass.to_smarts)
+                and hasattr(subclass, 'to_xyzblock')
+                and callable(subclass.to_xyzblock)
                 or NotImplemented)
 
     @abc.abstractmethod
