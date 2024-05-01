@@ -877,6 +877,9 @@ class XTBParser(FileParserInterface):
 
         self.result = {}
 
+        if data is not None:
+            self.lines = self.data["out"].split("\n")
+
     def load(self, path):
         self.data = isicle.io.load_pickle(path)
 
@@ -1081,7 +1084,10 @@ class XTBParser(FileParserInterface):
             if key in self.data:
                 geometries[key] = self.data[key]
         
-        return geometries
+        if len(geometries) > 1:
+            return geometries
+        
+        return geometries[geometries.keys()[0]]
 
     def parse(self):
         """
@@ -1103,7 +1109,6 @@ class XTBParser(FileParserInterface):
         # Initialize result object to store info
         result = {
             "protocol": self._parse_protocol(),
-            "timing": self._parse_timing(),
             "energy": self._parse_energy(),
             "geometry": self._parse_geometry()
         }
