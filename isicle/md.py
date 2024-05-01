@@ -396,7 +396,7 @@ class XTBWrapper(WrapperInterface):
                 contents = f.readlines()
 
             # Single-structure outputs
-            if (basename == "struc") or (basename == "best") or (basename == "xtbopt"):
+            if basename in ["struc", "best", "xtbopt"]:
                 xyzblock = "".join(contents)
                 
                 raw_mol = Chem.MolFromXYZBlock(xyzblock)
@@ -444,7 +444,7 @@ class XTBWrapper(WrapperInterface):
                 ext = None
 
             # Key management
-            if (ext is None) or (ext == "tmp"):
+            if ext in [None, "tmp"]:
                 key = basename
             else:
                 key = ext
