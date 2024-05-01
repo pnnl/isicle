@@ -713,7 +713,7 @@ class NWChemWrapper(WrapperInterface):
                                          mem_stack=mem_stack)
 
         # Load geometry
-        config += self._configure_load(charge=self.geom.get_charge())
+        config += self._configure_load()
 
         # Configure tasks
         for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
