@@ -560,7 +560,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         # Assign geometry
         self.geom = geom
 
-    def configure(self, method: str = "distance", numConfs: int = 10, **kwargs):
+    def configure(self, method: str = "etkdgv3", numConfs: int = 10, **kwargs):
         """
         Set conformer generation parameters.
         Parameters
@@ -641,12 +641,14 @@ class RDKitWrapper(Geometry, WrapperInterface):
         """
         self.params = rdDistGeom.ETKDGv2()
 
-    def _configure_etkdg3(self):
+    def _configure_etkdg3(self, variant=True):
         """
         Set parameters for ETKDG conformer generation, based on work by Riniker and Landrum.
         Version 3: Updated sampling small rings AND macrocycles
         """
         self.params = rdDistGeom.ETKDGv3()
+        if variant is True:
+            self.params.useSmallRingTorsions = True
 
     def _configure_etkdg3_variant(self):
         """
