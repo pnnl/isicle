@@ -724,9 +724,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        self.finish()
-
-        return self
+        return self.finish()
 
 
 class TINKERWrapper(Geometry, WrapperInterface):
