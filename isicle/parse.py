@@ -1090,6 +1090,10 @@ class XTBParser(FileParserInterface):
         
         return geometries.popitem()[1]
 
+    # TODO
+    def _parse_orbital_energies(self):
+        pass
+
     def parse(self):
         """
         Extract relevant information from data
