@@ -27,6 +27,9 @@ class Geometry(GeometryInterface):
         # if self.charge is None:
         #     self.charge = self.get_charge()
 
+    def view(self):
+        return self.to_mol()
+
     def get_basename(self):
         """
         Returns a copy of this object's basename (original filename).
