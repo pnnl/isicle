@@ -405,6 +405,8 @@ class XTBWrapper(WrapperInterface):
                 "protonated",
                 "deprotonated",
                 "tautomers",
+                "conformers",
+                "rotamers"
             ]:
                 # Open file
                 with open(geomfile, "r") as f:
