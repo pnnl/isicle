@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from statsmodels.stats.weightstats import DescrStatsW
 
-from isicle import io
 from isicle.geometry import Geometry
 from isicle.utils import TypedList, safelist
 

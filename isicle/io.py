@@ -1,12 +1,14 @@
 import os
 import pickle
-import joblib
 from io import StringIO
 
-import isicle
+import joblib
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
+
+import isicle
+
 
 def _load_text(path: str):
     """
