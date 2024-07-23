@@ -4,11 +4,9 @@ import os
 import pickle
 import re
 
-import rdkit.Chem.rdchem as rdc
 from rdkit import Chem
 
 import isicle
-from isicle.conformers import ConformationalEnsemble
 from isicle.interfaces import WrapperInterface
 from isicle.md import md
 from isicle.utils import safelist
