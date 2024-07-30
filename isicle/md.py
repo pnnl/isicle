@@ -426,9 +426,9 @@ class XTBWrapper(WrapperInterface):
                     # Construct mol from XYZ
                     raw_mol = Chem.MolFromXYZBlock(xyzblock)
                     mol = Chem.Mol(raw_mol)
-                    rdDetermineBonds.DetermineBonds(
-                        mol, charge=self.geom.get_charge() + charge_lookup[basename]
-                    )
+                    # rdDetermineBonds.DetermineBonds(
+                    #     mol, charge=self.geom.get_charge() + charge_lookup[basename]
+                    # )
 
                     # Initialize Geometry instance
                     geom = isicle.geometry.Geometry(

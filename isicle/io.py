@@ -34,7 +34,7 @@ def _load_text(path: str):
     return [x.strip() for x in contents]
 
 
-def load_xyz(path, charge=None):
+def load_xyz(path):
     """
     Load XYZ from file.
 
@@ -50,14 +50,14 @@ def load_xyz(path, charge=None):
 
     """
     
-    # Check for charge
-    if charge is None:
-        raise ValueError("Charge must be specified when loading XYZ files.")
+    # # Check for charge
+    # if charge is None:
+    #     raise ValueError("Charge must be specified when loading XYZ files.")
 
     # Create mol object
     raw_mol = Chem.MolFromXYZFile(path)
     mol = Chem.Mol(raw_mol)
-    rdDetermineBonds.DetermineBonds(mol, charge=charge)
+    # rdDetermineBonds.DetermineBonds(mol, charge=charge)
 
     # Basename
     basename = os.path.splitext(os.path.basename(path))[0]
