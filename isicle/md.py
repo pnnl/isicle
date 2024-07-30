@@ -34,7 +34,7 @@ def _program_selector(program):
 
     """
 
-    program_map = {"xtb": XTBWrapper, "rdkit": RDKitWrapper, "tinker": TINKERWrapper}
+    program_map = {"xtb": XTBWrapper, "rdkit": RDKitWrapper}
 
     if program.lower() in program_map.keys():
         return program_map[program.lower()]()
