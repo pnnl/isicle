@@ -108,6 +108,11 @@ def tinker_lookup():
     return pd.read_csv(path, sep="\t")
 
 
+def scaling_factors():
+    path = resources.files("isicle") / "resources/scaling_factors.txt"
+    return pd.read_csv(path, sep="\t")
+
+
 def gettempdir():
     """
     Return the name of the directory used for temporary files.
@@ -118,16 +123,16 @@ def gettempdir():
         Path to temporary directory.
 
     """
-    
-    root = os.path.join(tempfile.gettempdir(), 'isicle')
+
+    root = os.path.join(tempfile.gettempdir(), "isicle")
     os.makedirs(root, exist_ok=True)
-    
+
     return root
 
 
 def mkdtemp(prefix=None, suffix=None):
     """
-    An ISiCLE-specific wrapper of :func:`~tempfile.mkdtemp` to create a 
+    An ISiCLE-specific wrapper of :func:`~tempfile.mkdtemp` to create a
     temporary directory for temporary ISiCLE files. The temporary directory
     is not automatically removed.
 
