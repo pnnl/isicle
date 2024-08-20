@@ -326,7 +326,9 @@ class ChemicalShiftTransformation:
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.scaling_factors = dict.fromkeys(self._default_sfs)
         self.geom = geom
-        self.__dict__.update(**kwargs)
+        self.giao = giao
+        self.csgt = csgt
+        self.smd = smd
 
     def _filter_solvation(self, x, nmr=False):
         phrase_modifier = ""
