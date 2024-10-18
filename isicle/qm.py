@@ -847,7 +847,7 @@ class NWChemWrapper(WrapperInterface):
         # Enumerate geometry files
         result['xyz'] = OrderedDict()
         for geomfile in geomfiles:
-            geom = isicle.load(geomfile, charge=self.geom.get_charge())
+            geom = isicle.load(geomfile)
             
             if '_geom-' in geomfile:
                 idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
@@ -1177,7 +1177,7 @@ class ORCAWrapper(WrapperInterface):
 
             # Load geometry
             if var_name == 'xyz':
-                result[var_name] = isicle.load(outfile, charge=self.geom.get_charge())
+                result[var_name] = isicle.load(outfile)
 
             # Load other files
             else:
