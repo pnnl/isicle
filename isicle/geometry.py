@@ -1,38 +1,31 @@
-import os
-
 import numpy as np
-from openbabel import pybel
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
 
 import isicle
-from isicle.interfaces import GeometryInterface, XYZGeometryInterface
+from isicle.interfaces import GeometryInterface
 
 
-class XYZGeometry(XYZGeometryInterface):
+class Geometry(GeometryInterface):
     """
-    Molecule information, specialized for XYZ files (bonding info not provided).
-    It is not recommended to manipulate or retrieve attributes of this class
-    without using class functions.
+    Molecule information, specialized for 3D representations. It is not
+    recommended to manipulate or retrieve attributes of this class without
+    using class functions.
     """
 
-    _defaults = ["xyz"]
+    _defaults = ["mol", "charge", "basename"]
     _default_value = None
 
     def __init__(self, **kwargs):
-        """
-        Initialize :obj:`~isicle.geometry.XYZGeometry` instance.
-
-        Parameters
-        ----------
-        kwargs
-            Keyword arguments to initialize instance attributes.
-
-        """
-
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
+
+        # if self.charge is None:
+        #     self.charge = self.get_charge()
+
+    def view(self):
+        return self.to_mol()
 
     def get_basename(self):
         """
@@ -68,146 +61,6 @@ class XYZGeometry(XYZGeometryInterface):
         # Add to attributes
         self.__dict__.update(d)
 
-    def dft(self, backend="NWChem", **kwargs):
-        """
-        Perform density functional theory calculations according to supplied task list
-        and configuration parameters for specified backend.
-
-        Parameters
-        ----------
-        backend : str
-            Alias for backend selection (NWChem, ORCA).
-        kwargs
-            Keyword arguments supplied to selected program. See `run` method of relevant
-            wrapper for configuration parameters, e.g. :meth:`~isicle.qm.NWChemWrapper.run`.
-
-        Returns
-        -------
-        :obj:`~isicle.qm.{program}Wrapper`
-            Wrapper object containing relevant outputs from the simulation.
-
-        """
-
-        return isicle.qm.dft(self, backend=backend, **kwargs)
-
-    def md(self, program="xtb", **kwargs):
-        """
-        Optimize geometry or generate conformers or adducts using stated forcefield.
-
-        Parameters
-        ----------
-        kwargs
-            Keyword arguments supplied to selected program. See `run` method of relevant
-            wrapper for configuration parameters, e.g. :meth:`~isicle.md.XTBWrapper.run`.
-
-        Returns
-        -------
-        :obj:`~isicle.md.{program}Wrapper`
-            Wrapper object containing relevant outputs from the simulation.
-
-        """
-
-        return isicle.md.md(self, program=program, **kwargs)
-
-    def ionize(self, ion_path=None, ion_list=None, **kwargs):
-        """
-        Calls xtb CREST to ionize XYZ geometry, using specified list of ions and method of ionization.
-        WARNING: must run isicle.geometry.XYZGeometry.set_charge prior to this.
-
-        Parameters
-        ----------
-        ion_path : str
-            Filepath to text file containing ions with charge (eg. `H+`) to be considered
-            Either ion_path or ion_list must be specified
-        ion_list : list
-            List of strings of adducts to be considered.
-            Must be specifed in syntax `Atom+` or `Atom-`, eg. `H+`, `Na+`, `H-Na+`
-            Either ion_path or ion_list must be specified
-        kwargs
-            See :meth: `~isicle.adducts.CRESTIonizationWrapper.submit`
-            for more options
-
-        Returns
-        -------
-        Dictionary of adducts, `{<IonCharge>:[<geomObjects>]}`
-
-        """
-
-        if self.__dict__.get("charge") is None:
-            raise ValueError(
-                "Must first run isicle.geometry.XYZGeometry.set_charge for an XYZ structure"
-            )
-        iw = isicle.adducts.ionize("crest").run(
-            self.__copy__(), ion_path=ion_path, ion_list=ion_list, **kwargs
-        )
-
-        return iw
-
-    def set_charge(self, charge):
-        """
-        Specify and set the known formal charge of the XYZ molecule.
-
-        Parameters
-        ----------
-        charge : int
-            Nominal charge of the molecule.
-
-        """
-
-        # Attempt cast to int
-        try:
-            charge = int(charge)
-        except:
-            raise TypeError("Charge specifed must be str or int.")
-
-        # Update attribute
-        self.__dict__.update(charge=charge)
-
-    def get_natoms(self):
-        """
-        Calculate total number of atoms.
-
-        Returns
-        -------
-        int
-            Number of atoms.
-
-        """
-
-        self.__dict__["natoms"] = int(self.xyz[0].strip())
-        return self.__dict__["natoms"]
-
-    def get_atom_indices(self, atoms=["C", "H"]):
-        """
-        Extract indices of each atom from the internal geometry.
-
-        Parameters
-        ----------
-        atoms : list of str
-            Atom types of interest.
-
-        Returns
-        -------
-        list of int
-            Atom indices.
-
-        """
-
-        # Index container
-        idx = []
-
-        # Enumerate rows
-        for i in range(2, len(self.xyz)):
-            # Extract atom
-            atom = self.xyz[i].split(" ")[0]
-
-            # Check if of interest
-            if atom in atoms:
-                # Append index
-                idx.append(i - 2)
-
-        return idx
-
     def get___dict__(self):
         """
         Return a copy of this object's attributes as a dictionary.
@@ -223,7 +76,7 @@ class XYZGeometry(XYZGeometryInterface):
 
     def __copy__(self, **kwargs):
         """
-        Copy this class instance.
+        Return hard copy of this class instance.
 
         Parameters
         ----------
@@ -232,7 +85,7 @@ class XYZGeometry(XYZGeometryInterface):
 
         Returns
         -------
-        :obj:`~isicle.geometry.XYZGeometry`
+        :obj:`~isicle.geometry.Geometry`
             Molecule representation.
 
         """
@@ -251,53 +104,6 @@ class XYZGeometry(XYZGeometryInterface):
         instance.__dict__.update(kwargs)
 
         return instance
-
-    def to_xyzblock(self):
-        """
-        Get XYZ text for this structure.
-
-        Returns
-        -------
-        str
-            XYZ text.
-
-        """
-
-        return "\n".join(self.xyz)
-
-    def to_mol(self):
-        """
-        Get structure representation in :obj:`~rdkit.Chem.rdchem.Mol` format.
-
-        :obj:`~rdkit.Chem.rdchem.Mol`
-            RDKit Mol instance.
-
-        """
-
-        self.temp_dir = isicle.utils.mkdtemp()
-
-        geomfile = os.path.join(self.temp_dir, "{}.{}".format(self.basename, "xyz"))
-        isicle.io.save(geomfile, self)
-
-        mols = list(pybel.readfile("xyz", geomfile))
-        mo = mols[0]
-        mo_block = mo.write("mol")
-        return Chem.MolFromMolBlock(mo_block, removeHs=False)
-
-
-class Geometry(XYZGeometry, GeometryInterface):
-    """
-    Molecule information, specialized for 3D representations. It is not
-    recommended to manipulate or retrieve attributes of this class without
-    using class functions.
-    """
-
-    _defaults = ["mol"]
-    _default_value = None
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
-        self.__dict__.update(kwargs)
 
     def _is_embedded(self, mol):
         """
@@ -589,9 +395,7 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         """
 
-        natoms = Chem.Mol.GetNumAtoms(self.to_mol())
-        self.__dict__["natoms"] = natoms
-        return self.__dict__["natoms"]
+        return Chem.Mol.GetNumAtoms(self.to_mol())
 
     def get_atom_indices(
         self, atoms=["C", "H"], lookup={"C": 6, "H": 1, "N": 7, "O": 8, "F": 9, "P": 15}
@@ -653,52 +457,46 @@ class Geometry(XYZGeometry, GeometryInterface):
 
         return Chem.rdmolops.GetFormalCharge(self.to_mol())
 
-    def set_charge(self, charge=None):
+    def dft(self, backend="NWChem", **kwargs):
         """
-        Set formal charge of the molecule.
+        Perform density functional theory calculations according to supplied task list
+        and configuration parameters for specified backend.
 
         Parameters
         ----------
-        charge : int
-            Formal charge of molecule.
+        backend : str
+            Alias for backend selection (NWChem, ORCA).
+        kwargs
+            Keyword arguments supplied to selected program. See `run` method of relevant
+            wrapper for configuration parameters, e.g. :meth:`~isicle.qm.NWChemWrapper.run`.
+
+        Returns
+        -------
+        :obj:`~isicle.qm.{program}Wrapper`
+            Wrapper object containing relevant outputs from the simulation.
 
         """
 
-        if charge is None:
-            charge = self.get_charge()
+        return isicle.qm.dft(self, backend=backend, **kwargs)
 
-        self.__dict__.update(charge=int(charge))
-
-    def __copy__(self, **kwargs):
+    def md(self, program="xtb", **kwargs):
         """
-        Return hard copy of this class instance.
+        Optimize geometry or generate conformers or adducts using stated forcefield.
 
         Parameters
         ----------
         kwargs
-            Keyword arguments to update copy.
+            Keyword arguments supplied to selected program. See `run` method of relevant
+            wrapper for configuration parameters, e.g. :meth:`~isicle.md.XTBWrapper.run`.
 
         Returns
         -------
-        :obj:`~isicle.geometry.Geometry`
-            Molecule representation.
+        :obj:`~isicle.md.{program}Wrapper`
+            Wrapper object containing relevant outputs from the simulation.
 
         """
 
-        # Copy attributes
-        d = self.__dict__.copy()
-
-        # Safely copy mol if present
-        if "mol" in d:
-            d["mol"] = self.to_mol()
-
-        # Build self instance from scratch
-        instance = type(self)(**d)
-
-        # Update from kwargs
-        instance.__dict__.update(kwargs)
-
-        return instance
+        return isicle.md.md(self, program=program, **kwargs)
 
     def to_mol(self):
         """

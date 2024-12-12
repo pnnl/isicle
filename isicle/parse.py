@@ -1,12 +1,8 @@
-import glob
-import os
 import pickle
 import re
-from os.path import splitext
 
 import numpy as np
 import pandas as pd
-from openbabel import pybel
 
 import isicle
 from isicle.interfaces import FileParserInterface
@@ -40,7 +36,7 @@ class ORCAParser(FileParserInterface):
     def _parse_protocol(self):
         return self.data["inp"]
 
-    def _parse_geom(self):
+    def _parse_geometry(self):
         return self.data["xyz"]
 
     def _parse_energy(self):
@@ -61,37 +57,41 @@ class ORCAParser(FileParserInterface):
         return evals[-1]
 
     def _parse_frequency(self):
-        # Define columns
-        columns = ["wavenumber", "eps", "intensity", "TX", "TY", "TZ"]
+        if "hess" in self.data:
+            # Define columns
+            columns = ["wavenumber", "eps", "intensity", "TX", "TY", "TZ"]
 
-        # Split sections by delimiter
-        blocks = self.data["hess"].split("$")
+            # Split sections by delimiter
+            blocks = self.data["hess"].split("$")
 
-        # Search for frequency values
-        freq_block = [x for x in blocks if x.startswith("ir_spectrum")]
+            # Search for frequency values
+            freq_block = [x for x in blocks if x.startswith("ir_spectrum")]
 
-        # Frequency values not found
-        if len(freq_block) == 0:
-            return None
+            # Frequency values not found
+            if len(freq_block) == 0:
+                return None
 
-        # Grab last frequency block
-        # Doubtful if more than one, but previous results in list
-        freq_block = freq_block[-1]
+            # Grab last frequency block
+            # Doubtful if more than one, but previous results in list
+            freq_block = freq_block[-1]
 
-        # Split block into lines
-        lines = freq_block.split("\n")
+            # Split block into lines
+            lines = freq_block.split("\n")
 
-        # Map float over values
-        vals = np.array(
-            [
-                list(map(float, x.split()))
-                for x in lines
-                if len(x.split()) == len(columns)
-            ]
-        )
+            # Map float over values
+            vals = np.array(
+                [
+                    list(map(float, x.split()))
+                    for x in lines
+                    if len(x.split()) == len(columns)
+                ]
+            )
 
-        # Zip columns and values
-        return dict(zip(columns, vals.T))
+            # Zip columns and values
+            return dict(zip(columns, vals.T))
+        
+        # No frequency info
+        return None
 
     def _parse_timing(self):
         # Grab only last few lines
@@ -297,7 +297,7 @@ class ORCAParser(FileParserInterface):
     def parse(self):
         result = {
             "protocol": self._parse_protocol(),
-            "geom": self._parse_geom(),
+            "geometry": self._parse_geometry(),
             "total_dft_energy": self._parse_energy(),
             "orbital_energies": self._parse_orbital_energies(),
             "shielding": self._parse_shielding(),
@@ -318,6 +318,12 @@ class ORCAParser(FileParserInterface):
         # Filter empty fields
         result = {k: v for k, v in result.items() if v is not None}
 
+        # Add result info to geometry object
+        if "geometry" in result:
+            result["geometry"].add___dict__(
+                {k: v for k, v in result.items() if k != "geometry"}
+            )
+
         # Store attribute
         self.result = result
 
@@ -328,35 +334,22 @@ class ORCAParser(FileParserInterface):
 
 
 class NWChemParser(FileParserInterface):
-    """
-    Extract text from an NWChem simulation output file.
-    """
+    """Extract information from NWChem simulation output files."""
 
-    def __init__(self):
-        self.contents = None
-        self.result = None
-        self.path = None
+    def __init__(self, data=None):
+        self.data = data
 
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        with open(path, "r") as f:
-            self.contents = f.readlines()
-        self.path = path
-        return self.contents
+        self.result = {}
+
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
 
     def _parse_geometry(self):
         """
         Add docstring
         """
-        search = os.path.dirname(self.path)
-        geoms = sorted(glob.glob(os.path.join(search, "*.xyz")))
 
-        if len(geoms) > 0:
-            return isicle.io.load(geoms[-1])
-
-        raise Exception
+        return self.data["xyz"]["final"]
 
     def _parse_energy(self):
         """
@@ -368,7 +361,7 @@ class NWChemParser(FileParserInterface):
         energy = None
 
         # Cycle through file
-        for line in self.contents:
+        for line in self.data["out"].split("\n"):
             if "Total DFT energy" in line:
                 # Overwrite last saved energy
                 energy = float(line.split()[-1])
@@ -385,7 +378,7 @@ class NWChemParser(FileParserInterface):
         shield_atoms = []
         shields = []
 
-        for line in self.contents:
+        for line in self.data["out"].split("\n"):
             if " SHIELDING" in line:
                 shield_idxs = [int(x) for x in line.split()[2:]]
                 if len(shield_idxs) == 0:
@@ -406,12 +399,18 @@ class NWChemParser(FileParserInterface):
         if len(shields) > 1:
             return {"index": shield_idxs, "atom": shield_atoms, "shielding": shields}
 
-        raise Exception
+        # No shielding data found
+        return None
 
     def _parse_spin(self):
         """
         Add docstring
         """
+
+        # No spin
+        if "SPINSPIN" not in self.data["nw"]:
+            return None
+
         # TO DO: Add g-factors
 
         # Declaring couplings
@@ -421,7 +420,7 @@ class NWChemParser(FileParserInterface):
         g_factor = []
         ready = False
 
-        for line in self.contents:
+        for line in self.data["out"].split("\n"):
             if "Atom  " in line:
                 line = line.split()
                 idx1 = int((line[1].split(":"))[0])
@@ -443,12 +442,16 @@ class NWChemParser(FileParserInterface):
                     g = float(line[5])
                     g_factor.append(g)
 
-        return {
-            "pair indices": coup_pairs,
-            "spin couplings": coup,
-            "index": index,
-            "g-tensors": g_factor,
-        }
+        if len(coup_pairs) > 0:
+            return {
+                "pair indices": coup_pairs,
+                "spin couplings": coup,
+                "index": index,
+                "g-tensors": g_factor,
+            }
+
+        # No spin data found
+        return None
 
     def _parse_frequency(self):
         """
@@ -466,7 +469,8 @@ class NWChemParser(FileParserInterface):
         natoms = None
         has_frequency = None
 
-        for i, line in enumerate(self.contents):
+        lines = self.data["out"].split("\n")
+        for i, line in enumerate(lines):
             if ("geometry" in line) and (natoms is None):
                 atom_start = i + 7
             if ("Atomic Mass" in line) and (natoms is None):
@@ -492,19 +496,19 @@ class NWChemParser(FileParserInterface):
 
         if has_frequency is True:
             freq = np.array(
-                [float(x.split()[1]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[1]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_au = np.array(
-                [float(x.split()[3]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[3]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_debyeangs = np.array(
-                [float(x.split()[4]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[4]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_KMmol = np.array(
-                [float(x.split()[5]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[5]) for x in lines[freq_start : freq_stop + 1]]
             )
             intensity_arbitrary = np.array(
-                [float(x.split()[6]) for x in self.contents[freq_start : freq_stop + 1]]
+                [float(x.split()[6]) for x in lines[freq_start : freq_stop + 1]]
             )
 
             return {
@@ -519,7 +523,8 @@ class NWChemParser(FileParserInterface):
                 "zero-point correction": zpe,
             }
 
-        raise Exception
+        # No frequency data found
+        return None
 
     def _parse_charge(self):
         """
@@ -531,7 +536,7 @@ class NWChemParser(FileParserInterface):
         charges = []
         ready = False
 
-        for line in self.contents:
+        for line in self.data["out"].split("\n"):
             # Load charges from table
             if "Atom       Charge   Shell Charges" in line:
                 # Table header found. Overwrite anything saved previously
@@ -571,7 +576,8 @@ class NWChemParser(FileParserInterface):
 
             return df.Charge.values
 
-        raise Exception
+        # No charge data found
+        return None
 
     def _parse_timing(self):
         """
@@ -588,7 +594,7 @@ class NWChemParser(FileParserInterface):
         opt = False
         freq = False
 
-        for i, line in enumerate(self.contents):
+        for i, line in enumerate(self.data["out"].split("\n")):
             # ?
             if "No." in line and len(indices) == 0:
                 indices.append(i + 2)  # 0
@@ -619,87 +625,56 @@ class NWChemParser(FileParserInterface):
 
         # natoms = int(self.contents[indices[1] - 1].split()[0])
 
-        return {
-            "single point": preoptTime,
-            "geometry optimization": geomoptTime,
-            "frequency": freqTime,
-            "total": cpuTime,
-        }
+        if cpuTime != 0:
+            return {
+                "single point": preoptTime,
+                "geometry optimization": geomoptTime,
+                "frequency": freqTime,
+                "total": cpuTime,
+                "success": True,
+            }
+        return None
 
     def _parse_molden(self):
         """
         Add docstring
         """
-        search = splitext(self.path)[0]
-        m = glob.glob(search + "*.molden")
+        if "molden" in self.data:
+            return self["molden"]
 
-        if len(m) != 1:
-            raise Exception
-
-        return m[0]
+        return None
 
     def _parse_protocol(self):
         """
         Parse out dft protocol
         """
-        functional = []
-        basis_set = []
-        solvation = []
-        tasks = []
-        basis = None
-        func = None
-        solvent = None
-
-        for line in self.contents:
-            if "* library" in line:
-                basis = line.split()[-1]
-            if " xc " in line:
-                func = line.split(" xc ")[-1].strip()
-            if "solvent " in line:
-                solvent = line.split()[-1]
-            if "task dft optimize" in line:
-                tasks.append("optimize")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-            if "SHIELDING" in line:
-                tasks.append("shielding")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-            if "SPINSPIN" in line:
-                tasks.append("spin")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-            if "freq " in line:
-                tasks.append("frequency")
-                basis_set.append(basis)
-                functional.append(func)
-                solvation.append(solvent)
-
-        return {
-            "functional": functional,
-            "basis set": basis_set,
-            "solvation": solvation,
-            "tasks": tasks,
-        }
+        return self.data["nw"]
 
     def _parse_connectivity(self):
         """
         Add docstring
         """
-        coor_substr = "internuclear distances"
+
+        # Split lines
+        lines = self.data["out"].split("\n")
 
         # Extracting Atoms & Coordinates
-        ii = [i for i in range(len(self.contents)) if coor_substr in self.contents[i]]
+        coor_substr = "internuclear distances"
+        ii = [i for i in range(len(lines)) if coor_substr in lines[i]]
+
+        # Exit condition
+        if len(ii) == 0:
+            return None
+
+        # Sort hits
         ii.sort()
 
+        # Iterate connectivity
         g = ii[0] + 4
         connectivity = []
-        while g <= len(self.contents) - 1:
-            if "-" not in self.contents[g]:
-                line = self.contents[g].split()
+        while g <= len(lines) - 1:
+            if "-" not in lines[g]:
+                line = lines[g].split()
                 pair = [line[1], line[4], int(line[0]), int(line[3])]
                 connectivity.append(pair)
 
@@ -707,85 +682,49 @@ class NWChemParser(FileParserInterface):
                 break
             g += 1
 
-        return connectivity
+        # Check for result
+        if len(connectivity) > 0:
+            return connectivity
+
+        return None
 
     def parse(self):
-        """
-        Extract relevant information from NWChem output.
+        result = {
+            "protocol": self._parse_protocol(),
+            "geometry": self._parse_geometry(),
+            "total_dft_energy": self._parse_energy(),
+            # "orbital_energies": self._parse_orbital_energies(),
+            "shielding": self._parse_shielding(),
+            "spin": self._parse_spin(),
+            "frequency": self._parse_frequency(),
+            "molden": self._parse_molden(),
+            "charge": self._parse_charge(),
+            "timing": self._parse_timing(),
+            "connectivity": self._parse_connectivity(),
+        }
 
-        Parameters
-        ----------
-        to_parse : list of str
-            geometry, energy, shielding, spin, frequency, molden, charge, timing
+        # Pop success from timing
+        if result["timing"] is not None:
+            result["success"] = result["timing"].pop("success")
+        else:
+            result["success"] = False
 
-        """
+        # Filter empty fields
+        result = {k: v for k, v in result.items() if v is not None}
 
-        # Check that the file is valid first
-        if len(self.contents) == 0:
-            raise RuntimeError("No contents to parse: {}".format(self.path))
-        if "Total times  cpu" not in self.contents[-1]:
-            raise RuntimeError("Incomplete NWChem run: {}".format(self.path))
+        # Add result info to geometry object
+        if "geometry" in result:
+            result["geometry"].add___dict__(
+                {k: v for k, v in result.items() if k != "geometry"}
+            )
 
-        # Initialize result object to store info
-        result = {}
-
-        try:
-            result["protocol"] = self._parse_protocol()
-        except:
-            pass
-
-        try:
-            result["geom"] = self._parse_geometry()
-
-        except:
-            pass
-
-        try:
-            result["energy"] = self._parse_energy()
-        except:
-            pass
-
-        try:
-            result["shielding"] = self._parse_shielding()
-        except:  # Must be no shielding info
-            pass
-
-        try:
-            result["spin"] = self._parse_spin()
-        except:
-            pass
-
-        try:
-            result["frequency"] = self._parse_frequency()
-        except:
-            pass
-
-        try:
-            result["molden"] = self._parse_molden()
-        except:
-            pass
-
-        try:
-            result["charge"] = self._parse_charge()
-        except:
-            pass
-
-        try:
-            result["timing"] = self._parse_timing()
-        except:
-            pass
-
-        try:
-            result["connectivity"] = self._parse_connectivity()
-        except:
-            pass
+        # Store attribute
+        self.result = result
 
         return result
 
     def save(self, path):
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-        return
+        isicle.io.save_pickle(path, self.result)
 
 
 class ImpactParser(FileParserInterface):
@@ -933,22 +872,18 @@ class XTBParser(FileParserInterface):
     Add docstring
     """
 
-    def __init__(self):
-        """
-        Add docstring
-        """
-        self.contents = None
-        self.result = None
-        self.path = None
+    def __init__(self, data=None):
+        self.data = data
 
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        with open(path, "r") as f:
-            self.contents = f.readlines()
-        self.path = path
-        # return self.contents
+        self.result = {}
+
+        if data is not None:
+            self.lines = self.data["out"].split("\n")
+
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
+
+        self.lines = self.data["out"].split("\n")
 
     def _crest_energy(self):
         """
@@ -959,11 +894,11 @@ class XTBParser(FileParserInterface):
         population = []
 
         ready = False
-        for h in range(len(self.contents), 0, -1):
-            if "Erel/kcal" in self.contents[h]:
+        for h in range(len(self.lines) - 1, -1, -1):
+            if "Erel/kcal" in self.lines[h]:
                 g = h + 1
-                for j in range(g, len(self.contents)):
-                    line = self.contents[j].split()
+                for j in range(g, len(self.lines)):
+                    line = self.lines[j].split()
                     if len(line) == 8:
                         relative_energy.append(float(line[1]))
                         total_energy.append(float(line[2]))
@@ -972,7 +907,7 @@ class XTBParser(FileParserInterface):
 
                     if "/K" in line[1]:
                         break
-            if ready == True:
+            if ready is True:
                 break
 
         return {
@@ -993,7 +928,7 @@ class XTBParser(FileParserInterface):
             return ":".join(line[1:]).strip("\n")
 
         ready = False
-        for line in self.contents:
+        for line in self.lines:
             if "test MD wall time" in line:
                 test_MD = grab_time(line)
                 ready = True
@@ -1004,7 +939,7 @@ class XTBParser(FileParserInterface):
             if "multilevel OPT wall time" in line:
                 multilevel_OPT = grab_time(line)
 
-            if "MD wall time" in line and ready == True:
+            if "MD wall time" in line and ready is True:
                 MD = grab_time(line)
                 ready = False
 
@@ -1030,19 +965,19 @@ class XTBParser(FileParserInterface):
         complete = False
         relative_energies = []
         total_energies = []
-        for i in range(len(self.contents), 0, -1):
-            if "structure    ΔE(kcal/mol)   Etot(Eh)" in self.contents[i]:
+        for i in range(len(self.lines) - 1, -1, -1):
+            if "structure    ΔE(kcal/mol)   Etot(Eh)" in self.lines[i]:
                 h = i + 1
-                for j in range(h, len(self.contents)):
-                    if self.contents[j] != " \n":
-                        line = self.contents[j].split()
+                for j in range(h, len(self.lines)):
+                    if self.lines[j] != " \n":
+                        line = self.lines[j].split()
                         relative_energies.append(float(line[1]))
                         total_energies.append(float(line[2]))
                     else:
                         complete = True
                         break
 
-            if complete == True:
+            if complete is True:
                 break
 
         return {"relative energy": relative_energies, "total energy": total_energies}
@@ -1058,7 +993,7 @@ class XTBParser(FileParserInterface):
 
             return ":".join(line[1:]).strip("\n")
 
-        for line in self.contents:
+        for line in self.lines:
             if "LMO calc. wall time" in line:
                 LMO_time = grab_time(line)
 
@@ -1078,7 +1013,7 @@ class XTBParser(FileParserInterface):
         """
         Add docstring
         """
-        for line in self.contents:
+        for line in self.lines:
             if "TOTAL ENERGY" in line:
                 energy = line.split()[3] + " Hartrees"
 
@@ -1099,7 +1034,7 @@ class XTBParser(FileParserInterface):
         scf = False
         anc = False
 
-        for line in self.contents:
+        for line in self.lines:
             if "wall-time" in line and tot is False:
                 total_time = grab_time(line)
                 tot = True
@@ -1118,62 +1053,45 @@ class XTBParser(FileParserInterface):
             "ANC optimizer wall time": anc_time,
         }
 
-    def _parse_energy(self):
-        """
-        Add docstring
-        """
-        if self.parse_crest == True:
-            return self._crest_energy()
-        if self.parse_opt == True:
-            return self._opt_energy()
-        if self.parse_isomer == True:
-            return self._isomer_energy()
-
-    def _parse_timing(self):
-        """
-        Add docstring
-        """
-        if self.parse_crest == True:
-            return self._crest_timing()
-        if self.parse_opt == True:
-            return self._opt_timing()
-        if self.parse_isomer == True:
-            return self._isomer_timing()
-
     def _parse_protocol(self):
         """
         Add docstring
         """
         protocol = None
 
-        for line in self.contents:
+        for line in self.lines:
             if " > " in line:
                 protocol = line.strip("\n")
             if "program call" in line:
                 protocol = (line.split(":")[1]).strip("\n")
         return protocol
 
-    def _parse_xyz(self):
+    def _parse_geometry(self):
         """
         Split .xyz into separate XYZGeometry instances
         """
+        geometries = {}
+        # Add geometry info
+        for key in [
+            "conformers",
+            "rotamers",
+            "final",
+            "best",
+            "protonated",
+            "deprotonated",
+            "tautomers",
+        ]:
+            if key in self.data:
+                geometries[key] = self.data[key]
+        
+        if len(geometries) > 1:
+            return geometries
+        
+        return geometries.popitem()[1]
 
-        FILE = self.xyz_path
-        if len(list(pybel.readfile("xyz", FILE))) > 1:
-            geom_list = []
-            count = 1
-            XYZ = FILE.split(".")[0]
-            for geom in pybel.readfile("xyz", FILE):
-                geom.write("xyz", "%s_%d.xyz" % (XYZ, count))
-                geom_list.append("%s_%d.xyz" % (XYZ, count))
-                count += 1
-
-            x = [isicle.io.load(i) for i in geom_list]
-
-        else:
-            x = [isicle.io.load(self.xyz_path)]
-
-        return isicle.conformers.ConformationalEnsemble(x)
+    # TODO
+    def _parse_orbital_energies(self):
+        pass
 
     def parse(self):
         """
@@ -1181,10 +1099,10 @@ class XTBParser(FileParserInterface):
         """
 
         # Check that the file is valid first
-        if len(self.contents) == 0:
+        if len(self.lines) == 0:
             raise RuntimeError("No contents to parse: {}".format(self.path))
 
-        last_lines = "".join(self.contents[-10:])
+        last_lines = "".join(self.lines[-10:])
         if (
             ("terminat" not in last_lines)
             & ("normal" not in last_lines)
@@ -1192,70 +1110,29 @@ class XTBParser(FileParserInterface):
         ):
             raise RuntimeError("XTB job failed: {}".format(self.path))
 
-        self.parse_crest = False
-        self.parse_opt = False
-        self.parse_isomer = False
-
         # Initialize result object to store info
-        result = {}
-        result["protocol"] = self._parse_protocol()
+        result = {
+            "protocol": self._parse_protocol(),
+            "geometry": self._parse_geometry()
+        }
 
-        try:
-            result["timing"] = self._parse_timing()
-        except:
-            pass
+        if result["protocol"].split()[0] == "xtb":
+            result["timing"] = self._opt_timing()
+            result["energy"] = self._opt_energy()
 
-        try:
-            result["energy"] = self._parse_energy()
-        except:
-            pass
+        elif result["protocol"].split()[1] == "crest":
+            if any(
+                [
+                    x in result["protocol"]
+                    for x in ["-deprotonate", "-protonate", "-tautomer"]
+                ]
+            ):
+                result["timing"] = self._isomer_timing()
+                result["energy"] = self._isomer_energy()
+            else:
+                result["timing"] = self._crest_timing()
+                result["energy"] = self._crest_energy()
 
-        # Parse geometry from assoc. XYZ file
-        try:
-            if self.path.endswith("xyz"):
-                try:
-                    self.xyz_path = self.path
-                    result["geom"] = self._parse_xyz()
-
-                except:
-                    pass
-
-            if self.path.endswith("out") or self.path.endswith("log"):
-                # try geometry parsing
-                try:
-                    XYZ = None
-                    if result["protocol"].split()[0] == "xtb":
-                        self.parse_opt = True
-                        XYZ = "xtbopt.xyz"
-                    if result["protocol"].split()[1] == "crest":
-                        if "-deprotonate" in result["protocol"]:
-                            self.parse_isomer = True
-                            XYZ = "deprotonated.xyz"
-                        elif "-protonate" in result["protocol"]:
-                            self.parse_isomer = True
-                            XYZ = "protonated.xyz"
-                        elif "-tautomer" in result["protocol"]:
-                            self.parse_isomer = True
-                            XYZ = "tautomers.xyz"
-                        else:
-                            self.parse_crest = True
-                            XYZ = "crest_conformers.xyz"
-
-                    if XYZ is None:
-                        raise RuntimeError(
-                            "XYZ file associated with XTB job not available,\
-                                        please parse separately."
-                        )
-
-                    else:
-                        temp_dir = os.path.dirname(self.path)
-                        self.xyz_path = os.path.join(temp_dir, XYZ)
-
-                        result["geom"] = self._parse_xyz()
-                except:
-                    pass
-        except:
-            pass
         return result
 
     def save(self, path):
@@ -1264,234 +1141,4 @@ class XTBParser(FileParserInterface):
         """
         with open(path, "wb") as f:
             pickle.dump(self, f)
-        return
-
-
-class TINKERParser(FileParserInterface):
-    """
-    Add docstring
-    """
-
-    def __init__(self):
-        """
-        Add docstring
-        """
-        self.contents = None
-        self.result = None
-        self.path = None
-
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        with open(path, "r") as f:
-            self.contents = f.readlines()
-        self.path = path
-
-    def _parse_energy(self):
-        """
-        Add docstring
-        """
-        inp = self.contents
-        if len(inp) < 13:
-            quit()
-
-        # Get the conformer energies from the file
-        energies = []
-        for line in inp[13:]:
-            data = line[:-1].split("  ")
-            data = [_f for _f in data if _f]
-            if len(data) >= 3:
-                if "Map" in data[0] and "Minimum" in data[1]:
-                    energies.append(float(data[-1]))
-
-        return energies
-
-    def _parse_conformers(self):
-        """
-        Add docstring
-        """
-
-        def parse_atom_symbol(AtomNum):
-            # TODO: modify lookup to use resources/atomic_masses.tsv
-            Lookup = [
-                "H",
-                "He",
-                "Li",
-                "Be",
-                "B",
-                "C",
-                "N",
-                "O",
-                "F",
-                "Ne",
-                "Na",
-                "Mg",
-                "Al",
-                "Si",
-                "P",
-                "S",
-                "Cl",
-                "Ar",
-                "K",
-                "Ca",
-                "Sc",
-                "Ti",
-                "V",
-                "Cr",
-                "Mn",
-                "Fe",
-                "Co",
-                "Ni",
-                "Cu",
-                "Zn",
-                "Ga",
-                "Ge",
-                "As",
-                "Se",
-                "Br",
-                "Kr",
-                "Rb",
-                "Sr",
-                "Y",
-                "Zr",
-                "Nb",
-                "Mo",
-                "Tc",
-                "Ru",
-                "Rh",
-                "Pd",
-                "Ag",
-                "Cd",
-                "In",
-                "Sn",
-                "Sb",
-                "Te",
-                "I",
-                "Xe",
-                "Cs",
-                "Ba",
-                "La",
-                "Ce",
-                "Pr",
-                "Nd",
-                "Pm",
-                "Sm",
-                "Eu",
-                "Gd",
-                "Tb",
-                "Dy",
-                "Ho",
-                "Er",
-                "Tm",
-                "Yb",
-                "Lu",
-                "Hf",
-                "Ta",
-                "W",
-                "Re",
-                "Os",
-                "Ir",
-                "Pt",
-                "Au",
-                "Hg",
-                "Tl",
-                "Pb",
-                "Bi",
-                "Po",
-                "At",
-                "Rn",
-            ]
-
-            if AtomNum > 0 and AtomNum < len(Lookup):
-                return Lookup[AtomNum - 1]
-            else:
-                print("No such element with atomic number " + str(AtomNum))
-                return 0
-
-        conffile = open(self.path.split(".")[0] + ".arc", "r")
-        confdata = conffile.readlines()
-        conffile.close()
-        conformers = []
-        atoms = []
-        atomtypes = isicle.utils.tinker_lookup()["atomtypes"].to_list()
-        anums = isicle.utils.tinker_lookup()["anums"].to_list()
-        atypes = [x[:3] for x in atomtypes]
-
-        # Parse data from arc file, extract coordinates and atom type
-        for line in confdata:
-            data = [_f for _f in line.split("  ") if _f]
-            if len(data) < 3:
-                conformers.append([])
-            else:
-                if len(conformers) == 1:
-                    anum = anums[atypes.index(data[1][:3])]
-                    atoms.append(parse_atom_symbol(anum))
-                conformers[-1].append([x for x in data[2:5]])
-
-        # Convert from TINKER xyz format to standard xyz format
-        xyz_file = []
-        for conf in conformers:
-            xyz_file.append(" {}\n".format(len(conf)))
-            for idx, line in enumerate(conf):
-                s = " {}\t{}\t{}\t{}".format(atoms[idx], line[0], line[1], line[2])
-                xyz_file.append(s)
-
-        # Write xyzs to file
-        FILE = "conformers.xyz"
-        f = open(FILE, "w+")
-        for i in xyz_file:
-            f.write(i + "\n")
-        f.close()
-
-        # Read in file by
-        if len(list(pybel.readfile("xyz", FILE))) > 1:
-            geom_list = []
-            count = 1
-            XYZ = FILE.split(".")[0]
-            for geom in pybel.readfile("xyz", FILE):
-                geom.write("xyz", "%s_%d.xyz" % (XYZ, count), overwrite=True)
-                geom_list.append("%s_%d.xyz" % (XYZ, count))
-                count += 1
-
-            x = [isicle.io.load(i) for i in geom_list]
-
-        else:
-            x = [isicle.io.load(self.xyz_path)]
-
-        return isicle.conformers.ConformationalEnsemble(x)
-
-    def parse(self):
-        """
-        Extract relevant information from data
-        """
-
-        # Check that the file is valid first
-        if len(self.contents) == 0:
-            raise RuntimeError("No contents to parse: {}".format(self.path))
-
-        # Initialize result object to store info
-        result = {}
-
-        try:
-            result["geom"] = self._parse_conformers()
-        except:
-            pass
-
-        try:
-            result["energy"] = self._parse_energy()
-        except:
-            pass
-
-        try:
-            result["charge"] = self._parse_charge()
-        except:
-            pass
-
-        return result
-
-    def save(self):
-        """
-        Add docstring
-        """
         return

@@ -1,12 +1,12 @@
 import glob
 import os
 import subprocess
+from collections import OrderedDict
 from itertools import cycle
 from string import Template
 
 import isicle
 from isicle.interfaces import WrapperInterface
-from isicle.parse import NWChemParser
 from isicle.utils import safelist
 
 
@@ -117,7 +117,6 @@ class NWChemWrapper(WrapperInterface):
 
         # Assign geometry
         self.geom = geom.__copy__()
-        self.basename = self.geom.basename
 
         # Save
         self._save_geometry()
@@ -180,14 +179,9 @@ class NWChemWrapper(WrapperInterface):
                 'echo\n'
                 'print low\n').format(**d)
 
-    def _configure_load(self, charge=0):
+    def _configure_load(self):
         """
         Generate geometry load block of NWChem configuration.
-
-        Parameters
-        ----------
-        charge : int
-            Nominal charge of the molecule to be optimized.
 
         Returns
         -------
@@ -198,7 +192,7 @@ class NWChemWrapper(WrapperInterface):
 
         d = {'basename': self.geom.basename,
              'dirname': self.temp_dir,
-             'charge': charge}
+             'charge': self.geom.get_charge()}
 
         return ('\ncharge {charge}\n'
                 'geometry noautoz noautosym\n'
@@ -625,7 +619,7 @@ class NWChemWrapper(WrapperInterface):
         return s
 
     def configure(self, tasks='energy', functional='b3lyp',
-                  basis_set='6-31g*', ao_basis='cartesian', charge=0,
+                  basis_set='6-31g*', ao_basis='cartesian',
                   atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
                   gas=False, max_iter=150, mem_global=1600, mem_heap=100,
                   mem_stack=600, scratch_dir=None, processes=12):
@@ -644,8 +638,6 @@ class NWChemWrapper(WrapperInterface):
         ao_basis : str or list of str
             Angular function selection ("spherical", "cartesian"). Supply
             globally or per task.
-        charge : int
-            Nominal charge of the molecule to be optimized.
         atoms : list of str
             Atom types of interest. Only used for `spin` and `shielding` tasks.
         temp : float
@@ -721,7 +713,7 @@ class NWChemWrapper(WrapperInterface):
                                          mem_stack=mem_stack)
 
         # Load geometry
-        config += self._configure_load(charge=charge)
+        config += self._configure_load()
 
         # Configure tasks
         for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
@@ -842,27 +834,52 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        # Initialize parser
-        parser = NWChemParser()
+        # Get list of outputs
+        outfiles = glob.glob(os.path.join(self.temp_dir, '*'))
 
-        # Open output file
-        self.output = parser.load(os.path.join(self.temp_dir,
-                                               self.basename + '.out'))
+        # Result container
+        result = {}
 
-        # Parse results
-        result = parser.parse()
+        # Split out geometry files
+        geomfiles = sorted([x for x in outfiles if x.endswith('.xyz')])
+        outfiles = sorted([x for x in outfiles if not x.endswith('.xyz')])
 
-        # Update this instance attributes
-        self.__dict__.update(result)
+        # Enumerate geometry files
+        result['xyz'] = OrderedDict()
+        for geomfile in geomfiles:
+            geom = isicle.load(geomfile)
+            
+            if '_geom-' in geomfile:
+                idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
+                result['xyz'][idx] = geom
 
-        # Update geom attributes
-        self.geom.add___dict__(
-            {k: v for k, v in result.items() if k != 'geom'})
+            else:
+                result['xyz']['input'] = geom
 
-        return self
+        # Rename final geometry
+        result['xyz']['final'] = list(result['xyz'].values())[-1]
+
+        # Enumerate output files
+        for outfile in outfiles:
+            # Split name and extension
+            basename, ext = os.path.basename(outfile).rsplit('.', 1)
+
+            # Read output content
+            with open(outfile, 'rb') as f:
+                contents = f.read()
+
+            # Attempt utf-8 decode
+            try:
+                result[ext] = contents.decode('utf-8')
+            except UnicodeDecodeError:
+                result[ext] = contents
+
+        # Assign to attribute
+        self.result = result
+        return self.result
 
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
-            basis_set='6-31g*', ao_basis='cartesian', charge=0,
+            basis_set='6-31g*', ao_basis='cartesian',
             atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
             gas=False, max_iter=150, mem_global=1600, mem_heap=100,
             mem_stack=600, scratch_dir=None, processes=12):
@@ -886,8 +903,6 @@ class NWChemWrapper(WrapperInterface):
         ao_basis : str or list of str
             Angular function selection ("spherical", "cartesian"). Supply
             globally or per task.
-        charge : int
-            Nominal charge of the molecule to be optimized.
         atoms : list of str
             Atom types of interest. Only used for `spin` and `shielding` tasks.
         temp : float
@@ -929,9 +944,8 @@ class NWChemWrapper(WrapperInterface):
         else:
             self.configure(tasks=tasks,
                            functional=functional, basis_set=basis_set,
-                           ao_basis=ao_basis, charge=charge,
-                           atoms=atoms, bonds=bonds, temp=temp,
-                           cosmo=cosmo, solvent=solvent, gas=gas,
+                           ao_basis=ao_basis,atoms=atoms, bonds=bonds,
+                           temp=temp, cosmo=cosmo, solvent=solvent, gas=gas,
                            max_iter=max_iter, mem_global=mem_global,
                            mem_heap=mem_heap, mem_stack=mem_stack,
                            scratch_dir=scratch_dir, processes=processes)
@@ -943,6 +957,22 @@ class NWChemWrapper(WrapperInterface):
         result = self.finish()
 
         return result
+
+    def save(self, path):
+        """
+        Save result as pickle file.
+
+        Parameters
+        ----------
+        path : str
+            Path to output file.
+
+        """
+
+        if hasattr(self, 'result'):
+            isicle.io.save_pickle(path, self.result)
+        else:
+            raise AttributeError("Object must have `result` attribute")
 
 
 class ORCAWrapper(WrapperInterface):
@@ -988,8 +1018,7 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Assign geometry
-        self.geom = geom.__copy__()
-        self.basename = self.geom.basename
+        self.geom = geom.__copy__()        
 
         # Save
         self._save_geometry()
@@ -1011,7 +1040,7 @@ class ORCAWrapper(WrapperInterface):
         # Store path
         self.geom.path = geomfile
 
-    def configure(self, simple_input=[], block_input={}, processes=1, **kwargs):
+    def configure(self, simple_input=[], block_input={}, spin_multiplicity=1, processes=1, **kwargs):
         """
         Configure ORCA simulation.
 
@@ -1026,6 +1055,8 @@ class ORCAWrapper(WrapperInterface):
             directly, include as a complete string. Include key:value pairs as tuples. 
             See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
             section of the ORCA docs.
+        spin_multiplicity : int
+            Spin multiplicity of the molecule.
         processes : int
             Number of parallel processes.
         kwargs
@@ -1049,7 +1080,7 @@ class ORCAWrapper(WrapperInterface):
             config += '%PAL NPROCS {} END\n'.format(processes)
 
         # Add geometry context
-        config += '* xyzfile 0 1 {}\n'.format(self.geom.path)
+        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.get_charge(), spin_multiplicity, self.geom.path)
 
         # Expand keyword args
         for k, v in kwargs.items():
@@ -1144,15 +1175,21 @@ class ORCAWrapper(WrapperInterface):
             else:
                 var_name = ext
 
-            # Read output content
-            with open(outfile, 'rb') as f:
-                contents = f.read()
+            # Load geometry
+            if var_name == 'xyz':
+                result[var_name] = isicle.load(outfile)
 
-            # Attempt utf-8 decode
-            try:
-                result[var_name] = contents.decode('utf-8')
-            except UnicodeDecodeError:
-                result[var_name] = contents
+            # Load other files
+            else:
+                # Read output content
+                with open(outfile, 'rb') as f:
+                    contents = f.read()
+
+                # Attempt utf-8 decode
+                try:
+                    result[var_name] = contents.decode('utf-8')
+                except UnicodeDecodeError:
+                    result[var_name] = contents
 
         # Assign to attribute
         self.result = result

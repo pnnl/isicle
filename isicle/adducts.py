@@ -4,11 +4,9 @@ import os
 import pickle
 import re
 
-import rdkit.Chem.rdchem as rdc
 from rdkit import Chem
 
 import isicle
-from isicle.conformers import ConformationalEnsemble
 from isicle.interfaces import WrapperInterface
 from isicle.md import md
 from isicle.utils import safelist
@@ -296,13 +294,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
         else:
             raise ValueError('Could not find self.mol or self.geom')
 
-    def set_charge(self):
-        '''
-        '''
-
-        if self.geom.__dict__.get('charge') is None:
-            self.geom.__dict__.update(charge=self.geom.get_charge())
-
     def _set_ions(self, ion_path=None, ion_list=None):
         '''
         '''
@@ -468,6 +459,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
             raise ValueError(
                 'RDKit only supports UFF, MMFF, MMFF94, MMFF94s as forcefields.')
 
+    # TODO: update this
     def _update_geometry_charge(self, geom):
         '''
         '''
@@ -873,9 +865,6 @@ class ExplicitIonizationWrapper(WrapperInterface):
         # Sets geom to self.geom
         self.set_geometry(geom)
 
-        # Infers charge of geom.mol
-        self.set_charge()
-
         # Load specified ions by type
         # Validity check if negative ionization can be done
         self.configure(ion_path=ion_path, ion_list=ion_list)
@@ -975,18 +964,6 @@ class CRESTIonizationWrapper(WrapperInterface):
         else:
             raise ValueError('Could not find self.xyz, self.mol, or self.geom')
 
-    def set_charge(self):
-        '''
-        '''
-
-        if self.geom.__dict__.get('charge') is None:
-            if self.geom.load.get('filetype') == '.xyz':
-                # self.geom.__dict__.update(charge=charge)
-                raise ValueError(
-                    'Must first run geom.set_charge for an xyz structure')
-            else:
-                self.geom.__dict__.update(charge=self.geom.get_charge())
-
     def _set_ions(self, ion_path=None, ion_list=None):
         cations, anions, complex = _parse_ions(
             ion_path=ion_path, ion_list=ion_list)
@@ -1032,11 +1009,11 @@ class CRESTIonizationWrapper(WrapperInterface):
         self.adducts['complex'] = self._filter_supported_by_xtb(
             self.adducts['complex'])
 
-        if self.geom.load['filetype'] != '.xyz':
-            self.adducts['anions'] = _filter_by_substructure_match(
-                self.geom.mol, self.adducts['anions'])
-            self.adducts['complex'] = _filter_by_substructure_match(
-                self.geom.mol, self.adducts['complex'])
+
+        self.adducts['anions'] = _filter_by_substructure_match(
+            self.geom.mol, self.adducts['anions'])
+        self.adducts['complex'] = _filter_by_substructure_match(
+            self.geom.mol, self.adducts['complex'])
 
     def configure(self, ion_path=None, ion_list=None):
         self._set_ions(ion_path=ion_path, ion_list=ion_list)
@@ -1054,14 +1031,15 @@ class CRESTIonizationWrapper(WrapperInterface):
             charge = int(charge[0])
         return charge
 
+    # TODO: update this
     def _update_geometry_charge(self, geom, adduct, ion_charge, mode):
         '''
         '''
 
         if mode == 'negative':
-            charge = geom.__dict__.get('charge') - ion_charge
+            charge = geom.get_charge() - ion_charge
         elif mode == 'positive':
-            charge = geom.__dict__.get('charge') + ion_charge
+            charge = geom.get_charge() + ion_charge
         adduct.__dict__.update(charge=charge)
 
     def _positive_mode(self, geom, forcefield, ewin, cation, optlevel, dryrun, processes, solvation, ignore_topology):
@@ -1070,7 +1048,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
 
         output = md(geom, program='xtb', task='protonate', forcefield=forcefield,
-                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, charge=geom.charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology)
+                    ewin=ewin, ion=cation, optlevel=optlevel, dryrun=dryrun, processes=processes, solvation=solvation, ignore_topology=ignore_topology)
         ion_charge = self._parse_ion_charge(cation)
         for adduct in output.geom:
             self._update_geometry_charge(geom, adduct, ion_charge, 'positive')
@@ -1082,7 +1060,7 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
 
         output = md(geom, program='xtb', task='deprotonate', forcefield=forcefield,
-                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, charge=geom.charge, processes=processes, solvation=solvation, ignore_topology=ignore_topology)
+                    ewin=ewin, ion=anion, optlevel=optlevel, dryrun=dryrun, processes=processes, solvation=solvation, ignore_topology=ignore_topology)
         ion_charge = self._parse_ion_charge(anion)
         for adduct in output.geom:
             self._update_geometry_charge(geom, adduct, ion_charge, 'negative')
@@ -1180,9 +1158,6 @@ class CRESTIonizationWrapper(WrapperInterface):
         self = CRESTIonizationWrapper(**geom.__dict__)
 
         self.set_geometry(geom)
-
-        # Infers charge for non xyz files, infers default neutral for xyz files
-        self.set_charge()
 
         # Load specified ions by type
         # Validity check if negative ionization can be done
