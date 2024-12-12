@@ -7,12 +7,12 @@ dependencies:
   - crest >=2.12
   - joblib
   - numpy >=1.19.4
-  - nwchem # >=7.0.2
+  - nwchem >=7.0.2
   - openbabel >=3.0.0
   - openmpi
   - pandas >=1.1.4
   - python >=3.9
-  - rdkit # >=2023.09.1
+  - rdkit >=2023.09.1
   - snakemake >=6.3.0
   - statsmodels >=0.11.1
   - xtb >=6.5.1

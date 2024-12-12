@@ -14,7 +14,7 @@ dependencies:
   - openmpi
   - pandas >=1.1.4
   - python >=3.9
-  - rdkit # >=2023.09.1
+  - rdkit >=2023.09.1
   - snakemake >=6.3.0
   - statsmodels >=0.11.1
   - xtb >=6.5.1
