@@ -45,9 +45,10 @@ jobs:
       - name: Install ISiCLE
         run: pip install --no-deps . 
     
-      # - name: Test environment
-      #   run: |
-      #     pytest
+      - name: Test environment
+        run: |
+          python -c "import isicle"
+          # pytest
 
   Test_Mac:
     needs:
@@ -79,8 +80,7 @@ jobs:
         run: |
           python -c "import isicle"
           # pytest
-          
-  
+
   Deploy:
     needs:
       - Test_Linux
