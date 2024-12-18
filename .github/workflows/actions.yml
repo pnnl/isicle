@@ -108,7 +108,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mamba install boa anaconda-client conda-verify
+          mamba install boa anaconda-client conda-verify conda-build
 
       - name: Build conda package
         run: |
