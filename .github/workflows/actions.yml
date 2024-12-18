@@ -108,16 +108,24 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mamba install boa anaconda-client conda-verify conda-build
+          mamba install boa anaconda-client conda-verify conda-build -y
+          mamba install -c conda-forge conda-index -y
 
       - name: Build conda package
         run: |
-          mkdir build/
+          mkdir -p build/
           conda mambabuild conda-recipe/ --output-folder build/
-          conda index build/
+
+      - name: Index conda package
+        run: |
+          conda-index build/
         
       - name: Convert to osx-arm64
         run: conda convert -p osx-arm64 build/linux-64/*.tar.bz2 -o build/
+
+      - name: Index converted package
+        run: |
+          conda-index build/
 
       - name: Upload packages
         env:
