@@ -114,12 +114,8 @@ jobs:
           conda mambabuild conda-recipe/ --output-folder build/
           conda index build/
 
-      - name: Convert to osx-64
-        run: conda convert -p osx-64 build/linux-64/*.tar.bz2 -o build/
-
       - name: Upload packages
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          anaconda upload build/linux-64/*.tar.bz2
-          anaconda upload build/osx-64/*.tar.bz2
+          anaconda upload build/noarch/*.tar.bz2
