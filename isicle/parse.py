@@ -24,7 +24,7 @@ class ORCAParser(FileParserInterface):
         pattern = (
             r"(-{2,})\n\s{0,}("
             + re.escape(header)
-            + ")\s{0,}\n-{2,}\n([\s\S]*?)(?=-{2,}\n[^\n]*\n-{2,}\n|$)"
+            + r")\s{0,}\n-{2,}\n([\s\S]*?)(?=-{2,}\n[^\n]*\n-{2,}\n|$)"
         )
 
         # Search ORCA output file
@@ -242,8 +242,8 @@ class ORCAParser(FileParserInterface):
 
         # Parse table
         text = [x.strip() for x in text if x.strip() != "" and "*" not in x]
-        columns = [x.replace(" ", "") for x in re.split("\s{2,}", text[0])]
-        body = [re.split("\s{2,}", x)[1:] for x in text[1:-1]]
+        columns = [x.replace(" ", "") for x in re.split(r"\s{2,}", text[0])]
+        body = [re.split(r"\s{2,}", x)[1:] for x in text[1:-1]]
 
         # Construct data frame
         return pd.DataFrame(body, dtype=float, columns=columns, index=columns)

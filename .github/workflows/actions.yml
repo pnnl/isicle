@@ -45,9 +45,10 @@ jobs:
       - name: Install ISiCLE
         run: pip install --no-deps . 
     
-      # - name: Test environment
-      #   run: |
-      #     pytest
+      - name: Test environment
+        run: |
+          python -c "import isicle"
+          # pytest
 
   Test_Mac:
     needs:
@@ -75,10 +76,11 @@ jobs:
       - name: Install ISiCLE
         run: pip install --no-deps . 
     
-      # - name: Test environment
-      #   run: |
-      #     pytest
-  
+      - name: Test environment
+        run: |
+          python -c "import isicle"
+          # pytest
+
   Deploy:
     needs:
       - Test_Linux
@@ -100,7 +102,7 @@ jobs:
           miniforge-version: latest
           use-mamba: true
           python-version: 3.12
-          channels: conda-forge,bioconda
+          channels: conda-forge,bioconda,smcolby
           use-only-tar-bz2: false
           auto-activate-base: true
 
@@ -113,13 +115,13 @@ jobs:
           mkdir build/
           conda mambabuild conda-recipe/ --output-folder build/
           conda index build/
-
-      - name: Convert to osx-64
-        run: conda convert -p osx-64 build/linux-64/*.tar.bz2 -o build/
+        
+      - name: Convert to osx-arm64
+        run: conda convert -p osx-arm64 build/linux-64/*.tar.bz2 -o build/
 
       - name: Upload packages
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
           anaconda upload build/linux-64/*.tar.bz2
-          anaconda upload build/osx-64/*.tar.bz2
+          anaconda upload build/osx-arm64/*.tar.bz2
