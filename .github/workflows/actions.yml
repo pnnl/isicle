@@ -34,7 +34,7 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-variant: miniforge3
           miniforge-version: latest
           use-mamba: true
           environment-file: envs/linux.yml
@@ -65,7 +65,7 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-variant: miniforge3
           miniforge-version: latest
           use-mamba: true
           environment-file: envs/osx.yml
@@ -98,7 +98,7 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-variant: miniforge3
           miniforge-version: latest
           use-mamba: true
           python-version: 3.12
