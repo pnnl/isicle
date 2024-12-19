@@ -107,11 +107,17 @@ jobs:
         with:
           # Needs to be unique for each matrix entry
           artifact-name: isicle-${{ matrix.target-platform }}
-          build-args: --target-platform ${{ matrix.target-platform }} --variant-config conda.recipe/variants.yaml --output-dir build/ -c conda-forge -c bioconda
+          recipe-path: conda.recipe/recipe.yaml
+          build-args: |
+            --target-platform ${{ matrix.target-platform }}
+            --variant-config conda.recipe/variants.yaml
+            --output-dir build/
+            -c conda-forge
+            -c bioconda
       
       - name: Upload conda package
         env:
-          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+          ANACONDA_API_KEY: ${{ secrets.ANACONDA_TOKEN }}
         run: |
           for pkg in $(find build/ -type f \( -name "*.conda" -o -name "*.tar.bz2" \) ); do
             echo "Uploading ${pkg}"
