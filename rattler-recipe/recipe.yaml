@@ -1,7 +1,5 @@
-# {% set data = load_setup_py_data(setup_file="../setup.py",
-#                                  from_recipe_dir=True) %}
 context:
-  version: "2.0.0"
+  version: "2.0.0" # TODO: obtain this from package directly
 
 package:
   name: isicle
