@@ -34,7 +34,7 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-variant: miniforge3
           miniforge-version: latest
           use-mamba: true
           environment-file: envs/linux.yml
@@ -65,7 +65,7 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-variant: miniforge3
           miniforge-version: latest
           use-mamba: true
           environment-file: envs/osx.yml
@@ -82,11 +82,18 @@ jobs:
           # pytest
 
   Deploy:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     needs:
       - Test_Linux
       - Test_Mac
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target-platform: linux-64
+          - os: macos-latest
+            target-platform: osx-arm64
     defaults:
       run:
         shell: bash -l {0}
@@ -94,34 +101,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          use-mamba: true
-          python-version: 3.12
-          channels: conda-forge,bioconda,smcolby
-          use-only-tar-bz2: false
-          auto-activate-base: true
-
-      - name: Install dependencies
-        run: |
-          mamba install boa anaconda-client conda-verify conda-build
-
+  
       - name: Build conda package
-        run: |
-          mkdir build/
-          conda mambabuild conda-recipe/ --output-folder build/
-          conda index build/
-        
-      - name: Convert to osx-arm64
-        run: conda convert -p osx-arm64 build/linux-64/*.tar.bz2 -o build/
-
-      - name: Upload packages
+        uses: prefix-dev/rattler-build-action@v0.2.24
+        with:
+          # Needs to be unique for each matrix entry
+          artifact-name: isicle-${{ matrix.target-platform }}
+          build-args: |
+            --target-platform ${{ matrix.target-platform }}
+            --recipe rattler-recipe/recipe.yaml
+            --variant-config rattler-recipe/variants.yaml
+            --output-dir build/
+            -c conda-forge
+            -c bioconda
+      
+      - name: Upload conda package
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          anaconda upload build/linux-64/*.tar.bz2
-          anaconda upload build/osx-arm64/*.tar.bz2
+          for pkg in $(find build/ -type f \( -name "*.conda" -o -name "*.tar.bz2" \) ); do
+            echo "Uploading ${pkg}"
+            rattler-build upload anaconda --owner smcolby "${pkg}"
+          done
