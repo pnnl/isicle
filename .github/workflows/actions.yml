@@ -107,13 +107,13 @@ jobs:
         with:
           # Needs to be unique for each matrix entry
           artifact-name: isicle-${{ matrix.target-platform }}
-          build-args: |
-            --target-platform ${{ matrix.target-platform }}
-            --recipe rattler-recipe/recipe.yaml
-            --variant-config rattler-recipe/variants.yaml
-            --output-dir build/
-            -c conda-forge
-            -c bioconda
+          build-args:
+            - --target-platform ${{ matrix.target-platform }}
+            - --recipe rattler-recipe/recipe.yaml
+            - --variant-config rattler-recipe/variants.yaml
+            - --output-dir build/
+            - -c conda-forge
+            - -c bioconda
       
       - name: Upload conda package
         env:
