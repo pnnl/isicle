@@ -12,7 +12,7 @@ extra:
   channels:
     - conda-forge
     - bioconda
-    - smcolby # [linux64]
+    - smcolby
     - anaconda
 
 build:
@@ -27,7 +27,8 @@ requirements:
   run:
     - crest >=2.12
     - joblib
-    - mobcal-shm # [linux64]
+    - if: linux
+      then: mobcal-shm
     - numpy >=1.19.4
     - nwchem >=7.0.2
     - openbabel >=3.0.0
