@@ -108,7 +108,7 @@ jobs:
           # Needs to be unique for each matrix entry
           artifact-name: isicle-${{ matrix.target-platform }}
           recipe-path: conda.recipe/recipe.yaml
-          build-args: |
+          build-args: >
             --target-platform ${{ matrix.target-platform }}
             --variant-config conda.recipe/variants.yaml
             --output-dir build/
