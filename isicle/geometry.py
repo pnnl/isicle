@@ -2,6 +2,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
+from rdkit.Chem import AllChem
 
 import isicle
 from isicle.interfaces import GeometryInterface
@@ -171,7 +172,7 @@ class Geometry(GeometryInterface):
             forcefield = forcefield.lower()
             if forcefield == "uff":
                 if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
-                    return Chem.AllChem.UFFOptimizeMolecule
+                    return AllChem.UFFOptimizeMolecule
                 else:
                     raise ValueError("UFF is not available for all atoms in molecule.")
             elif forcefield in ["mmff", "mmff94", "mmff94s"]:
@@ -192,10 +193,10 @@ class Geometry(GeometryInterface):
         # Embed molecule 3D coordinates
         if embed is True:
             # Attempt embedding
-            res = Chem.AllChem.EmbedMolecule(mol)
+            res = AllChem.EmbedMolecule(mol)
             if res == -1:
                 # Use random coordinates
-                res = Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+                res = AllChem.EmbedMolecule(mol, useRandomCoords=True)
                 if res == -1:
                     raise ValueError("Embedding failure.")
 
@@ -295,7 +296,7 @@ class Geometry(GeometryInterface):
         for i, (reactant, product) in enumerate(reactions):
             while mol.HasSubstructMatch(reactant):
                 replaced = True
-                rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
+                rms = AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
         return self.__copy__(mol=mol)
@@ -437,7 +438,7 @@ class Geometry(GeometryInterface):
         """
 
         mol = self.to_mol()
-        Chem.AllChem.ComputeGasteigerCharges(mol)
+        AllChem.ComputeGasteigerCharges(mol)
         contribs = [
             mol.GetAtomWithIdx(i).GetDoubleProp("_GasteigerCharge")
             for i in range(mol.GetNumAtoms())
