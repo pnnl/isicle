@@ -122,6 +122,36 @@ class Geometry(GeometryInterface):
             return True
         except:
             return False
+    
+    def update_coordinates(self, other):
+        """
+        Update atom coordinates using another geometry as reference.
+
+        Parameters
+        ----------
+        other : :obj:`~isicle.geometry.Geometry`
+            Geometry with reference coordinates.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+        # Get copies of mol object
+        mol = self.to_mol()
+        mol_other = other.to_mol()
+
+        # Iterate atoms
+        for i in range(mol.GetNumAtoms()):
+            # Get coordinates to update
+            pos_other = mol_other.GetConformer().GetAtomPosition(i)
+
+            # Set coordinates
+            mol.GetConformer().SetAtomPosition(i, pos_other)
+
+        # Return fresh instance
+        return self.__copy__(mol=mol)
 
     def addHs(self):
         """

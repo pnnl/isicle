@@ -1018,7 +1018,7 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Assign geometry
-        self.geom = geom.__copy__()        
+        self.geom = geom.__copy__()
 
         # Save
         self._save_geometry()
@@ -1177,7 +1177,14 @@ class ORCAWrapper(WrapperInterface):
 
             # Load geometry
             if var_name == 'xyz':
-                result[var_name] = isicle.load(outfile)
+                # Load xyz geometry
+                geom = isicle.load(outfile)
+                
+                # Update coordinates of starting geometry
+                geom = self.geom.update_coordinates(geom)
+
+                # Add to result object
+                result[var_name] = geom
 
             # Load other files
             else:

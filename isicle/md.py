@@ -435,6 +435,9 @@ class XTBWrapper(WrapperInterface):
                         mol=mol, basename=self.geom.basename
                     )
 
+                    # Update coordinates of starting geometry
+                    geom = self.geom.update_coordinates(geom)
+
                     # Append to list of geometries
                     geoms.append(geom)
 
