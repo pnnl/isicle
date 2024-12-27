@@ -511,7 +511,7 @@ def save_mfj(path, geom):
         StringIO(geom.to_xyzblock()),
         skiprows=2,
         header=None,
-        delim_whitespace=True,
+        sep="\s+",
         names=["Atom", "x", "y", "z"],
     )
 
