@@ -504,7 +504,7 @@ def save_mfj(path, geom):
 
     # Check for charges in global properties
     if ("energy" not in geom.__dict__) or ("charge" not in geom.__dict__):
-        raise KeyError("DFT energy calculation required. " "See isicle.qm.dft.")
+        raise KeyError("DFT energy calculation required. See `isicle.qm.dft`.")
 
     # Get XYZ coordinates
     xyz = pd.read_csv(
