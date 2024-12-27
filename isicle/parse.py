@@ -41,10 +41,10 @@ class ORCAParser(FileParserInterface):
 
     def _parse_energy(self):
         # Split text
-        lines = self.data["property"].split("\n")
+        lines = self.data["out"].split("\n")
 
         # Search for energy values
-        elines = [x for x in lines if "Total DFT Energy" in x]
+        elines = [x for x in lines if "FINAL SINGLE POINT ENERGY" in x]
 
         # Energy values not found
         if len(elines) == 0:
