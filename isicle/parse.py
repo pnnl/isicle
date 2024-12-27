@@ -293,7 +293,26 @@ class ORCAParser(FileParserInterface):
         return None
 
     def _parse_charge(self):
-        return None
+        text = self._find_output_by_header("MULLIKEN ATOMIC CHARGES")
+
+        # Mulliken charges not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        body = [x.split() for x in text[:-1]]
+
+        # Construct data frame
+        df = pd.DataFrame(body, columns=["idx", "Atom", "_", "Charge"])
+
+        # Map correct types
+        for col, dtype in zip(df.columns, (int, str, str, float)):
+            df[col] = df[col].astype(dtype)
+
+        return df['Charge'].values
 
     def _parse_connectivity(self):
         return None
