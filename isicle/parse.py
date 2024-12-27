@@ -140,6 +140,10 @@ class ORCAParser(FileParserInterface):
         return timings
 
     def _parse_shielding(self):
+        # Check for property output
+        if "property" not in self.data:
+            return None
+
         # Filter comments
         property = [
             x.strip()
