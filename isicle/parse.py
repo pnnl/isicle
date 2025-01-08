@@ -344,7 +344,8 @@ class ORCAParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {k: v for k, v in result.items() if k != "geometry"}
+                {"_" + k: v for k, v in result.items() if k not in ["geometry", "timing", "protocol"]},
+                override=True
             )
 
         # Store attribute
@@ -738,7 +739,7 @@ class NWChemParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {"_" + k: v for k, v in result.items() if k != "geometry"},
+                {"_" + k: v for k, v in result.items() if k not in ["geometry", "timing", "protocol"]},
                 override=True
             )
 

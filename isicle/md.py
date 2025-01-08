@@ -87,7 +87,7 @@ class XTBWrapper(WrapperInterface):
 
     """
 
-    _defaults = ["geom"]
+    _defaults = ["geom", "result"]
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -491,6 +491,24 @@ class XTBWrapper(WrapperInterface):
             result[rename[key]] = result.pop(key)
 
         return result
+
+    def parse(self):
+        """
+        Parse xTB simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete xTB simulation.")
+
+        parser = isicle.parse.XTBParser(data=self.result)
+
+        return parser.parse()
 
     def run(self, geom, **kwargs):
         """

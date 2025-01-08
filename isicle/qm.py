@@ -83,6 +83,9 @@ class NWChemWrapper(WrapperInterface):
 
     """
 
+    _defaults = ["geom", "result"]
+    _default_value = None
+
     def __init__(self):
         """
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
@@ -103,6 +106,9 @@ class NWChemWrapper(WrapperInterface):
 
         # Set up temporary directory
         self.temp_dir = isicle.utils.mkdtemp()
+
+        # Set default attributes
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
 
     def set_geometry(self, geom):
         """
@@ -878,6 +884,24 @@ class NWChemWrapper(WrapperInterface):
         self.result = result
         return self.result
 
+    def parse(self):
+        """
+        Parse NWChem simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete NWChem simulation.")
+
+        parser = isicle.parse.NWChemParser(data=self.result)
+
+        return parser.parse()
+
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
             basis_set='6-31g*', ao_basis='cartesian',
             atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
@@ -997,6 +1021,9 @@ class ORCAWrapper(WrapperInterface):
 
     """
 
+    _defaults = ["geom", "result"]
+    _default_value = None
+
     def __init__(self):
         """
         Initialize :obj:`~isicle.qm.ORCAWrapper` instance.
@@ -1005,6 +1032,9 @@ class ORCAWrapper(WrapperInterface):
 
         # Set up temporary directory
         self.temp_dir = isicle.utils.mkdtemp()
+        
+        # Set defaults
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
 
     def set_geometry(self, geom):
         """
@@ -1201,6 +1231,24 @@ class ORCAWrapper(WrapperInterface):
         # Assign to attribute
         self.result = result
         return self.result
+
+    def parse(self):
+        """
+        Parse ORCA simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete ORCA simulation.")
+
+        parser = isicle.parse.ORCAParser(data=self.result)
+
+        return parser.parse()
 
     def run(self, geom, **kwargs):
         """
