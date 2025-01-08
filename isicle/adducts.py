@@ -464,7 +464,7 @@ class ExplicitIonizationWrapper(WrapperInterface):
         '''
         '''
 
-        geom.__dict__.update(charge=geom.get_charge())
+        geom.__dict__.update(charge=geom.formal_charge)
 
     def _add_ion(self, init_mol, base_atom_idx, ion_atomic_num, sanitize, forcefield, ff_iter):
         '''
@@ -1037,9 +1037,9 @@ class CRESTIonizationWrapper(WrapperInterface):
         '''
 
         if mode == 'negative':
-            charge = geom.get_charge() - ion_charge
+            charge = geom.formal_charge - ion_charge
         elif mode == 'positive':
-            charge = geom.get_charge() + ion_charge
+            charge = geom.formal_charge + ion_charge
         adduct.__dict__.update(charge=charge)
 
     def _positive_mode(self, geom, forcefield, ewin, cation, optlevel, dryrun, processes, solvation, ignore_topology):

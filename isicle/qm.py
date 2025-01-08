@@ -192,7 +192,7 @@ class NWChemWrapper(WrapperInterface):
 
         d = {'basename': self.geom.basename,
              'dirname': self.temp_dir,
-             'charge': self.geom.get_charge()}
+             'charge': self.geom.formal_charge}
 
         return ('\ncharge {charge}\n'
                 'geometry noautoz noautosym\n'
@@ -1080,7 +1080,7 @@ class ORCAWrapper(WrapperInterface):
             config += '%PAL NPROCS {} END\n'.format(processes)
 
         # Add geometry context
-        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.get_charge(), spin_multiplicity, self.geom.path)
+        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.formal_charge, spin_multiplicity, self.geom.path)
 
         # Expand keyword args
         for k, v in kwargs.items():

@@ -163,7 +163,7 @@ class XTBWrapper(WrapperInterface):
         s += "--" + forcefield + " "
 
         # Add charge
-        s += "--chrg " + str(self.geom.get_charge()) + " "
+        s += "--chrg " + str(self.geom.formal_charge) + " "
 
         # Add optional implicit solvation
         if solvation is not None:
@@ -243,7 +243,7 @@ class XTBWrapper(WrapperInterface):
             s += "-swel " + ion + " "
 
         # Add charge
-        s += "-chrg " + str(self.geom.get_charge()) + " "
+        s += "-chrg " + str(self.geom.formal_charge) + " "
 
         # Add dryrun option
         if dryrun:
@@ -430,7 +430,7 @@ class XTBWrapper(WrapperInterface):
                     raw_mol = Chem.MolFromXYZBlock(xyzblock)
                     mol = Chem.Mol(raw_mol)
                     # rdDetermineBonds.DetermineBonds(
-                    #     mol, charge=self.geom.get_charge() + charge_lookup[basename]
+                    #     mol, charge=self.geom.formal_charge + charge_lookup[basename]
                     # )
 
                     # Initialize Geometry instance

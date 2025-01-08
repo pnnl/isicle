@@ -15,15 +15,54 @@ class Geometry(GeometryInterface):
     using class functions.
     """
 
-    _defaults = ["mol", "charge", "basename"]
+    _defaults = ["mol", "basename", "_charge", "_energy"]
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
+    
+    @property
+    def energy(self):
+        """
+        Get total energy of the molecule.
 
-        # if self.charge is None:
-        #     self.charge = self.get_charge()
+        Returns
+        -------
+        float
+            Total energy.
+
+        """
+
+        return self._energy
+
+    @property
+    def charge(self):
+        """
+        Get per-atoms charges of the molecule.
+
+        Returns
+        -------
+        list : float
+            Per-atom charges.
+
+        """
+
+        return self._charge
+
+    @property
+    def formal_charge(self):
+        """
+        Get formal charge of the molecule.
+
+        Returns
+        -------
+        int
+            Formal charge.
+
+        """
+
+        return Chem.rdmolops.GetFormalCharge(self.to_mol())
 
     def view(self):
         return self.to_mol()
@@ -474,19 +513,6 @@ class Geometry(GeometryInterface):
             for i in range(mol.GetNumAtoms())
         ]
         return np.nansum(contribs)
-
-    def get_charge(self):
-        """
-        Get formal charge of the molecule.
-
-        Returns
-        -------
-        int
-            Formal charge.
-
-        """
-
-        return Chem.rdmolops.GetFormalCharge(self.to_mol())
 
     def dft(self, backend="NWChem", **kwargs):
         """
