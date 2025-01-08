@@ -15,7 +15,17 @@ class Geometry(GeometryInterface):
     using class functions.
     """
 
-    _defaults = ["mol", "basename", "_charge", "_energy"]
+    _defaults = [
+        "mol", 
+        "basename",
+        "_energy",
+        "_shielding",
+        "_spin",
+        "_frequency",
+        "_molden",
+        "_charge",
+        "_connectivity"
+        ]
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -35,6 +45,73 @@ class Geometry(GeometryInterface):
         """
 
         return self._energy
+    
+    @property
+    def orbital_energies(self):
+        """
+        Get orbital energies of the molecule.
+
+        Returns
+        -------
+        :obj:`~pandas.DataFrame`
+            Orbital energies.
+
+        """
+        return self._orbital_energies
+    
+    @property
+    def shielding(self):
+        """
+        Get orbital energies of the molecule.
+
+        Returns
+        -------
+        dict
+            Shielding values.
+
+        """
+        return self.shielding
+    
+    @property
+    def spin(self):
+        """
+        Get spin couplings of the molecule.
+
+        Returns
+        -------
+        :obj:`~pandas.DataFrame`
+            Spin couplings.
+
+        """
+        return self._spin
+
+    @property
+    def frequency(self):
+        """
+        Get frequency values of the molecule.
+
+        Returns
+        -------
+        dict
+            Frequency values.
+
+        """
+
+        return self._frequency
+
+    @property
+    def molden(self):
+        """
+        Get Molden values of the molecule.
+
+        Returns
+        -------
+        dict
+            Frequency values.
+
+        """
+
+        return self._molden
 
     @property
     def charge(self):
@@ -51,6 +128,19 @@ class Geometry(GeometryInterface):
         return self._charge
 
     @property
+    def connectivity(self):
+        """
+        Get molecule connectivity.
+
+        Returns
+        -------
+        list
+            Pairwise atom connectivity.
+
+        """
+        return self._connectivity
+
+    @property
     def formal_charge(self):
         """
         Get formal charge of the molecule.
@@ -65,6 +155,16 @@ class Geometry(GeometryInterface):
         return Chem.rdmolops.GetFormalCharge(self.to_mol())
 
     def view(self):
+        """
+        View internal rdkit mol object representation.
+
+        Returns
+        -------
+        :obj:`~rdkit.Chem.rdchem.Mol`
+            RDKit Mol instance.
+
+        """
+
         return self.to_mol()
 
     def get_basename(self):

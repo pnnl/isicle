@@ -321,7 +321,7 @@ class ORCAParser(FileParserInterface):
         result = {
             "protocol": self._parse_protocol(),
             "geometry": self._parse_geometry(),
-            "total_dft_energy": self._parse_energy(),
+            "energy": self._parse_energy(),
             "orbital_energies": self._parse_orbital_energies(),
             "shielding": self._parse_shielding(),
             "spin": self._parse_spin(),
@@ -715,7 +715,7 @@ class NWChemParser(FileParserInterface):
         result = {
             "protocol": self._parse_protocol(),
             "geometry": self._parse_geometry(),
-            "total_dft_energy": self._parse_energy(),
+            "energy": self._parse_energy(),
             # "orbital_energies": self._parse_orbital_energies(),
             "shielding": self._parse_shielding(),
             "spin": self._parse_spin(),
@@ -738,7 +738,8 @@ class NWChemParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {k: v for k, v in result.items() if k != "geometry"}
+                {"_" + k: v for k, v in result.items() if k != "geometry"},
+                override=True
             )
 
         # Store attribute
