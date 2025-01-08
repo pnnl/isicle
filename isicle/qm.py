@@ -978,9 +978,9 @@ class NWChemWrapper(WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        result = self.finish()
+        self.finish()
 
-        return result
+        return self
 
     def save(self, path):
         """
@@ -1281,10 +1281,10 @@ class ORCAWrapper(WrapperInterface):
         # Run QM simulation
         self.submit()
 
-        # Parse outputs
+        # Finish/clean-up outputs
         self.finish()
 
-        return self.result
+        return self
 
     def save(self, path):
         """

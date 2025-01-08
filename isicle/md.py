@@ -490,7 +490,9 @@ class XTBWrapper(WrapperInterface):
         for key in result.keys() & rename.keys():
             result[rename[key]] = result.pop(key)
 
-        return result
+        # Assign to attribute
+        self.result = result
+        return self.result
 
     def parse(self):
         """
@@ -543,9 +545,9 @@ class XTBWrapper(WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        result = self.finish()
+        self.finish()
 
-        return result
+        return self
 
 
 class RDKitWrapper(Geometry, WrapperInterface):
@@ -564,7 +566,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         The number of conformers to generate.
     """
 
-    _defaults = ["geom", "method", "numConfs"]
+    _defaults = ["geom", "method", "numConfs", "result"]
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -715,7 +717,8 @@ class RDKitWrapper(Geometry, WrapperInterface):
         for conf, label in zip(conformers, range(conf_count)):
             conf.__dict__.update(conformerID=label, basename=self.geom.basename)
 
-        return isicle.conformers.ConformationalEnsemble(conformers)
+        self.result = isicle.conformers.ConformationalEnsemble(conformers)
+        return self.result
 
     def run(self, geom, **kwargs):
         """
@@ -749,4 +752,6 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        return self.finish()
+        self.finish()
+
+        return self
