@@ -41,10 +41,10 @@ class ORCAParser(FileParserInterface):
 
     def _parse_energy(self):
         # Split text
-        lines = self.data["property"].split("\n")
+        lines = self.data["out"].split("\n")
 
         # Search for energy values
-        elines = [x for x in lines if "Total DFT Energy" in x]
+        elines = [x for x in lines if "FINAL SINGLE POINT ENERGY" in x]
 
         # Energy values not found
         if len(elines) == 0:
@@ -140,6 +140,10 @@ class ORCAParser(FileParserInterface):
         return timings
 
     def _parse_shielding(self):
+        # Check for property output
+        if "property" not in self.data:
+            return None
+
         # Filter comments
         property = [
             x.strip()
@@ -289,7 +293,26 @@ class ORCAParser(FileParserInterface):
         return None
 
     def _parse_charge(self):
-        return None
+        text = self._find_output_by_header("MULLIKEN ATOMIC CHARGES")
+
+        # Mulliken charges not found
+        if len(text) == 0:
+            return None
+
+        # Get last relevant output
+        text = text[-1].split("\n")
+
+        # Parse table
+        body = [x.split() for x in text[:-1]]
+
+        # Construct data frame
+        df = pd.DataFrame(body, columns=["idx", "Atom", "_", "Charge"])
+
+        # Map correct types
+        for col, dtype in zip(df.columns, (int, str, str, float)):
+            df[col] = df[col].astype(dtype)
+
+        return df['Charge'].values
 
     def _parse_connectivity(self):
         return None
@@ -298,7 +321,7 @@ class ORCAParser(FileParserInterface):
         result = {
             "protocol": self._parse_protocol(),
             "geometry": self._parse_geometry(),
-            "total_dft_energy": self._parse_energy(),
+            "energy": self._parse_energy(),
             "orbital_energies": self._parse_orbital_energies(),
             "shielding": self._parse_shielding(),
             "spin": self._parse_spin(),
@@ -321,7 +344,8 @@ class ORCAParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {k: v for k, v in result.items() if k != "geometry"}
+                {"_" + k: v for k, v in result.items() if k not in ["geometry", "timing", "protocol"]},
+                override=True
             )
 
         # Store attribute
@@ -692,7 +716,7 @@ class NWChemParser(FileParserInterface):
         result = {
             "protocol": self._parse_protocol(),
             "geometry": self._parse_geometry(),
-            "total_dft_energy": self._parse_energy(),
+            "energy": self._parse_energy(),
             # "orbital_energies": self._parse_orbital_energies(),
             "shielding": self._parse_shielding(),
             "spin": self._parse_spin(),
@@ -715,7 +739,8 @@ class NWChemParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {k: v for k, v in result.items() if k != "geometry"}
+                {"_" + k: v for k, v in result.items() if k not in ["geometry", "timing", "protocol"]},
+                override=True
             )
 
         # Store attribute
@@ -922,41 +947,40 @@ class XTBParser(FileParserInterface):
         """
 
         def grab_time(line):
-            line = line.replace(" ", "")
-            line = line.split(":")
+            # Regular expression pattern
+            pattern = r"(?:(\d+)\s*d,\s*)?(?:(\d+)\s*h,\s*)?(?:(\d+)\s*min,\s*)?([\d.]+)\s*sec"
+            match = re.search(pattern, line)
+            return {
+                "days": int(match.group(1)) if match.group(1) else 0,
+                "hours": int(match.group(2)) if match.group(2) else 0,
+                "minutes": int(match.group(3)) if match.group(3) else 0,
+                "seconds": float(match.group(4))
+                }
 
-            return ":".join(line[1:]).strip("\n")
-
-        ready = False
+        timing = {}
         for line in self.lines:
-            if "test MD wall time" in line:
-                test_MD = grab_time(line)
-                ready = True
+            if "CREST runtime (total)" in line:
+                timing["CREST runtime (total)"] = grab_time(line)
 
-            if "MTD wall time" in line:
-                MTD_time = grab_time(line)
+            if "Trial metadynamics (MTD)" in line:
+                timing["Trial metadynamics (MTD)"] = grab_time(line)
 
-            if "multilevel OPT wall time" in line:
-                multilevel_OPT = grab_time(line)
+            if "Metadynamics (MTD)" in line:
+                timing["Metadynamics (MTD)"] = grab_time(line)
 
-            if "MD wall time" in line and ready is True:
-                MD = grab_time(line)
-                ready = False
+            if "Geometry optimization" in line:
+                timing["Geometry optimization"] = grab_time(line)
 
-            if "GC wall time" in line:
-                GC = grab_time(line)
+            if "Molecular dynamics (MD)" in line:
+                timing["Molecular dynamics (MD)"] = grab_time(line)
 
-            if "Overall wall time" in line:
-                overall = grab_time(line)
+            if "Genetic crossing (GC)" in line:
+                timing["Genetic crossing (GC)"] = grab_time(line)
+            
+            if "I/O and setup" in line:
+                timing["I/O and setup"] = grab_time(line)
 
-        return {
-            "test MD wall time": test_MD,
-            "metadynamics wall time": MTD_time,
-            "multilevel opt wall time": multilevel_OPT,
-            "molecular dynamics wall time": MD,
-            "genetic z-matrix crossing wall time": GC,
-            "overall wall time": overall,
-        }
+        return timing
 
     def _isomer_energy(self):
         """
@@ -1060,10 +1084,12 @@ class XTBParser(FileParserInterface):
         protocol = None
 
         for line in self.lines:
-            if " > " in line:
+            if "$ crest" in line:
                 protocol = line.strip("\n")
+                return protocol
             if "program call" in line:
                 protocol = (line.split(":")[1]).strip("\n")
+                return protocol
         return protocol
 
     def _parse_geometry(self):
@@ -1100,7 +1126,7 @@ class XTBParser(FileParserInterface):
 
         # Check that the file is valid first
         if len(self.lines) == 0:
-            raise RuntimeError("No contents to parse: {}".format(self.path))
+            raise RuntimeError("No contents to parse.")
 
         last_lines = "".join(self.lines[-10:])
         if (
@@ -1108,7 +1134,7 @@ class XTBParser(FileParserInterface):
             & ("normal" not in last_lines)
             & ("ratio" not in last_lines)
         ):
-            raise RuntimeError("XTB job failed: {}".format(self.path))
+            raise RuntimeError("XTB job failed.")
 
         # Initialize result object to store info
         result = {

@@ -101,7 +101,7 @@ class TypedList(collections.abc.MutableSequence):
 
 def atomic_masses():
     path = resources.files("isicle") / "resources/atomic_masses.tsv"
-    return pd.read_csv(path, delim_whitespace=True)
+    return pd.read_csv(path, sep="\s+")
 
 
 def tinker_lookup():

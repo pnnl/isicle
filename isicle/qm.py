@@ -83,6 +83,9 @@ class NWChemWrapper(WrapperInterface):
 
     """
 
+    _defaults = ["geom", "result"]
+    _default_value = None
+
     def __init__(self):
         """
         Initialize :obj:`~isicle.qm.NWChemWrapper` instance.
@@ -103,6 +106,9 @@ class NWChemWrapper(WrapperInterface):
 
         # Set up temporary directory
         self.temp_dir = isicle.utils.mkdtemp()
+
+        # Set default attributes
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
 
     def set_geometry(self, geom):
         """
@@ -192,7 +198,7 @@ class NWChemWrapper(WrapperInterface):
 
         d = {'basename': self.geom.basename,
              'dirname': self.temp_dir,
-             'charge': self.geom.get_charge()}
+             'charge': self.geom.formal_charge}
 
         return ('\ncharge {charge}\n'
                 'geometry noautoz noautosym\n'
@@ -878,6 +884,24 @@ class NWChemWrapper(WrapperInterface):
         self.result = result
         return self.result
 
+    def parse(self):
+        """
+        Parse NWChem simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete NWChem simulation.")
+
+        parser = isicle.parse.NWChemParser(data=self.result)
+
+        return parser.parse()
+
     def run(self, geom, template=None, tasks='energy', functional='b3lyp',
             basis_set='6-31g*', ao_basis='cartesian',
             atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
@@ -954,9 +978,9 @@ class NWChemWrapper(WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        result = self.finish()
+        self.finish()
 
-        return result
+        return self
 
     def save(self, path):
         """
@@ -997,6 +1021,9 @@ class ORCAWrapper(WrapperInterface):
 
     """
 
+    _defaults = ["geom", "result"]
+    _default_value = None
+
     def __init__(self):
         """
         Initialize :obj:`~isicle.qm.ORCAWrapper` instance.
@@ -1005,6 +1032,9 @@ class ORCAWrapper(WrapperInterface):
 
         # Set up temporary directory
         self.temp_dir = isicle.utils.mkdtemp()
+        
+        # Set defaults
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
 
     def set_geometry(self, geom):
         """
@@ -1018,7 +1048,7 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Assign geometry
-        self.geom = geom.__copy__()        
+        self.geom = geom.__copy__()
 
         # Save
         self._save_geometry()
@@ -1080,7 +1110,7 @@ class ORCAWrapper(WrapperInterface):
             config += '%PAL NPROCS {} END\n'.format(processes)
 
         # Add geometry context
-        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.get_charge(), spin_multiplicity, self.geom.path)
+        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.formal_charge, spin_multiplicity, self.geom.path)
 
         # Expand keyword args
         for k, v in kwargs.items():
@@ -1177,7 +1207,14 @@ class ORCAWrapper(WrapperInterface):
 
             # Load geometry
             if var_name == 'xyz':
-                result[var_name] = isicle.load(outfile)
+                # Load xyz geometry
+                geom = isicle.load(outfile)
+                
+                # Update coordinates of starting geometry
+                geom = self.geom.update_coordinates(geom)
+
+                # Add to result object
+                result[var_name] = geom
 
             # Load other files
             else:
@@ -1194,6 +1231,24 @@ class ORCAWrapper(WrapperInterface):
         # Assign to attribute
         self.result = result
         return self.result
+
+    def parse(self):
+        """
+        Parse ORCA simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete ORCA simulation.")
+
+        parser = isicle.parse.ORCAParser(data=self.result)
+
+        return parser.parse()
 
     def run(self, geom, **kwargs):
         """
@@ -1226,10 +1281,10 @@ class ORCAWrapper(WrapperInterface):
         # Run QM simulation
         self.submit()
 
-        # Parse outputs
+        # Finish/clean-up outputs
         self.finish()
 
-        return self.result
+        return self
 
     def save(self, path):
         """

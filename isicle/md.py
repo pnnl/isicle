@@ -87,7 +87,7 @@ class XTBWrapper(WrapperInterface):
 
     """
 
-    _defaults = ["geom"]
+    _defaults = ["geom", "result"]
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -163,7 +163,7 @@ class XTBWrapper(WrapperInterface):
         s += "--" + forcefield + " "
 
         # Add charge
-        s += "--chrg " + str(self.geom.get_charge()) + " "
+        s += "--chrg " + str(self.geom.formal_charge) + " "
 
         # Add optional implicit solvation
         if solvation is not None:
@@ -243,7 +243,7 @@ class XTBWrapper(WrapperInterface):
             s += "-swel " + ion + " "
 
         # Add charge
-        s += "-chrg " + str(self.geom.get_charge()) + " "
+        s += "-chrg " + str(self.geom.formal_charge) + " "
 
         # Add dryrun option
         if dryrun:
@@ -375,6 +375,9 @@ class XTBWrapper(WrapperInterface):
         # Get list of outputs
         outfiles = glob.glob(os.path.join(self.temp_dir, "*"))
 
+        # Filter directories
+        outfiles = [x for x in outfiles if not os.path.isdir(x)]
+
         # Result container
         result = {}
 
@@ -427,13 +430,16 @@ class XTBWrapper(WrapperInterface):
                     raw_mol = Chem.MolFromXYZBlock(xyzblock)
                     mol = Chem.Mol(raw_mol)
                     # rdDetermineBonds.DetermineBonds(
-                    #     mol, charge=self.geom.get_charge() + charge_lookup[basename]
+                    #     mol, charge=self.geom.formal_charge + charge_lookup[basename]
                     # )
 
                     # Initialize Geometry instance
                     geom = isicle.geometry.Geometry(
                         mol=mol, basename=self.geom.basename
                     )
+
+                    # Update coordinates of starting geometry
+                    geom = self.geom.update_coordinates(geom)
 
                     # Append to list of geometries
                     geoms.append(geom)
@@ -484,7 +490,27 @@ class XTBWrapper(WrapperInterface):
         for key in result.keys() & rename.keys():
             result[rename[key]] = result.pop(key)
 
-        return result
+        # Assign to attribute
+        self.result = result
+        return self.result
+
+    def parse(self):
+        """
+        Parse xTB simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete xTB simulation.")
+
+        parser = isicle.parse.XTBParser(data=self.result)
+
+        return parser.parse()
 
     def run(self, geom, **kwargs):
         """
@@ -519,9 +545,9 @@ class XTBWrapper(WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        result = self.finish()
+        self.finish()
 
-        return result
+        return self
 
 
 class RDKitWrapper(Geometry, WrapperInterface):
@@ -540,7 +566,7 @@ class RDKitWrapper(Geometry, WrapperInterface):
         The number of conformers to generate.
     """
 
-    _defaults = ["geom", "method", "numConfs"]
+    _defaults = ["geom", "method", "numConfs", "result"]
     _default_value = None
 
     def __init__(self, **kwargs):
@@ -691,7 +717,8 @@ class RDKitWrapper(Geometry, WrapperInterface):
         for conf, label in zip(conformers, range(conf_count)):
             conf.__dict__.update(conformerID=label, basename=self.geom.basename)
 
-        return isicle.conformers.ConformationalEnsemble(conformers)
+        self.result = isicle.conformers.ConformationalEnsemble(conformers)
+        return self.result
 
     def run(self, geom, **kwargs):
         """
@@ -725,4 +752,6 @@ class RDKitWrapper(Geometry, WrapperInterface):
         self.submit()
 
         # Finish/clean up
-        return self.finish()
+        self.finish()
+
+        return self

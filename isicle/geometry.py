@@ -2,6 +2,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem.SaltRemover import SaltRemover
+from rdkit.Chem import AllChem
 
 import isicle
 from isicle.interfaces import GeometryInterface
@@ -14,17 +15,156 @@ class Geometry(GeometryInterface):
     using class functions.
     """
 
-    _defaults = ["mol", "charge", "basename"]
+    _defaults = [
+        "mol", 
+        "basename",
+        "_energy",
+        "_shielding",
+        "_spin",
+        "_frequency",
+        "_molden",
+        "_charge",
+        "_connectivity"
+        ]
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
+    
+    @property
+    def energy(self):
+        """
+        Get total energy of the molecule.
 
-        # if self.charge is None:
-        #     self.charge = self.get_charge()
+        Returns
+        -------
+        float
+            Total energy.
+
+        """
+
+        return self._energy
+    
+    @property
+    def orbital_energies(self):
+        """
+        Get orbital energies of the molecule.
+
+        Returns
+        -------
+        :obj:`~pandas.DataFrame`
+            Orbital energies.
+
+        """
+        return self._orbital_energies
+    
+    @property
+    def shielding(self):
+        """
+        Get orbital energies of the molecule.
+
+        Returns
+        -------
+        dict
+            Shielding values.
+
+        """
+        return self.shielding
+    
+    @property
+    def spin(self):
+        """
+        Get spin couplings of the molecule.
+
+        Returns
+        -------
+        :obj:`~pandas.DataFrame`
+            Spin couplings.
+
+        """
+        return self._spin
+
+    @property
+    def frequency(self):
+        """
+        Get frequency values of the molecule.
+
+        Returns
+        -------
+        dict
+            Frequency values.
+
+        """
+
+        return self._frequency
+
+    @property
+    def molden(self):
+        """
+        Get Molden values of the molecule.
+
+        Returns
+        -------
+        dict
+            Frequency values.
+
+        """
+
+        return self._molden
+
+    @property
+    def charge(self):
+        """
+        Get per-atoms charges of the molecule.
+
+        Returns
+        -------
+        list : float
+            Per-atom charges.
+
+        """
+
+        return self._charge
+
+    @property
+    def connectivity(self):
+        """
+        Get molecule connectivity.
+
+        Returns
+        -------
+        list
+            Pairwise atom connectivity.
+
+        """
+        return self._connectivity
+
+    @property
+    def formal_charge(self):
+        """
+        Get formal charge of the molecule.
+
+        Returns
+        -------
+        int
+            Formal charge.
+
+        """
+
+        return Chem.rdmolops.GetFormalCharge(self.to_mol())
 
     def view(self):
+        """
+        View internal rdkit mol object representation.
+
+        Returns
+        -------
+        :obj:`~rdkit.Chem.rdchem.Mol`
+            RDKit Mol instance.
+
+        """
+
         return self.to_mol()
 
     def get_basename(self):
@@ -121,6 +261,36 @@ class Geometry(GeometryInterface):
             return True
         except:
             return False
+    
+    def update_coordinates(self, other):
+        """
+        Update atom coordinates using another geometry as reference.
+
+        Parameters
+        ----------
+        other : :obj:`~isicle.geometry.Geometry`
+            Geometry with reference coordinates.
+
+        Returns
+        -------
+        :obj:`~isicle.geometry.Geometry`
+            Molecule representation.
+
+        """
+        # Get copies of mol object
+        mol = self.to_mol()
+        mol_other = other.to_mol()
+
+        # Iterate atoms
+        for i in range(mol.GetNumAtoms()):
+            # Get coordinates to update
+            pos_other = mol_other.GetConformer().GetAtomPosition(i)
+
+            # Set coordinates
+            mol.GetConformer().SetAtomPosition(i, pos_other)
+
+        # Return fresh instance
+        return self.__copy__(mol=mol)
 
     def addHs(self):
         """
@@ -171,7 +341,7 @@ class Geometry(GeometryInterface):
             forcefield = forcefield.lower()
             if forcefield == "uff":
                 if Chem.rdForceFieldHelpers.UFFHasAllMoleculeParams(mw) is True:
-                    return Chem.AllChem.UFFOptimizeMolecule
+                    return AllChem.UFFOptimizeMolecule
                 else:
                     raise ValueError("UFF is not available for all atoms in molecule.")
             elif forcefield in ["mmff", "mmff94", "mmff94s"]:
@@ -192,10 +362,10 @@ class Geometry(GeometryInterface):
         # Embed molecule 3D coordinates
         if embed is True:
             # Attempt embedding
-            res = Chem.AllChem.EmbedMolecule(mol)
+            res = AllChem.EmbedMolecule(mol)
             if res == -1:
                 # Use random coordinates
-                res = Chem.AllChem.EmbedMolecule(mol, useRandomCoords=True)
+                res = AllChem.EmbedMolecule(mol, useRandomCoords=True)
                 if res == -1:
                     raise ValueError("Embedding failure.")
 
@@ -295,7 +465,7 @@ class Geometry(GeometryInterface):
         for i, (reactant, product) in enumerate(reactions):
             while mol.HasSubstructMatch(reactant):
                 replaced = True
-                rms = Chem.AllChem.ReplaceSubstructs(mol, reactant, product)
+                rms = AllChem.ReplaceSubstructs(mol, reactant, product)
                 mol = rms[0]
 
         return self.__copy__(mol=mol)
@@ -437,25 +607,12 @@ class Geometry(GeometryInterface):
         """
 
         mol = self.to_mol()
-        Chem.AllChem.ComputeGasteigerCharges(mol)
+        AllChem.ComputeGasteigerCharges(mol)
         contribs = [
             mol.GetAtomWithIdx(i).GetDoubleProp("_GasteigerCharge")
             for i in range(mol.GetNumAtoms())
         ]
         return np.nansum(contribs)
-
-    def get_charge(self):
-        """
-        Get formal charge of the molecule.
-
-        Returns
-        -------
-        int
-            Formal charge.
-
-        """
-
-        return Chem.rdmolops.GetFormalCharge(self.to_mol())
 
     def dft(self, backend="NWChem", **kwargs):
         """
