@@ -1,3 +1,4 @@
+import glob
 import os
 import shutil
 import subprocess
@@ -116,10 +117,10 @@ class MobcalWrapper(WrapperInterface):
              'IMP': imp,
              'NUM_THREADS': processes}
 
-        self.mobcal_params = os.path.join(self.temp_dir,
+        self._mobcal_params = os.path.join(self.temp_dir,
                                           'mobcal.params')
 
-        with open(self.mobcal_params, 'w') as f:
+        with open(self._mobcal_params, 'w') as f:
             f.write('\n'.join(['{} {}'.format(k, v) for k, v in d.items()]))
             f.write('\n')
 
@@ -175,13 +176,28 @@ class MobcalWrapper(WrapperInterface):
         # Result container
         result = {}
 
+        # Enumerate output files
+        for outfile in outfiles:
+            # Split name and extension
+            basename, ext = os.path.basename(outfile).rsplit('.', 1)
+
+            # Read output content
+            with open(outfile, 'rb') as f:
+                contents = f.read()
+
+            # Attempt utf-8 decode
+            try:
+                result[ext] = contents.decode('utf-8')
+            except UnicodeDecodeError:
+                result[ext] = contents
+
         # Assign to attribute
         self.result = result
         return self.result
     
     def parse(self):
         """
-        Parse ORCA simulation results.
+        Parse Mobcal simulation results.
 
         Returns
         -------
@@ -191,7 +207,7 @@ class MobcalWrapper(WrapperInterface):
         """
 
         if self.result is None:
-            raise RuntimeError("Must complete ORCA simulation.")
+            raise RuntimeError("Must complete Mobcal simulation.")
 
         parser = isicle.parse.MobcalParser(data=self.result)
 

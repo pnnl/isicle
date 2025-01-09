@@ -353,9 +353,6 @@ class ORCAParser(FileParserInterface):
 
         return result
 
-    def save(self, path):
-        isicle.io.save_pickle(path, self.result)
-
 
 class NWChemParser(FileParserInterface):
     """Extract information from NWChem simulation output files."""
@@ -748,9 +745,6 @@ class NWChemParser(FileParserInterface):
 
         return result
 
-    def save(self, path):
-        isicle.io.save_pickle(path, self.result)
-
 
 class ImpactParser(FileParserInterface):
     """
@@ -812,41 +806,26 @@ class ImpactParser(FileParserInterface):
         self.result = result
         return result  # TODO: return CCS?
 
-    def save(self, path: str, sep="\t"):
-        """
-        Write parsed object to file
-        """
-        pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
-        return
-
 
 class MobcalParser(FileParserInterface):
     """
     Extract text from a MOBCAL mobility calculation output file.
     """
 
-    def __init__(self):
-        """
-        Add docstring
-        """
-        self.contents = None
+    def __init__(self, data=None):
+        self.data = data
+
         self.result = {}
 
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        with open(path, "r") as f:
-            self.contents = f.readlines()
-
-        return self.contents
+    def load(self, path):
+        self.data = isicle.io.load_pickle(path)
 
     def parse(self):
         """
         Extract relevant information from data
         """
         done = False
-        for line in self.contents:
+        for line in self.data["out"]:
             # if "average (second order) TM mobility" in line:
             #     m_mn = float(line.split('=')[-1])
             if "average TM cross section" in line:
@@ -859,37 +838,6 @@ class MobcalParser(FileParserInterface):
             self.result["ccs"] = {"mean": ccs_mn, "std": ccs_std}
 
         return self.result
-
-    def save(self, path: str, sep="\t"):
-        """
-        Write parsed object to file
-        """
-        pd.DataFrame(self.result).to_csv(path, sep=sep, index=False)
-        return
-
-
-class SanderParser(FileParserInterface):
-    """
-    Extract text from an Sander simulated annealing simulation output file.
-    """
-
-    def load(self, path: str):
-        """
-        Load in the data file
-        """
-        raise NotImplementedError
-
-    def parse(self):
-        """
-        Extract relevant information from data
-        """
-        raise NotImplementedError
-
-    def save(self, path: str):
-        """
-        Write parsed object to file
-        """
-        raise NotImplementedError
 
 
 class XTBParser(FileParserInterface):
@@ -1160,11 +1108,3 @@ class XTBParser(FileParserInterface):
                 result["energy"] = self._crest_energy()
 
         return result
-
-    def save(self, path):
-        """
-        Add docstring
-        """
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-        return
