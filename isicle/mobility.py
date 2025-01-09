@@ -92,7 +92,7 @@ class MobcalWrapper(WrapperInterface):
             )
 
         # All other formats
-        isicle.save(self.infile, self.geom)
+        isicle.save(self._infile, self.geom)
 
     def _configure_lennard_jones(self, path=None):
         if path is None:
