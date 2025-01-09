@@ -4,7 +4,7 @@ import subprocess
 from collections import defaultdict
 
 from rdkit import Chem
-from rdkit.Chem import rdDetermineBonds, rdDistGeom
+from rdkit.Chem import rdDistGeom
 
 import isicle
 from isicle.geometry import Geometry
@@ -75,25 +75,19 @@ class XTBWrapper(WrapperInterface):
     ----------
     temp_dir : str
         Path to temporary directory used for simulation.
-    task_map : dict
-        Alias mapper for supported molecular dynamic presets. Includes
-        "optimize", "crest", "nmr", "protonate", "deprotonate", and "tautomer".
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
-    fmt : str
-        File extension indicator.
-    job_list : str
-        List of commands for simulation.
+    result : dict
+        Dictionary containing simulation results.
 
     """
 
-    _defaults = ["geom", "result"]
+    _defaults = ["geom", "result", "temp_dir"]
     _default_value = None
 
-    def __init__(self, **kwargs):
-        self.temp_dir = isicle.utils.mkdtemp()
+    def __init__(self):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
-        self.__dict__.update(**kwargs)
+        self.temp_dir = isicle.utils.mkdtemp()
 
     def set_geometry(self, geom):
         """
@@ -124,13 +118,13 @@ class XTBWrapper(WrapperInterface):
 
         """
         # Path operations
-        self.fmt = fmt.lower()
+        self._fmt = fmt.lower()
         geomfile = os.path.join(
-            self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower())
+            self.temp_dir, "{}.{}".format(self.geom.basename, self._fmt.lower())
         )
 
         # All other formats
-        isicle.io.save(geomfile, self.geom)
+        isicle.save(geomfile, self.geom)
         self.geom.path = geomfile
 
     def _configure_xtb(self, forcefield="gfn2", optlevel="normal", solvation=None):
@@ -154,7 +148,7 @@ class XTBWrapper(WrapperInterface):
         s = "xtb "
 
         # Add geometry
-        s += "{}.{}".format(self.geom.basename, self.fmt.lower())
+        s += "{}.{}".format(self.geom.basename, self._fmt.lower())
 
         # Add optimize tag
         s += " --opt " + optlevel + " "
@@ -226,7 +220,7 @@ class XTBWrapper(WrapperInterface):
         # Add geometry
         s += str(
             os.path.join(
-                self.temp_dir, "{}.{}".format(self.geom.basename, self.fmt.lower())
+                self.temp_dir, "{}.{}".format(self.geom.basename, self._fmt.lower())
             )
         )
 
@@ -354,9 +348,9 @@ class XTBWrapper(WrapperInterface):
                     "Task not assigned properly, please choose optimize, conformer, protonate, deprotonate, or tautomerize"
                 )
 
-        self.task = task
+        self._task = task
 
-        self.config = config
+        self._config = config
 
     def submit(self):
         """
@@ -364,7 +358,7 @@ class XTBWrapper(WrapperInterface):
         """
         cwd = os.getcwd()
         os.chdir(self.temp_dir)
-        subprocess.call(self.config, shell=True)
+        subprocess.call(self._config, shell=True)
         os.chdir(cwd)
 
     def finish(self):
@@ -560,18 +554,19 @@ class RDKitWrapper(Geometry, WrapperInterface):
     ----------
     geom : :obj:`isicle.geometry.Geometry`
         Internal molecule representation.
-    method: str
+    method : str
         Method of RDKit conformer generation specified.
-    numConfs: int
+    numConfs : int
         The number of conformers to generate.
+    result : dict
+        Dictionary containing simulation results.
     """
 
     _defaults = ["geom", "method", "numConfs", "result"]
     _default_value = None
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
-        self.__dict__.update(**kwargs)
 
     def set_geometry(self, geom):
         """
@@ -704,6 +699,9 @@ class RDKitWrapper(Geometry, WrapperInterface):
             raise ValueError(
                 "Failure to run RDKit MD, method and/or variant not recognized"
             )
+    
+    def parse(self):
+        print("No need to parse RDKit result. Simply access `result` attribute.")
 
     def finish(self):
         """
