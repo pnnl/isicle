@@ -21,9 +21,32 @@ def _mobcal_selector():
 
 
 class MobcalWrapper(WrapperInterface):
+    """
+    Wrapper for Mobcal functionality.
 
-    def __init__(self):
-        pass
+    Implements :class:`~isicle.interfaces.WrapperInterface` to ensure
+    required methods are exposed.
+
+    Attributes
+    ----------
+    temp_dir : str
+        Path to temporary directory used for simulation.
+    geom : :obj:`~isicle.geometry.Geometry`
+        Internal molecule representation.
+    result : dict
+        Dictionary containing simulation results.
+
+    """
+
+    _defaults = ["geom", "result", "temp_dir"]
+    _default_value = None
+
+    def __init__(self):        
+        # Set defaults
+        self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+
+        # Set up temporary directory
+        self.temp_dir = isicle.utils.mkdtemp()
 
     def set_geometry(self, geom):
         """
@@ -53,26 +76,31 @@ class MobcalWrapper(WrapperInterface):
 
         """
 
-        # Temp directory
-        self.temp_dir = isicle.utils.mkdtemp()
-
         # Files
-        self.infile = os.path.join(self.temp_dir,
-                                   self.geom.basename + '.mfj')
-        self.outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
-        self.logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
+        self._infile = os.path.join(
+            self.temp_dir,
+            self.geom.basename + '.mfj'
+            )
+        self._outfile = os.path.join(
+            self.temp_dir, 
+            self.geom.basename + '.out'
+            )
+        self._logfile = os.path.join(
+            self.temp_dir,
+            self.geom.basename + '.log'
+            )
 
         # All other formats
-        isicle.io.save(self.infile, self.geom)
+        isicle.save(self.infile, self.geom)
 
     def _configure_lennard_jones(self, path=None):
         if path is None:
             path = resources.files('isicle') / 'resources/lennard_jones.txt'
 
-        self.atom_params = os.path.join(self.temp_dir,
+        self._atom_params = os.path.join(self.temp_dir,
                                         'atomtype_parameters.in')
 
-        shutil.copy2(path, self.atom_params)
+        shutil.copy2(path, self._atom_params)
 
     def _configure_mobcal(self, i2=5013489, buffer_gas='helium',
                           buffer_gas_mass=4.0026, temp=300, ipr=1000,
@@ -116,34 +144,58 @@ class MobcalWrapper(WrapperInterface):
                                processes=processes)
 
         # Set command to access mobcal as attribute
-        self.command = command
+        self._command = command
 
     def submit(self):
-        subprocess.call('{} {} {} {} {} &> {}'.format(self.command,
-                                                      self.mobcal_params,
-                                                      self.atom_params,
-                                                      self.infile,
-                                                      self.outfile,
-                                                      self.logfile),
+        subprocess.call('{} {} {} {} {} &> {}'.format(self._command,
+                                                      self._mobcal_params,
+                                                      self._atom_params,
+                                                      self._infile,
+                                                      self._outfile,
+                                                      self._logfile),
                         shell=True)
 
     def finish(self):
-        # Initialize parser
-        parser = isicle.parse.MobcalParser()
+        """
+        Collect MOBCAL simulation results.
 
-        # Load output file
-        parser.load(os.path.join(self.temp_dir, self.geom.basename + '.out'))
+        Returns
+        -------
+        dict
+            Dictionary containing relevant outputs from the simulation.
 
-        # Extract result
-        result = parser.parse()
+        """
 
-        # Update objects
-        self.__dict__.update(result)
-        self.geom.add___dict__(result)
-        self.output = parser.load(os.path.join(
-            self.temp_dir, self.geom.basename + '.out'))
+        # Get list of outputs
+        outfiles = glob.glob(os.path.join(self.temp_dir, '*'))
 
-        return self
+        # Filter out temp files
+        outfiles = [x for x in outfiles if not x.endswith('.tmp')]
+
+        # Result container
+        result = {}
+
+        # Assign to attribute
+        self.result = result
+        return self.result
+    
+    def parse(self):
+        """
+        Parse ORCA simulation results.
+
+        Returns
+        -------
+        dict
+            Dictionary containing parsed outputs from the simulation.
+
+        """
+
+        if self.result is None:
+            raise RuntimeError("Must complete ORCA simulation.")
+
+        parser = isicle.parse.MobcalParser(data=self.result)
+
+        return parser.parse()
 
     def run(self, geom, **kwargs):
         # Set geometry
