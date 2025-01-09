@@ -16,43 +16,43 @@ issued in, no matter where the input is. Can direct the .log file, but no other 
 """
 
 
-def _program_selector(program):
+def _backend_selector(backend):
     """
-    Selects a supported molecular dynamics program for associated simulation.
+    Selects a supported molecular dynamics backend for associated simulation.
     Currently only NWChem has been implemented.
 
     Parameters
     ----------
-    program : str
-        Alias for program selection (xtb).
+    backend : str
+        Alias for backend selection (xtb).
 
     Returns
     -------
-    program
-        Wrapped functionality of the selected program. Must implement
+    backend
+        Wrapped functionality of the selected backend. Must implement
         :class:`~isicle.interfaces.WrapperInterface`.
 
     """
 
-    program_map = {"xtb": XTBWrapper, "rdkit": RDKitWrapper}
+    backend_map = {"xtb": XTBWrapper, "rdkit": RDKitWrapper}
 
-    if program.lower() in program_map.keys():
-        return program_map[program.lower()]()
+    if backend.lower() in backend_map.keys():
+        return backend_map[backend.lower()]()
     else:
         raise ValueError(
-            "{} not a supported molecular dynamics program.".format(program)
+            "{} not a supported molecular dynamics backend.".format(backend)
         )
 
 
-def md(geom, program="xtb", **kwargs):
+def md(geom, backend="xtb", **kwargs):
     """
     Optimize geometry via molecular dyanmics using supplied forcefield
     and basis set.
 
     Parameters
     ----------
-    program : str
-        Alias for program selection (xtb).
+    backend : str
+        Alias for backend selection (xtb).
 
     Returns
     -------
@@ -61,8 +61,8 @@ def md(geom, program="xtb", **kwargs):
 
     """
 
-    # Select program
-    return _program_selector(program).run(geom, **kwargs)
+    # Select backend
+    return _backend_selector(backend).run(geom, **kwargs)
 
 
 class XTBWrapper(WrapperInterface):
