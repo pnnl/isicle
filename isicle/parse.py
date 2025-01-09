@@ -825,7 +825,7 @@ class MobcalParser(FileParserInterface):
         Extract relevant information from data
         """
         done = False
-        for line in self.data["out"]:
+        for line in self.data["out"].split("\n"):
             # if "average (second order) TM mobility" in line:
             #     m_mn = float(line.split('=')[-1])
             if "average TM cross section" in line:
