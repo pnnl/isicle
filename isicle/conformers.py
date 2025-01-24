@@ -398,13 +398,10 @@ class ConformationalEnsemble(TypedList):
             If all members do not have `attr`.
 
         '''
-
-        value = [x.get___dict__() for x in self]
-        for key in safelist(attr):
-            if not all(key in x for x in value):
-                raise AttributeError('"{}" not found for all conformational '
-                                     'ensemble members.'.format(attr))
-            value = [x.get(key) for x in value]
+        
+        if not all(hasattr(x, attr) for x in self):
+            raise AttributeError('"{}" not found for all conformational '
+                                    'ensemble members.'.format(attr))
 
     def reduce(self, attr, func='boltzmann', **kwargs):
         '''
@@ -438,9 +435,7 @@ class ConformationalEnsemble(TypedList):
             self._check_attributes('energy')
 
         # Extract (possibly nested) value attribute
-        value = [x.get___dict__() for x in self]
-        for key in safelist(attr):
-            value = [x.get(key) for x in value]
+        value = [getattr(x, attr) for x in self]
 
         # Check nested values
         if isinstance(value[0], dict):
@@ -463,7 +458,7 @@ class ConformationalEnsemble(TypedList):
                 value = np.array([x['mean'] for x in value]).flatten()
 
             else:
-                value = np.array([x[attr] for x in value]).flatten()
+                value = np.array([getattr(x, attr) for x in value]).flatten()
 
         # Not nested
         else:
@@ -474,7 +469,7 @@ class ConformationalEnsemble(TypedList):
         # Extract energy attribute
         if _energy_based(f):
             energy = np.array(
-                [np.repeat(x.get___dict__()['energy'], pad) for x in self])
+                [np.repeat(getattr(x, 'energy'), pad) for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method

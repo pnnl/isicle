@@ -27,7 +27,6 @@ class Geometry(GeometryInterface):
         "_connectivity",
         "_formal_charge",
         "_ccs",
-        "_ccs_std"
         ]
     _default_value = None
 
@@ -170,20 +169,6 @@ class Geometry(GeometryInterface):
         """
 
         return self._ccs
-
-    @property
-    def ccs_std(self):
-        """
-        Get standard deviation of CCS prediction of the molecule.
-
-        Returns
-        -------
-        float
-            Standard deviation of collision cross section.
-
-        """
-
-        return self._ccs_std
 
     def view(self):
         """
