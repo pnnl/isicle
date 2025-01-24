@@ -191,6 +191,9 @@ class MobcalWrapper(WrapperInterface):
             except UnicodeDecodeError:
                 result[ext] = contents
 
+        # Propagate geometry object
+        result["geometry"] = self.geom
+
         # Assign to attribute
         self.result = result
         return self.result

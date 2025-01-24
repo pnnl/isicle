@@ -24,7 +24,10 @@ class Geometry(GeometryInterface):
         "_frequency",
         "_molden",
         "_charge",
-        "_connectivity"
+        "_connectivity",
+        "_formal_charge",
+        "_ccs",
+        "_ccs_std"
         ]
     _default_value = None
 
@@ -153,6 +156,34 @@ class Geometry(GeometryInterface):
         """
 
         return Chem.rdmolops.GetFormalCharge(self.to_mol())
+
+    @property
+    def ccs(self):
+        """
+        Get CCS of the molecule.
+
+        Returns
+        -------
+        float
+            Collision cross section.
+
+        """
+
+        return self._ccs
+
+    @property
+    def ccs_std(self):
+        """
+        Get standard deviation of CCS prediction of the molecule.
+
+        Returns
+        -------
+        float
+            Standard deviation of collision cross section.
+
+        """
+
+        return self._ccs_std
 
     def view(self):
         """

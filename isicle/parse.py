@@ -835,7 +835,16 @@ class MobcalParser(FileParserInterface):
             elif "standard deviation (percent)" in line:
                 done = True
         if done is True:
-            self.result["ccs"] = {"mean": ccs_mn, "std": ccs_std}
+            self.result["ccs"] = ccs_mn
+            self.result["ccs_std"] = ccs_std
+        
+        self.result["geometry"] = self.data["geometry"]
+
+        # Update geometry attributes
+        self.result["geometry"].add___dict__(
+            {"_" + k: v for k, v in self.result.items() if k not in ["geometry"]},
+            override=True
+        )
 
         return self.result
 
