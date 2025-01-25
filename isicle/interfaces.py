@@ -27,11 +27,6 @@ class FileParserInterface(metaclass=abc.ABCMeta):
         """Extract relevant information from data"""
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def save(self, path: str):
-        """Write parsed object to file"""
-        raise NotImplementedError
-
 
 class XYZGeometryInterface(metaclass=abc.ABCMeta):
 

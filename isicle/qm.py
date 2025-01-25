@@ -71,19 +71,14 @@ class NWChemWrapper(WrapperInterface):
     ----------
     temp_dir : str
         Path to temporary directory used for simulation.
-    task_map : dict
-        Alias mapper for supported quantum mechanical presets. Thses include
-        "optimze", "energy", "frequency", "shielding", and "spin".
-    task_order : dict
-        Indicates order of tasks in `task_map`.
     geom : :obj:`~isicle.geometry.Geometry`
         Internal molecule representation.
-    config : str
-        Configuration information for simulation.
+    result : dict
+        Dictionary containing simulation results.
 
     """
 
-    _defaults = ["geom", "result"]
+    _defaults = ["geom", "result", "temp_dir"]
     _default_value = None
 
     def __init__(self):
@@ -92,23 +87,23 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        self.task_map = {'optimize': self._configure_optimize,
+        self._task_map = {'optimize': self._configure_optimize,
                          'energy': self._configure_energy,
                          'frequency': self._configure_frequency,
                          'shielding': self._configure_shielding,
                          'spin': self._configure_spin}
 
-        self.task_order = {'optimize': 0,
+        self._task_order = {'optimize': 0,
                            'energy': 1,
                            'frequency': 2,
                            'shielding': 3,
                            'spin': 4}
 
-        # Set up temporary directory
-        self.temp_dir = isicle.utils.mkdtemp()
-
         # Set default attributes
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+
+        # Set up temporary directory
+        self.temp_dir = isicle.utils.mkdtemp()
 
     def set_geometry(self, geom):
         """
@@ -131,11 +126,6 @@ class NWChemWrapper(WrapperInterface):
         """
         Save internal :obj:`~isicle.geometry.Geometry` representation to file.
 
-        Parameters
-        ----------
-        fmt : str
-            File format.
-
         """
 
         # Path operations
@@ -143,7 +133,7 @@ class NWChemWrapper(WrapperInterface):
                                 '{}.xyz'.format(self.geom.basename))
 
         # Save
-        isicle.io.save(geomfile, self.geom)
+        isicle.save(geomfile, self.geom)
         self.geom.path = geomfile
 
     def _configure_header(self, scratch_dir=None, mem_global=1600,
@@ -725,29 +715,31 @@ class NWChemWrapper(WrapperInterface):
         for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
                                         cycle(ao_basis), cycle(cosmo), cycle(solvent)):
             # TODO: finish this
-            config += self.task_map[task](functional=f,
-                                          basis_set=b,
-                                          ao_basis=a,
-                                          temp=temp,
-                                          cosmo=c,
-                                          gas=gas,
-                                          max_iter=max_iter,
-                                          solvent=so,
-                                          bonds=bonds)
+            config += self._task_map[task](
+                functional=f,
+                basis_set=b,
+                ao_basis=a,
+                temp=temp,
+                cosmo=c,
+                gas=gas,
+                max_iter=max_iter,
+                solvent=so,
+                bonds=bonds
+                )
 
         # Store tasks as attribute
-        self.tasks = tasks
+        self._tasks = tasks
 
         # Store number of processes as attribute
-        self.processes = processes
+        self._processes = processes
 
         # Store as atrribute
-        self.config = config
+        self._config = config
 
         # Save
         self.save_config()
 
-        return self.config
+        return self._config
 
     def configure_from_template(self, path, basename_override=None,
                                 dirname_override=None, **kwargs):
@@ -810,7 +802,7 @@ class NWChemWrapper(WrapperInterface):
         # Write to file
         with open(os.path.join(self.temp_dir,
                                self.geom.basename + '.nw'), 'w') as f:
-            f.write(self.config)
+            f.write(self._config)
 
     def submit(self):
         """
@@ -822,7 +814,7 @@ class NWChemWrapper(WrapperInterface):
         outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
         logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
 
-        s = 'mpirun -n {} nwchem {} > {} 2> {}'.format(self.processes,
+        s = 'mpirun -n {} nwchem {} > {} 2> {}'.format(self._processes,
                                                        infile,
                                                        outfile,
                                                        logfile)
@@ -1012,8 +1004,6 @@ class ORCAWrapper(WrapperInterface):
         Path to temporary directory used for simulation.
     geom : :obj:`~isicle.geometry.Geometry`
         Internal molecule representation.
-    fmt : str
-        File extension indicator.
     config : str
         Configuration information for simulation.
     result : dict
@@ -1021,7 +1011,7 @@ class ORCAWrapper(WrapperInterface):
 
     """
 
-    _defaults = ["geom", "result"]
+    _defaults = ["geom", "result", "temp_dir"]
     _default_value = None
 
     def __init__(self):
@@ -1029,12 +1019,12 @@ class ORCAWrapper(WrapperInterface):
         Initialize :obj:`~isicle.qm.ORCAWrapper` instance.
 
         """
-
-        # Set up temporary directory
-        self.temp_dir = isicle.utils.mkdtemp()
         
         # Set defaults
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
+
+        # Set up temporary directory
+        self.temp_dir = isicle.utils.mkdtemp()
 
     def set_geometry(self, geom):
         """
