@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from statsmodels.stats.weightstats import DescrStatsW
-
+import re
 from isicle import io
 from isicle.geometry import Geometry, XYZGeometry
 from isicle.utils import TypedList, safelist, scaling_factors
@@ -431,7 +431,7 @@ class ChemicalShiftTransformation:
         self.scaling_factors.update(tempdict)
 
     def _transform_quadratic(
-        self, value, a=float, b=float, c=float, constant=float, coefficient=float
+        self, value, a: float, b: float, c: float, constant: float, coefficient: float
     ):
         """
         Apply quadratic value coefficients in the form of
@@ -442,13 +442,17 @@ class ChemicalShiftTransformation:
         quadratic_result = a * value**2 + b * value + c
         return constant - coefficient * quadratic_result
 
-    def _transform_slope_intercept(self, value, slope=float, intercept=float):
+    def _transform_slope_intercept(self, value, slope: float, intercept: float):
         if not isinstance(slope, float):
-            slope = float(slope)
+            try:
+                slope = float(slope)
+            except:
+                slope = np.nan
         if not isinstance(intercept, float):
-            intercept = float(intercept)
-        if np.isnan(slope) or np.isnan(intercept):
-            return np.nan
+            try:
+                intercept = float(intercept)
+            except:
+                intercept = np.nan
         return (intercept - value) / (-slope)
 
     def apply_scaling_factors(self):
