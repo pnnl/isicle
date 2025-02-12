@@ -28,17 +28,17 @@ def _backend_selector(backend):
 
     """
 
-    backend_map = {'nwchem': NWChemWrapper,
-                   'orca': ORCAWrapper}
+    backend_map = {"nwchem": NWChemWrapper, "orca": ORCAWrapper}
 
     if backend.lower() in backend_map.keys():
         return backend_map[backend.lower()]()
     else:
-        raise ValueError(('{} not a supported quantum mechanical backend.')
-                         .format(backend))
+        raise ValueError(
+            ("{} not a supported quantum mechanical backend.").format(backend)
+        )
 
 
-def dft(geom, backend='NWChem', **kwargs):
+def dft(geom, backend="NWChem", **kwargs):
     """
     Perform density functional theory calculations according to supplied task list
     and configuration parameters.
@@ -87,17 +87,21 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        self._task_map = {'optimize': self._configure_optimize,
-                         'energy': self._configure_energy,
-                         'frequency': self._configure_frequency,
-                         'shielding': self._configure_shielding,
-                         'spin': self._configure_spin}
+        self._task_map = {
+            "optimize": self._configure_optimize,
+            "energy": self._configure_energy,
+            "frequency": self._configure_frequency,
+            "shielding": self._configure_shielding,
+            "spin": self._configure_spin,
+        }
 
-        self._task_order = {'optimize': 0,
-                           'energy': 1,
-                           'frequency': 2,
-                           'shielding': 3,
-                           'spin': 4}
+        self._task_order = {
+            "optimize": 0,
+            "energy": 1,
+            "frequency": 2,
+            "shielding": 3,
+            "spin": 4,
+        }
 
         # Set default attributes
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
@@ -129,15 +133,15 @@ class NWChemWrapper(WrapperInterface):
         """
 
         # Path operations
-        geomfile = os.path.join(self.temp_dir,
-                                '{}.xyz'.format(self.geom.basename))
+        geomfile = os.path.join(self.temp_dir, "{}.xyz".format(self.geom.basename))
 
         # Save
         isicle.save(geomfile, self.geom)
         self.geom.path = geomfile
 
-    def _configure_header(self, scratch_dir=None, mem_global=1600,
-                          mem_heap=100, mem_stack=600):
+    def _configure_header(
+        self, scratch_dir=None, mem_global=1600, mem_heap=100, mem_stack=600
+    ):
         """
         Generate header block of NWChem configuration.
 
@@ -159,21 +163,25 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        d = {'basename': self.geom.basename,
-             'dirname': self.temp_dir,
-             'mem_global': mem_global,
-             'mem_heap': mem_heap,
-             'mem_stack': mem_stack,
-             'scratch_dir': scratch_dir}
+        d = {
+            "basename": self.geom.basename,
+            "dirname": self.temp_dir,
+            "mem_global": mem_global,
+            "mem_heap": mem_heap,
+            "mem_stack": mem_stack,
+            "scratch_dir": scratch_dir,
+        }
 
-        return ('title "{basename}"\n'
-                'start {basename}\n\n'
-                'memory global {mem_global} mb heap {mem_heap} '
-                'mb stack {mem_stack} mb\n\n'
-                'permanent_dir {dirname}\n'
-                'scratch_dir {scratch_dir}\n\n'
-                'echo\n'
-                'print low\n').format(**d)
+        return (
+            'title "{basename}"\n'
+            "start {basename}\n\n"
+            "memory global {mem_global} mb heap {mem_heap} "
+            "mb stack {mem_stack} mb\n\n"
+            "permanent_dir {dirname}\n"
+            "scratch_dir {scratch_dir}\n\n"
+            "echo\n"
+            "print low\n"
+        ).format(**d)
 
     def _configure_load(self):
         """
@@ -186,16 +194,20 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        d = {'basename': self.geom.basename,
-             'dirname': self.temp_dir,
-             'charge': self.geom.formal_charge}
+        d = {
+            "basename": self.geom.basename,
+            "dirname": self.temp_dir,
+            "charge": self.geom.formal_charge,
+        }
 
-        return ('\ncharge {charge}\n'
-                'geometry noautoz noautosym\n'
-                ' load {dirname}/{basename}.xyz\n'
-                'end\n').format(**d)
+        return (
+            "\ncharge {charge}\n"
+            "geometry noautoz noautosym\n"
+            " load {dirname}/{basename}.xyz\n"
+            "end\n"
+        ).format(**d)
 
-    def _configure_basis(self, basis_set='6-31G*', ao_basis='cartesian'):
+    def _configure_basis(self, basis_set="6-31G*", ao_basis="cartesian"):
         """
         Generate basis set block of NWChem configuration.
 
@@ -213,14 +225,11 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        d = {'ao_basis': ao_basis,
-             'basis_set': basis_set}
+        d = {"ao_basis": ao_basis, "basis_set": basis_set}
 
-        return ('\nbasis {ao_basis}\n'
-                ' * library {basis_set}\n'
-                'end\n').format(**d)
+        return ("\nbasis {ao_basis}\n" " * library {basis_set}\n" "end\n").format(**d)
 
-    def _configure_dft(self, functional='b3lyp', odft=False):
+    def _configure_dft(self, functional="b3lyp", odft=False):
         """
         Generate DFT block of NWChem configuration.
 
@@ -239,18 +248,17 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        d = {'functional': functional,
-             'dft': 'odft' if odft is True else 'dft'}
+        d = {"functional": functional, "dft": "odft" if odft is True else "dft"}
 
-        s = '\ndft\n'
+        s = "\ndft\n"
 
         if odft is True:
-            s += ' odft\n'
+            s += " odft\n"
 
-        s += ' xc {functional}\n'.format(**d)
-        s += ' mulliken\n'               # Do we need this line?
-        s += ' print "mulliken ao"\n'    # (and this one?)
-        s += 'end\n'
+        s += " xc {functional}\n".format(**d)
+        s += " mulliken\n"  # Do we need this line?
+        s += ' print "mulliken ao"\n'  # (and this one?)
+        s += "end\n"
 
         return s
 
@@ -270,15 +278,13 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        d = {'basename': self.geom.basename,
-             'max_iter': max_iter}
+        d = {"basename": self.geom.basename, "max_iter": max_iter}
 
-        return ('\ndriver\n'
-                ' maxiter {max_iter}\n'
-                ' xyz {basename}_geom\n'
-                'end\n').format(**d)
+        return (
+            "\ndriver\n" " maxiter {max_iter}\n" " xyz {basename}_geom\n" "end\n"
+        ).format(**d)
 
-    def _configure_cosmo(self, solvent='H2O', gas=False):
+    def _configure_cosmo(self, solvent="H2O", gas=False):
         """
         Generate COSMO block of NWChem configuration.
 
@@ -296,17 +302,23 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        d = {'solvent': solvent,
-             'gas': gas}
+        d = {"solvent": solvent, "gas": gas}
 
-        return ('\ncosmo\n'
-                ' do_gasphase {gas}\n'
-                ' solvent {solvent}\n'
-                'end\n').format(**d)
+        return (
+            "\ncosmo\n" " do_gasphase {gas}\n" " solvent {solvent}\n" "end\n"
+        ).format(**d)
 
-    def _configure_frequency(self, temp=298.15, basis_set='6-31G*', ao_basis='cartesian',
-                             functional='b3lyp', cosmo=False, solvent='H2O', gas=False,
-                             **kwargs):
+    def _configure_frequency(
+        self,
+        temp=298.15,
+        basis_set="6-31G*",
+        ao_basis="cartesian",
+        functional="b3lyp",
+        cosmo=False,
+        solvent="H2O",
+        gas=False,
+        **kwargs
+    ):
         """
         Configure frequency block of NWChem configuration.
 
@@ -346,16 +358,21 @@ class NWChemWrapper(WrapperInterface):
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
         # Add frequency block
-        s += ('\nfreq\n'
-              ' temp 1 {}\n'
-              'end\n').format(temp)
-        s += '\ntask dft freq ignore\n'
+        s += ("\nfreq\n" " temp 1 {}\n" "end\n").format(temp)
+        s += "\ntask dft freq ignore\n"
 
         return s
 
-    def _configure_energy(self, basis_set='6-31G*', ao_basis='cartesian',
-                          functional='b3lyp', cosmo=False, solvent='H2O', gas=False,
-                          **kwargs):
+    def _configure_energy(
+        self,
+        basis_set="6-31G*",
+        ao_basis="cartesian",
+        functional="b3lyp",
+        cosmo=False,
+        solvent="H2O",
+        gas=False,
+        **kwargs
+    ):
         """
         Configure energy block of NWChem configuration.
 
@@ -392,13 +409,21 @@ class NWChemWrapper(WrapperInterface):
         if cosmo:
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
-        s += '\ntask dft energy ignore\n'
+        s += "\ntask dft energy ignore\n"
 
         return s
 
-    def _configure_optimize(self, basis_set='6-31G*', ao_basis='cartesian',
-                            functional='b3lyp', max_iter=150,
-                            cosmo=False, solvent='H2O', gas=False, **kwargs):
+    def _configure_optimize(
+        self,
+        basis_set="6-31G*",
+        ao_basis="cartesian",
+        functional="b3lyp",
+        max_iter=150,
+        cosmo=False,
+        solvent="H2O",
+        gas=False,
+        **kwargs
+    ):
         """
         Generate meta optimization block of NWChem configuration.
 
@@ -443,13 +468,20 @@ class NWChemWrapper(WrapperInterface):
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
         # Add optimize task
-        s += '\ntask dft optimize ignore\n'
+        s += "\ntask dft optimize ignore\n"
 
         return s
 
-    def _configure_shielding(self, basis_set='6-31G*', ao_basis='cartesian',
-                             functional='b3lyp', cosmo=True, solvent='H2O',
-                             gas=False, **kwargs):
+    def _configure_shielding(
+        self,
+        basis_set="6-31G*",
+        ao_basis="cartesian",
+        functional="b3lyp",
+        cosmo=True,
+        solvent="H2O",
+        gas=False,
+        **kwargs
+    ):
         """
         Generate meta shielding block of NWChem configuration.
 
@@ -496,18 +528,24 @@ class NWChemWrapper(WrapperInterface):
         if cosmo:
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
-        s += ('\nproperty\n'
-              ' SHIELDING\n'
-              'end\n')
+        s += "\nproperty\n" " SHIELDING\n" "end\n"
 
         # Add property task
-        s += '\ntask dft property ignore\n'
+        s += "\ntask dft property ignore\n"
 
         return s
 
-    def _configure_spin(self, bonds=1, basis_set='6-31G*',
-                        ao_basis='spherical', functional='b3lyp', cosmo=True,
-                        solvent='H2O', gas=False, **kwargs):
+    def _configure_spin(
+        self,
+        bonds=1,
+        basis_set="6-31G*",
+        ao_basis="spherical",
+        functional="b3lyp",
+        cosmo=True,
+        solvent="H2O",
+        gas=False,
+        **kwargs
+    ):
         """
         Generate meta spin-spin coupling block of NWChem configuration.
 
@@ -538,7 +576,6 @@ class NWChemWrapper(WrapperInterface):
         """
 
         def generate_pairs(mol, bonds=bonds):
-
             from rdkit import Chem
 
             matrix = Chem.GetAdjacencyMatrix(mol)
@@ -551,30 +588,38 @@ class NWChemWrapper(WrapperInterface):
 
                 for n in neighbors:
                     # Check if pair in pair_list, add one to index to match NWChem numbering.
-                    if [idx+1, n+1] not in pair_list and [n+1, idx+1] not in pair_list:
-                        pair_list.append([idx+1, n+1])
+                    if [idx + 1, n + 1] not in pair_list and [
+                        n + 1,
+                        idx + 1,
+                    ] not in pair_list:
+                        pair_list.append([idx + 1, n + 1])
 
                     # Second round of neighbors
-                    n_neighbors = [
-                        i for i, x in enumerate(matrix[n]) if x == 1]
+                    n_neighbors = [i for i, x in enumerate(matrix[n]) if x == 1]
 
                     if bonds >= 2:
                         for n_n in n_neighbors:
-
                             if n_n != idx and atom[n_n] == 0:
-                                if [idx+1, n_n+1] not in pair_list and [n_n+1, idx+1] not in pair_list:
-                                    pair_list.append([idx+1, n_n+1])
+                                if [idx + 1, n_n + 1] not in pair_list and [
+                                    n_n + 1,
+                                    idx + 1,
+                                ] not in pair_list:
+                                    pair_list.append([idx + 1, n_n + 1])
                                 atom[n_n] += 2
 
                             # Third line of neighbors
-                            nn_neighbors = [i for i, x in enumerate(
-                                matrix[n_n]) if x == 1]
+                            nn_neighbors = [
+                                i for i, x in enumerate(matrix[n_n]) if x == 1
+                            ]
 
                             if bonds >= 3:
                                 for nn_n in nn_neighbors:
                                     if nn_n != idx and atom[nn_n] == 0:
-                                        if [idx+1, nn_n+1] not in pair_list and [nn_n+1, idx+1] not in pair_list:
-                                            pair_list.append([idx+1, nn_n+1])
+                                        if [idx + 1, nn_n + 1] not in pair_list and [
+                                            nn_n + 1,
+                                            idx + 1,
+                                        ] not in pair_list:
+                                            pair_list.append([idx + 1, nn_n + 1])
                                         atom[nn_n] += 3
                             else:
                                 continue
@@ -590,7 +635,7 @@ class NWChemWrapper(WrapperInterface):
 
         pair_count, pairs = generate_pairs(self.geom.mol, bonds=bonds)
 
-        d = {'pair_count': pair_count, 'pairs': pairs}
+        d = {"pair_count": pair_count, "pairs": pairs}
 
         # Add basis block
         s = self._configure_basis(basis_set=basis_set, ao_basis=ao_basis)
@@ -603,22 +648,36 @@ class NWChemWrapper(WrapperInterface):
             s += self._configure_cosmo(solvent=solvent, gas=gas)
 
         # Add spin block
-        s += '\nend\n'
-        s += '\ntask dft ignore\n\n'
-        s += '\nproperty\n'
-        s += ' SPINSPIN {pair_count} {pairs}'.format(**d)
-        s += '\nend\n'
+        s += "\nend\n"
+        s += "\ntask dft ignore\n\n"
+        s += "\nproperty\n"
+        s += " SPINSPIN {pair_count} {pairs}".format(**d)
+        s += "\nend\n"
 
         # Add property task
-        s += '\ntask dft property ignore\n'
+        s += "\ntask dft property ignore\n"
 
         return s
 
-    def configure(self, tasks='energy', functional='b3lyp',
-                  basis_set='6-31g*', ao_basis='cartesian',
-                  atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
-                  gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-                  mem_stack=600, scratch_dir=None, processes=12):
+    def configure(
+        self,
+        tasks="energy",
+        functional="b3lyp",
+        basis_set="6-31g*",
+        ao_basis="cartesian",
+        atoms=["C", "H"],
+        bonds=1,
+        temp=298.15,
+        cosmo=False,
+        solvent="H2O",
+        gas=False,
+        max_iter=150,
+        mem_global=1600,
+        mem_heap=100,
+        mem_stack=600,
+        scratch_dir=None,
+        processes=12,
+    ):
         """
         Configure NWChem simulation.
 
@@ -680,40 +739,46 @@ class NWChemWrapper(WrapperInterface):
             scratch_dir = isicle.utils.mkdtemp()
 
         # Container for final configuration script
-        config = ''
+        config = ""
 
         # Check lengths
         if not ((len(tasks) == len(functional)) or (len(functional) == 1)):
-            raise ValueError('Functional must be assigned globally or per'
-                             'task.')
+            raise ValueError("Functional must be assigned globally or per" "task.")
 
         if not ((len(tasks) == len(basis_set)) or (len(basis_set) == 1)):
-            raise ValueError('Basis set must be assigned globally or per'
-                             'task.')
+            raise ValueError("Basis set must be assigned globally or per" "task.")
 
         if not ((len(tasks) == len(ao_basis)) or (len(ao_basis) == 1)):
-            raise ValueError('AO basis must be assigned globally or per task.')
+            raise ValueError("AO basis must be assigned globally or per task.")
 
         if not ((len(tasks) == len(cosmo)) or (len(cosmo) == 1)):
-            raise ValueError('Maximum iterations must be assigned globally or'
-                             'per task.')
+            raise ValueError(
+                "Maximum iterations must be assigned globally or" "per task."
+            )
 
         if not ((len(tasks) == len(solvent)) or (len(solvent) == 1)):
-            raise ValueError('Solvents must be assigned globally or'
-                             'per task.')
+            raise ValueError("Solvents must be assigned globally or" "per task.")
 
         # Generate header information
-        config += self._configure_header(scratch_dir=scratch_dir,
-                                         mem_global=mem_global,
-                                         mem_heap=mem_heap,
-                                         mem_stack=mem_stack)
+        config += self._configure_header(
+            scratch_dir=scratch_dir,
+            mem_global=mem_global,
+            mem_heap=mem_heap,
+            mem_stack=mem_stack,
+        )
 
         # Load geometry
         config += self._configure_load()
 
         # Configure tasks
-        for task, f, b, a, c, so in zip(tasks, cycle(functional), cycle(basis_set),
-                                        cycle(ao_basis), cycle(cosmo), cycle(solvent)):
+        for task, f, b, a, c, so in zip(
+            tasks,
+            cycle(functional),
+            cycle(basis_set),
+            cycle(ao_basis),
+            cycle(cosmo),
+            cycle(solvent),
+        ):
             # TODO: finish this
             config += self._task_map[task](
                 functional=f,
@@ -724,8 +789,8 @@ class NWChemWrapper(WrapperInterface):
                 gas=gas,
                 max_iter=max_iter,
                 solvent=so,
-                bonds=bonds
-                )
+                bonds=bonds,
+            )
 
         # Store tasks as attribute
         self._tasks = tasks
@@ -741,8 +806,9 @@ class NWChemWrapper(WrapperInterface):
 
         return self._config
 
-    def configure_from_template(self, path, basename_override=None,
-                                dirname_override=None, **kwargs):
+    def configure_from_template(
+        self, path, basename_override=None, dirname_override=None, **kwargs
+    ):
         """
         Configure NWChem simulation from template file.
 
@@ -772,17 +838,17 @@ class NWChemWrapper(WrapperInterface):
 
         # Add/override class-managed kwargs
         if basename_override is not None:
-            kwargs['basename'] = basename_override
+            kwargs["basename"] = basename_override
         else:
-            kwargs['basename'] = self.geom.basename
+            kwargs["basename"] = self.geom.basename
 
         if dirname_override is not None:
-            kwargs['dirname'] = dirname_override
+            kwargs["dirname"] = dirname_override
         else:
-            kwargs['dirname'] = self.temp_dir
+            kwargs["dirname"] = self.temp_dir
 
         # Open template
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             template = Template(f.read())
 
         # Store as attribute
@@ -800,8 +866,7 @@ class NWChemWrapper(WrapperInterface):
         """
 
         # Write to file
-        with open(os.path.join(self.temp_dir,
-                               self.geom.basename + '.nw'), 'w') as f:
+        with open(os.path.join(self.temp_dir, self.geom.basename + ".nw"), "w") as f:
             f.write(self._config)
 
     def submit(self):
@@ -810,14 +875,13 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        infile = os.path.join(self.temp_dir, self.geom.basename + '.nw')
-        outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
-        logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
+        infile = os.path.join(self.temp_dir, self.geom.basename + ".nw")
+        outfile = os.path.join(self.temp_dir, self.geom.basename + ".out")
+        logfile = os.path.join(self.temp_dir, self.geom.basename + ".log")
 
-        s = 'mpirun -n {} nwchem {} > {} 2> {}'.format(self._processes,
-                                                       infile,
-                                                       outfile,
-                                                       logfile)
+        s = "mpirun -n {} nwchem {} > {} 2> {}".format(
+            self._processes, infile, outfile, logfile
+        )
 
         subprocess.call(s, shell=True)
 
@@ -833,42 +897,52 @@ class NWChemWrapper(WrapperInterface):
         """
 
         # Get list of outputs
-        outfiles = glob.glob(os.path.join(self.temp_dir, '*'))
+        outfiles = glob.glob(os.path.join(self.temp_dir, "*"))
 
         # Result container
         result = {}
 
         # Split out geometry files
-        geomfiles = sorted([x for x in outfiles if x.endswith('.xyz')])
-        outfiles = sorted([x for x in outfiles if not x.endswith('.xyz')])
+        cosmo = False
+        geomfiles = sorted([x for x in outfiles if x.endswith(".xyz")])
+        outfiles = sorted([x for x in outfiles if not x.endswith(".xyz")])
+        if "cosmo.xyz" in geomfiles:
+            geomfiles = [i for i in geomfiles if i != "cosmo.xyz"]
+            cosmo = True
 
         # Enumerate geometry files
-        result['xyz'] = OrderedDict()
+        result["xyz"] = OrderedDict()
         for geomfile in geomfiles:
             geom = isicle.load(geomfile)
-            
-            if '_geom-' in geomfile:
-                idx = int(os.path.basename(geomfile).split('-')[-1].split('.')[0])
-                result['xyz'][idx] = geom
+
+            if "_geom-" in geomfile:
+                idx = int(os.path.basename(geomfile).split("-")[-1].split(".")[0])
+                result["xyz"][idx] = geom
 
             else:
-                result['xyz']['input'] = geom
+                result["xyz"]["input"] = geom
 
         # Rename final geometry
-        result['xyz']['final'] = list(result['xyz'].values())[-1]
+        result["xyz"]["final"] = list(result["xyz"].values())[-1]
+
+        # Parse cosmo.xyz
+        if cosmo is True:
+            with open("cosmo.xyz", "r") as f:
+                contents = f.read()
+            result["cosmo"] = contents
 
         # Enumerate output files
         for outfile in outfiles:
             # Split name and extension
-            basename, ext = os.path.basename(outfile).rsplit('.', 1)
+            basename, ext = os.path.basename(outfile).rsplit(".", 1)
 
             # Read output content
-            with open(outfile, 'rb') as f:
+            with open(outfile, "rb") as f:
                 contents = f.read()
 
             # Attempt utf-8 decode
             try:
-                result[ext] = contents.decode('utf-8')
+                result[ext] = contents.decode("utf-8")
             except UnicodeDecodeError:
                 result[ext] = contents
 
@@ -894,11 +968,27 @@ class NWChemWrapper(WrapperInterface):
 
         return parser.parse()
 
-    def run(self, geom, template=None, tasks='energy', functional='b3lyp',
-            basis_set='6-31g*', ao_basis='cartesian',
-            atoms=['C', 'H'], bonds=1, temp=298.15, cosmo=False, solvent='H2O',
-            gas=False, max_iter=150, mem_global=1600, mem_heap=100,
-            mem_stack=600, scratch_dir=None, processes=12):
+    def run(
+        self,
+        geom,
+        template=None,
+        tasks="energy",
+        functional="b3lyp",
+        basis_set="6-31g*",
+        ao_basis="cartesian",
+        atoms=["C", "H"],
+        bonds=1,
+        temp=298.15,
+        cosmo=False,
+        solvent="H2O",
+        gas=False,
+        max_iter=150,
+        mem_global=1600,
+        mem_heap=100,
+        mem_stack=600,
+        scratch_dir=None,
+        processes=12,
+    ):
         """
         Perform density functional theory calculations according to supplied task list
         and configuration parameters.
@@ -958,13 +1048,24 @@ class NWChemWrapper(WrapperInterface):
         if template is not None:
             self.configure_from_template(template)
         else:
-            self.configure(tasks=tasks,
-                           functional=functional, basis_set=basis_set,
-                           ao_basis=ao_basis,atoms=atoms, bonds=bonds,
-                           temp=temp, cosmo=cosmo, solvent=solvent, gas=gas,
-                           max_iter=max_iter, mem_global=mem_global,
-                           mem_heap=mem_heap, mem_stack=mem_stack,
-                           scratch_dir=scratch_dir, processes=processes)
+            self.configure(
+                tasks=tasks,
+                functional=functional,
+                basis_set=basis_set,
+                ao_basis=ao_basis,
+                atoms=atoms,
+                bonds=bonds,
+                temp=temp,
+                cosmo=cosmo,
+                solvent=solvent,
+                gas=gas,
+                max_iter=max_iter,
+                mem_global=mem_global,
+                mem_heap=mem_heap,
+                mem_stack=mem_stack,
+                scratch_dir=scratch_dir,
+                processes=processes,
+            )
 
         # Run QM simulation
         self.submit()
@@ -985,7 +1086,7 @@ class NWChemWrapper(WrapperInterface):
 
         """
 
-        if hasattr(self, 'result'):
+        if hasattr(self, "result"):
             isicle.io.save_pickle(path, self.result)
         else:
             raise AttributeError("Object must have `result` attribute")
@@ -1019,7 +1120,7 @@ class ORCAWrapper(WrapperInterface):
         Initialize :obj:`~isicle.qm.ORCAWrapper` instance.
 
         """
-        
+
         # Set defaults
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
 
@@ -1051,8 +1152,7 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Path to output
-        geomfile = os.path.join(self.temp_dir,
-                                '{}.xyz'.format(self.geom.basename))
+        geomfile = os.path.join(self.temp_dir, "{}.xyz".format(self.geom.basename))
 
         # Save
         isicle.save(geomfile, self.geom)
@@ -1060,7 +1160,14 @@ class ORCAWrapper(WrapperInterface):
         # Store path
         self.geom.path = geomfile
 
-    def configure(self, simple_input=[], block_input={}, spin_multiplicity=1, processes=1, **kwargs):
+    def configure(
+        self,
+        simple_input=[],
+        block_input={},
+        spin_multiplicity=1,
+        processes=1,
+        **kwargs
+    ):
         """
         Configure ORCA simulation.
 
@@ -1070,9 +1177,9 @@ class ORCAWrapper(WrapperInterface):
             List of simple input keywords. See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
             section of the ORCA docs.
         block_input : dict
-            Dictionary defining configuration "blocks". Use names of blocks as keys, 
+            Dictionary defining configuration "blocks". Use names of blocks as keys,
             lists of each block's content as values. To configure a line of block content
-            directly, include as a complete string. Include key:value pairs as tuples. 
+            directly, include as a complete string. Include key:value pairs as tuples.
             See `this <https://sites.google.com/site/orcainputlibrary/general-input>`__
             section of the ORCA docs.
         spin_multiplicity : int
@@ -1093,18 +1200,20 @@ class ORCAWrapper(WrapperInterface):
         simple_input = isicle.utils.safelist(simple_input)
 
         # Expand simple inputs
-        config = '! ' + ' '.join(simple_input) + '\n'
+        config = "! " + " ".join(simple_input) + "\n"
 
         # Add processes
         if processes > 1:
-            config += '%PAL NPROCS {} END\n'.format(processes)
+            config += "%PAL NPROCS {} END\n".format(processes)
 
         # Add geometry context
-        config += '* xyzfile {:d} {:d} {}\n'.format(self.geom.formal_charge, spin_multiplicity, self.geom.path)
+        config += "* xyzfile {:d} {:d} {}\n".format(
+            self.geom.formal_charge, spin_multiplicity, self.geom.path
+        )
 
         # Expand keyword args
         for k, v in kwargs.items():
-            config += '%{} {}\n'.format(k, v)
+            config += "%{} {}\n".format(k, v)
 
         # Expand block inputs
         for block, params in block_input.items():
@@ -1112,19 +1221,19 @@ class ORCAWrapper(WrapperInterface):
             params = isicle.utils.safelist(params)
 
             # Block header
-            block_text = '%{}\n'.format(block)
+            block_text = "%{}\n".format(block)
 
             # Block configuration
             for param in params:
                 if type(param) is str:
-                    block_text += param + '\n'
+                    block_text += param + "\n"
                 elif type(param) is tuple:
-                    block_text += ' '.join(map(str, param)) + '\n'
+                    block_text += " ".join(map(str, param)) + "\n"
                 else:
                     raise TypeError
 
             # End block
-            block_text += 'end\n'
+            block_text += "end\n"
 
             # Append block to config
             config += block_text
@@ -1144,8 +1253,7 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Write to file
-        with open(os.path.join(self.temp_dir,
-                               self.geom.basename + '.inp'), 'w') as f:
+        with open(os.path.join(self.temp_dir, self.geom.basename + ".inp"), "w") as f:
             f.write(self.config)
 
     def submit(self):
@@ -1154,13 +1262,11 @@ class ORCAWrapper(WrapperInterface):
 
         """
 
-        infile = os.path.join(self.temp_dir, self.geom.basename + '.inp')
-        outfile = os.path.join(self.temp_dir, self.geom.basename + '.out')
-        logfile = os.path.join(self.temp_dir, self.geom.basename + '.log')
+        infile = os.path.join(self.temp_dir, self.geom.basename + ".inp")
+        outfile = os.path.join(self.temp_dir, self.geom.basename + ".out")
+        logfile = os.path.join(self.temp_dir, self.geom.basename + ".log")
 
-        s = '`which orca` {} > {} 2> {}'.format(infile,
-                                                outfile,
-                                                logfile)
+        s = "`which orca` {} > {} 2> {}".format(infile, outfile, logfile)
 
         subprocess.call(s, shell=True)
 
@@ -1176,10 +1282,10 @@ class ORCAWrapper(WrapperInterface):
         """
 
         # Get list of outputs
-        outfiles = glob.glob(os.path.join(self.temp_dir, '*'))
+        outfiles = glob.glob(os.path.join(self.temp_dir, "*"))
 
         # Filter out temp files
-        outfiles = [x for x in outfiles if not x.endswith('.tmp')]
+        outfiles = [x for x in outfiles if not x.endswith(".tmp")]
 
         # Result container
         result = {}
@@ -1187,19 +1293,19 @@ class ORCAWrapper(WrapperInterface):
         # Enumerate output files
         for outfile in outfiles:
             # Split name and extension
-            basename, ext = os.path.basename(outfile).rsplit('.', 1)
+            basename, ext = os.path.basename(outfile).rsplit(".", 1)
 
             # Grab suitable variable names
-            if any(basename.endswith(x) for x in ['_property', '_trj']):
-                var_name = basename.split('_')[-1]
+            if any(basename.endswith(x) for x in ["_property", "_trj"]):
+                var_name = basename.split("_")[-1]
             else:
                 var_name = ext
 
             # Load geometry
-            if var_name == 'xyz':
+            if var_name == "xyz":
                 # Load xyz geometry
                 geom = isicle.load(outfile)
-                
+
                 # Update coordinates of starting geometry
                 geom = self.geom.update_coordinates(geom)
 
@@ -1209,12 +1315,12 @@ class ORCAWrapper(WrapperInterface):
             # Load other files
             else:
                 # Read output content
-                with open(outfile, 'rb') as f:
+                with open(outfile, "rb") as f:
                     contents = f.read()
 
                 # Attempt utf-8 decode
                 try:
-                    result[var_name] = contents.decode('utf-8')
+                    result[var_name] = contents.decode("utf-8")
                 except UnicodeDecodeError:
                     result[var_name] = contents
 
@@ -1287,7 +1393,7 @@ class ORCAWrapper(WrapperInterface):
 
         """
 
-        if hasattr(self, 'result'):
+        if hasattr(self, "result"):
             isicle.io.save_pickle(path, self.result)
         else:
             raise AttributeError("Object must have `result` attribute")
