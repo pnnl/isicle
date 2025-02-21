@@ -398,7 +398,8 @@ class NWChemParser(FileParserInterface):
         shield_idxs = []
         shield_atoms = []
         shields = []
-
+        collect_idx = False
+        
         for line in self.data["out"].split("\n"):
             if " SHIELDING" in line:
                 shield_idxs = [int(x) for x in line.split()[2:]]
