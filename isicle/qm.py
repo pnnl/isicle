@@ -907,11 +907,9 @@ class NWChemWrapper(WrapperInterface):
         geomfiles = sorted([x for x in outfiles if x.endswith(".xyz")])
         outfiles = sorted([x for x in outfiles if not x.endswith(".xyz")])
 
-        print('FILES', geomfiles) #changed cosmo.xyz
-        if os.path.join(self.temp_dir, "cosmo.xyz") in geomfiles: #changed cosmo.xyz
+        if os.path.join(self.temp_dir, "cosmo.xyz") in geomfiles:
             geomfiles = [i for i in geomfiles if i != os.path.join(self.temp_dir, "cosmo.xyz")]
             cosmo = True
-        print("COSMO", cosmo) #changed cosmo.xyz
 
         # Enumerate geometry files
         result["xyz"] = OrderedDict()
@@ -930,7 +928,7 @@ class NWChemWrapper(WrapperInterface):
 
         # Parse cosmo.xyz
         if cosmo is True:
-            with open(os.path.join(self.temp_dir, "cosmo.xyz"), "r") as f: #changed cosmo.xyz
+            with open(os.path.join(self.temp_dir, "cosmo.xyz"), "r") as f:
                 contents = f.read()
             result["cosmo"] = contents
 
