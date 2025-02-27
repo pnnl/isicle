@@ -6,6 +6,7 @@ import pandas as pd
 
 import isicle
 from isicle.interfaces import FileParserInterface
+from isicle.conformers import build_conformational_ensemble
 
 
 class ORCAParser(FileParserInterface):
@@ -89,7 +90,7 @@ class ORCAParser(FileParserInterface):
 
             # Zip columns and values
             return dict(zip(columns, vals.T))
-        
+
         # No frequency info
         return None
 
@@ -312,7 +313,7 @@ class ORCAParser(FileParserInterface):
         for col, dtype in zip(df.columns, (int, str, str, float)):
             df[col] = df[col].astype(dtype)
 
-        return df['Charge'].values
+        return df["Charge"].values
 
     def _parse_connectivity(self):
         return None
@@ -344,8 +345,12 @@ class ORCAParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {"_" + k: v for k, v in result.items() if k not in ["geometry", "timing", "protocol"]},
-                override=True
+                {
+                    "_" + k: v
+                    for k, v in result.items()
+                    if k not in ["geometry", "timing", "protocol"]
+                },
+                override=True,
             )
 
         # Store attribute
@@ -399,7 +404,7 @@ class NWChemParser(FileParserInterface):
         shield_atoms = []
         shields = []
         collect_idx = False
-        
+
         for line in self.data["out"].split("\n"):
             if " SHIELDING" in line:
                 shield_idxs = [int(x) for x in line.split()[2:]]
@@ -737,8 +742,12 @@ class NWChemParser(FileParserInterface):
         # Add result info to geometry object
         if "geometry" in result:
             result["geometry"].add___dict__(
-                {"_" + k: v for k, v in result.items() if k not in ["geometry", "timing", "protocol"]},
-                override=True
+                {
+                    "_" + k: v
+                    for k, v in result.items()
+                    if k not in ["geometry", "timing", "protocol"]
+                },
+                override=True,
             )
 
         # Store attribute
@@ -837,13 +846,13 @@ class MobcalParser(FileParserInterface):
                 done = True
         if done is True:
             self.result["ccs"] = {"mean": ccs_mn, "std": ccs_std}
-        
+
         self.result["geometry"] = self.data["geometry"]
 
         # Update geometry attributes
         self.result["geometry"].add___dict__(
             {"_" + k: v for k, v in self.result.items() if k not in ["geometry"]},
-            override=True
+            override=True,
         )
 
         return self.result
@@ -911,8 +920,8 @@ class XTBParser(FileParserInterface):
                 "days": int(match.group(1)) if match.group(1) else 0,
                 "hours": int(match.group(2)) if match.group(2) else 0,
                 "minutes": int(match.group(3)) if match.group(3) else 0,
-                "seconds": float(match.group(4))
-                }
+                "seconds": float(match.group(4)),
+            }
 
         timing = {}
         for line in self.lines:
@@ -933,7 +942,7 @@ class XTBParser(FileParserInterface):
 
             if "Genetic crossing (GC)" in line:
                 timing["Genetic crossing (GC)"] = grab_time(line)
-            
+
             if "I/O and setup" in line:
                 timing["I/O and setup"] = grab_time(line)
 
@@ -943,6 +952,7 @@ class XTBParser(FileParserInterface):
         """
         Add docstring
         """
+        energy = {}
         complete = False
         relative_energies = []
         total_energies = []
@@ -960,8 +970,11 @@ class XTBParser(FileParserInterface):
 
             if complete is True:
                 break
-
-        return {"relative energy": relative_energies, "total energy": total_energies}
+        if relative_energies:
+            energy["relative energy"] = relative_energies
+        if total_energies:
+            energy["total energy"] = total_energies
+        return energy
 
     def _isomer_timing(self):
         """
@@ -974,21 +987,18 @@ class XTBParser(FileParserInterface):
 
             return ":".join(line[1:]).strip("\n")
 
+        timing = {}
         for line in self.lines:
             if "LMO calc. wall time" in line:
-                LMO_time = grab_time(line)
+                timing["local molecular orbital wall time"] = grab_time(line)
 
             if "multilevel OPT wall time" in line:
-                OPT_time = grab_time(line)
+                timing["multilevel opt wall time"] = grab_time(line)
 
             if "Overall wall time" in line:
-                OVERALL_time = grab_time(line)
+                timing["overall wall time"] = grab_time(line)
 
-        return {
-            "local molecular orbital wall time": LMO_time,
-            "multilevel opt wall time": OPT_time,
-            "overall wall time": OVERALL_time,
-        }
+        return timing
 
     def _opt_energy(self):
         """
@@ -1044,6 +1054,9 @@ class XTBParser(FileParserInterface):
             if "$ crest" in line:
                 protocol = line.strip("\n")
                 return protocol
+            if "> crest" in line:
+                protocol = line.strip("\n")
+                return protocol
             if "program call" in line:
                 protocol = (line.split(":")[1]).strip("\n")
                 return protocol
@@ -1065,11 +1078,14 @@ class XTBParser(FileParserInterface):
             "tautomers",
         ]:
             if key in self.data:
-                geometries[key] = self.data[key]
-        
+                if isinstance(self.data[key], list):
+                    geometries[key] = build_conformational_ensemble(self.data[key])
+                else:
+                    geometries[key] = self.data[key]
+
         if len(geometries) > 1:
             return geometries
-        
+
         return geometries.popitem()[1]
 
     # TODO
@@ -1096,7 +1112,7 @@ class XTBParser(FileParserInterface):
         # Initialize result object to store info
         result = {
             "protocol": self._parse_protocol(),
-            "geometry": self._parse_geometry()
+            "geometry": self._parse_geometry(),
         }
 
         if result["protocol"].split()[0] == "xtb":
@@ -1104,16 +1120,29 @@ class XTBParser(FileParserInterface):
             result["energy"] = self._opt_energy()
 
         elif result["protocol"].split()[1] == "crest":
-            if any(
-                [
-                    x in result["protocol"]
-                    for x in ["-deprotonate", "-protonate", "-tautomer"]
-                ]
-            ):
-                result["timing"] = self._isomer_timing()
-                result["energy"] = self._isomer_energy()
-            else:
-                result["timing"] = self._crest_timing()
-                result["energy"] = self._crest_energy()
+            # if any(
+            #     [
+            #         x in result["protocol"]
+            #         for x in ["-deprotonate", "-protonate", "-tautomer"]
+            #     ]
+            # ):
+            # extract isomer timing / energy
+            # else:
+            # extract crest timing / energy
+            result["timing"] = {}
+            result["energy"] = {}
+            iso_timing = self._isomer_timing()
+            iso_energy = self._isomer_energy()
+            crest_timing = self._crest_timing()
+            crest_energy = self._crest_energy()
+
+            if iso_timing:
+                result["timing"].update(iso_timing)
+            if crest_timing:
+                result["timing"].update(crest_timing)
+            if iso_energy:
+                result["energy"].update(iso_energy)
+            if crest_energy:
+                result["energy"].update(crest_energy)
 
         return result
