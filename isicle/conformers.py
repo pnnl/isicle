@@ -7,7 +7,7 @@ from isicle.utils import TypedList, safelist
 
 
 def _function_selector(func):
-    '''
+    """
     Selects a supported reduction function for reducing a set of conformers.
 
     Parameters
@@ -20,23 +20,25 @@ def _function_selector(func):
     -------
     func
         Conformer reduction function.
-    '''
+    """
     # Mapping between names and functions
-    func_map = {'boltzmann': boltzmann,
-                'simple': simple_average,
-                'lowest': lowest_energy,
-                'threshold': energy_threshold}
+    func_map = {
+        "boltzmann": boltzmann,
+        "simple": simple_average,
+        "lowest": lowest_energy,
+        "threshold": energy_threshold,
+    }
 
     # Check for function by name
     if func.lower() in func_map:
         return func_map[func.lower()]
 
-    # Not a named/implemented function  
-    raise ValueError('{} not a supported reduction function.'.format(func))
+    # Not a named/implemented function
+    raise ValueError("{} not a supported reduction function.".format(func))
 
 
 def _energy_based(func):
-    '''
+    """
     Checks whether function employs an energy-based reduction operation.
 
     Parameters
@@ -48,7 +50,7 @@ def _energy_based(func):
     -------
     bool
         True if energy based, otherwise False.
-    '''
+    """
     # Check if among energy-based functions
     if func in [boltzmann, lowest_energy, energy_threshold]:
         return True
@@ -57,8 +59,8 @@ def _energy_based(func):
     return False
 
 
-def reduce(value, func='boltzmann', **kwargs):
-    '''
+def reduce(value, func="boltzmann", **kwargs):
+    """
     Combine values according to indicated function.
 
     Parameters
@@ -75,13 +77,13 @@ def reduce(value, func='boltzmann', **kwargs):
     -------
     :obj:`~pandas.DataFrame`
         Result of reduction operation.
-    '''
+    """
     # Select function
     f = _function_selector(func)
 
     # Energy-based method
     if _energy_based(f):
-        energy = kwargs.pop('energy')
+        energy = kwargs.pop("energy")
         return f(value, energy, **kwargs)
 
     # Other method
@@ -89,7 +91,7 @@ def reduce(value, func='boltzmann', **kwargs):
 
 
 def boltzmann(value, energy, index=None, atom=None):
-    '''
+    """
     Combine values according to a Boltzmann-weighted average.
 
     Parameters
@@ -107,7 +109,7 @@ def boltzmann(value, energy, index=None, atom=None):
     -------
     :obj:`~pandas.DataFrame`
         Result of reduction operation.
-    '''
+    """
     # Placeholder for index
     if index is None:
         index = np.full_like(value, -1)
@@ -117,18 +119,17 @@ def boltzmann(value, energy, index=None, atom=None):
         atom = np.full_like(value, -1)
 
     # Initialize data frame
-    df = pd.DataFrame.from_dict({'value': value,
-                                 'energy': energy,
-                                 'index': index,
-                                 'atom': atom})
+    df = pd.DataFrame.from_dict(
+        {"value": value, "energy": energy, "index": index, "atom": atom}
+    )
 
     # Result container
     res = []
 
     # Iterate over unique indices
-    for name, group in df.groupby(['index', 'atom']):
+    for name, group in df.groupby(["index", "atom"]):
         # Compute relative delta G
-        g = group['energy'] * 627.503
+        g = group["energy"] * 627.503
         mn = g.min()
         relG = g - mn
 
@@ -137,23 +138,23 @@ def boltzmann(value, energy, index=None, atom=None):
         w = (b / b.sum()) * len(b)
 
         # Compute weighted statistics
-        ws = DescrStatsW(group['value'], weights=w, ddof=0)
+        ws = DescrStatsW(group["value"], weights=w, ddof=0)
 
         # Append to container
         res.append([name[0], name[1], ws.mean, ws.std, len(group.index)])
 
     # Initialize data frame
-    res = pd.DataFrame(res, columns=['index', 'atom', 'mean', 'std', 'n'])
+    res = pd.DataFrame(res, columns=["index", "atom", "mean", "std", "n"])
 
     # Drop index if not supplied
     if np.all(index == -1):
-        return res.drop(columns=['index', 'atom']).iloc[0]
+        return res.drop(columns=["index", "atom"]).iloc[0]
 
     return res
 
 
 def simple_average(value, index=None, atom=None):
-    '''
+    """
     Combine values according to a simple average.
 
     Parameters
@@ -169,36 +170,35 @@ def simple_average(value, index=None, atom=None):
     -------
     :obj:`~pandas.DataFrame`
         Result of reduction operation.
-    '''
+    """
     # Placeholder for index
     if index is None:
         index = np.full_like(value, -1)
-    
+
     # Placeholder for atom
     if atom is None:
         atom = np.full_like(value, -1)
 
     # Initialize data frame
-    df = pd.DataFrame.from_dict({'value': value,
-                                 'index': index,
-                                 'atom': atom})
+    df = pd.DataFrame.from_dict({"value": value, "index": index, "atom": atom})
 
     # Average per unique index
-    res = df.groupby(['index', 'atom'], as_index=False).agg({'value':
-                                                             ['mean', 'std', 'count']})
-    
+    res = df.groupby(["index", "atom"], as_index=False).agg(
+        {"value": ["mean", "std", "count"]}
+    )
+
     # Rename columns
-    res.columns = ['index', 'atom', 'mean', 'std', 'n']
+    res.columns = ["index", "atom", "mean", "std", "n"]
 
     # Drop indices if not supplied
     if np.all(index == -1):
-        return res.drop(columns=['index', 'atom']).iloc[0]
+        return res.drop(columns=["index", "atom"]).iloc[0]
 
     return res
 
 
 def lowest_energy(value, energy, index=None, atom=None):
-    '''
+    """
     Combine values according to lowest energy.
 
     Parameters
@@ -216,34 +216,32 @@ def lowest_energy(value, energy, index=None, atom=None):
     -------
     :obj:`~pandas.DataFrame`
         Result of reduction operation.
-    '''
+    """
     # Placeholder for index
     if index is None:
         index = np.full_like(value, -1)
-    
+
     # Placeholder for atom
     if atom is None:
         atom = np.full_like(value, -1)
 
     # Initialize data frame
-    df = pd.DataFrame.from_dict({'value': value,
-                                 'energy': energy,
-                                 'index': index,
-                                 'atom': atom})
+    df = pd.DataFrame.from_dict(
+        {"value": value, "energy": energy, "index": index, "atom": atom}
+    )
 
     # Take minimum energy per unique index
-    res = df.loc[df.groupby(['index', 'atom'])[
-        'energy'].idxmin()]
+    res = df.loc[df.groupby(["index", "atom"])["energy"].idxmin()]
 
     # Drop indices if not supplied
     if np.all(index == -1):
-        return res.drop(columns=['index', 'atom']).iloc[0]
+        return res.drop(columns=["index", "atom"]).iloc[0]
 
     return res
 
 
 def energy_threshold(value, energy, threshold=5, index=None, atom=None):
-    '''
+    """
     Combine values with energy below a given threshold according to a simple
     average.
 
@@ -262,40 +260,42 @@ def energy_threshold(value, energy, threshold=5, index=None, atom=None):
     -------
     :obj:`~pandas.DataFrame`
         Result of reduction operation.
-    '''
+    """
     # Placeholder for index
     if index is None:
         index = np.full_like(value, -1)
-    
+
     # Placeholder for atom
     if atom is None:
         atom = np.full_like(value, -1)
 
     # Initialize data frame
-    df = pd.DataFrame.from_dict({'value': value,
-                                 'energy': energy,
-                                 'index': index,
-                                 'atom': atom})
+    df = pd.DataFrame.from_dict(
+        {"value": value, "energy": energy, "index": index, "atom": atom}
+    )
 
     # Filter by energy
-    df = df.loc[df['energy'] <= threshold, :]
+    df = df.loc[df["energy"] <= threshold, :]
 
     # Aggregate
-    res = df.groupby(['index', 'atom'], as_index=False).agg({'value':
-                                                             ['mean', 'std', 'count']})
-    
+    res = df.groupby(["index", "atom"], as_index=False).agg(
+        {"value": ["mean", "std", "count"]}
+    )
+
     # Rename columns
-    res.columns = ['index', 'atom', 'mean', 'std', 'n']
+    res.columns = ["index", "atom", "mean", "std", "n"]
 
     # Drop indices if not supplied
     if index is None:
-        return res.drop(columns=['index', 'atom']).iloc[0]
+        return res.drop(columns=["index", "atom"]).iloc[0]
 
     return res
 
 
-def transform(value, m={'H': 1.0, 'C': 1.0}, b={'H': 0.0, 'C': 0.0}, index=None, atom=None):
-    '''
+def transform(
+    value, m={"H": 1.0, "C": 1.0}, b={"H": 0.0, "C": 0.0}, index=None, atom=None
+):
+    """
     Perform linear transformation with values using provided parameters.
 
     Parameters
@@ -315,40 +315,37 @@ def transform(value, m={'H': 1.0, 'C': 1.0}, b={'H': 0.0, 'C': 0.0}, index=None,
     -------
     :obj: `~pandas.DataFrame`
         Result of transformation operation.
-    '''
+    """
     # Placeholder for index
     if index is None:
         index = np.full_like(value, -1)
-    
+
     # Placeholder for atom
     if atom is None:
         atom = np.full_like(value, -1)
 
     # Initialize data frame
-    df = pd.DataFrame.from_dict({'value': value,
-                                 'index': index,
-                                 'atom': atom})
+    df = pd.DataFrame.from_dict({"value": value, "index": index, "atom": atom})
 
     # Process with per-atom values
     if isinstance(m, dict):
         res = pd.DataFrame()
         for idx in m:
-            part = df.loc[df['atom'] == idx].copy()
-            part['new_value'] = part['value'].apply(
-                lambda x: m[idx] * x + b[idx])
+            part = df.loc[df["atom"] == idx].copy()
+            part["new_value"] = part["value"].apply(lambda x: m[idx] * x + b[idx])
 
             res = pd.concat([res, part])
-    
+
     # Process with global values
     else:
         res = df.copy()
-        res['new_value'] = res['value'].apply(lambda x: m * x + b)
+        res["new_value"] = res["value"].apply(lambda x: m * x + b)
 
     return res
 
 
 def build_conformational_ensemble(geometries):
-    '''
+    """
     Create a conformational ensemble from a collection of geometries.
 
     Parameters
@@ -360,18 +357,18 @@ def build_conformational_ensemble(geometries):
     -------
     :obj:`~isicle.conformers.ConformationalEnsemble`
         Conformational ensemble.
-    '''
+    """
     return ConformationalEnsemble(geometries)
 
 
 class ConformationalEnsemble(TypedList):
-    '''
+    """
     Collection of :obj:`~isicle.geometry.Geometry`, or related subclass,
     instances.
-    '''
+    """
 
     def __init__(self, *args):
-        '''
+        """
         Initialize :obj:`~isicle.conformers.ConformationalEnsemble` instance.
 
         Parameters
@@ -379,12 +376,12 @@ class ConformationalEnsemble(TypedList):
         *args
             Objects to comprise the conformational ensemble.
 
-        '''
+        """
 
         super().__init__(Geometry, *args)
 
     def _check_attributes(self, attr):
-        '''
+        """
         Check if all ensemble members have the supplied attribute.
 
         Parameters
@@ -397,14 +394,16 @@ class ConformationalEnsemble(TypedList):
         AttributeError
             If all members do not have `attr`.
 
-        '''
-        
-        if not all(hasattr(x, attr) for x in self):
-            raise AttributeError('"{}" not found for all conformational '
-                                    'ensemble members.'.format(attr))
+        """
 
-    def reduce(self, attr, func='boltzmann', **kwargs):
-        '''
+        if not all(hasattr(x, attr) for x in self):
+            raise AttributeError(
+                '"{}" not found for all conformational '
+                "ensemble members.".format(attr)
+            )
+
+    def reduce(self, attr, func="boltzmann", **kwargs):
+        """
         Combine attribute values according to indicated function.
 
         Parameters
@@ -422,7 +421,7 @@ class ConformationalEnsemble(TypedList):
         :obj:`~pandas.DataFrame`
             Result of reduction operation.
 
-        '''
+        """
 
         # Select reduction function
         f = _function_selector(func)
@@ -432,7 +431,7 @@ class ConformationalEnsemble(TypedList):
 
         # Check for energy attribute
         if _energy_based(f):
-            self._check_attributes('energy')
+            self._check_attributes("energy")
 
         # Extract (possibly nested) value attribute
         value = [getattr(x, attr) for x in self]
@@ -440,22 +439,22 @@ class ConformationalEnsemble(TypedList):
         # Check nested values
         if isinstance(value[0], dict):
             # Check index
-            if 'index' in value[0]:
-                index = np.array([x['index'] for x in value]).flatten()
+            if "index" in value[0]:
+                index = np.array([x["index"] for x in value]).flatten()
                 pad = int(len(index) / len(self))
             else:
                 index = None
                 pad = 1
 
             # Check atom
-            if 'atom' in value[0]:
-                atom = np.array([x['atom'] for x in value]).flatten()
+            if "atom" in value[0]:
+                atom = np.array([x["atom"] for x in value]).flatten()
             else:
                 atom = None
 
             # Special case for CCS
-            if 'mean' in value[0] and 'std' in value[0]:
-                value = np.array([x['mean'] for x in value]).flatten()
+            if "mean" in value[0] and "std" in value[0]:
+                value = np.array([x["mean"] for x in value]).flatten()
 
             else:
                 value = np.array([getattr(x, attr) for x in value]).flatten()
@@ -468,8 +467,7 @@ class ConformationalEnsemble(TypedList):
 
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array(
-                [np.repeat(getattr(x, 'energy'), pad) for x in self])
+            energy = np.array([np.repeat(getattr(x, "energy"), pad) for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method
@@ -479,7 +477,7 @@ class ConformationalEnsemble(TypedList):
         return f(value, index=index, atom=atom, **kwargs)
 
     def _apply_method(self, method, **kwargs):
-        '''
+        """
         Process conformational ensemble members according to supplied method.
 
         Parameters
@@ -494,12 +492,14 @@ class ConformationalEnsemble(TypedList):
         :obj:`~isicle.conformers.ConformationalEnsemble` or list
             Result of operation, type depends on `method` return type.
 
-        '''
+        """
 
         # Check for attribute
         if not all(hasattr(x, method) for x in self):
-            raise AttributeError('"{}" not found for all conformational '
-                                 'ensemble members.'.format(method))
+            raise AttributeError(
+                '"{}" not found for all conformational '
+                "ensemble members.".format(method)
+            )
 
         # Apply method to collection
         result = [getattr(x, method)(**kwargs) for x in self]
@@ -513,7 +513,7 @@ class ConformationalEnsemble(TypedList):
             return result
 
     def _apply_function(self, func, **kwargs):
-        '''
+        """
         Process conformational ensemble members according to supplied function.
 
         Parameters
@@ -528,7 +528,7 @@ class ConformationalEnsemble(TypedList):
         :obj:`~isicle.conformers.ConformationalEnsemble` or list
             Result of operation, type depends on `func` return type.
 
-        '''
+        """
 
         # Apply method to collection
         result = [func(x, **kwargs) for x in self]
@@ -542,7 +542,7 @@ class ConformationalEnsemble(TypedList):
             return result
 
     def apply(self, func=None, method=None, **kwargs):
-        '''
+        """
         Process conformational ensemble members according to supplied function
         or method.
 
@@ -565,7 +565,7 @@ class ConformationalEnsemble(TypedList):
         ValueError
             If neither `func` nor `method` is supplied.
 
-        '''
+        """
 
         # Apply function
         if func is not None:
@@ -575,10 +575,10 @@ class ConformationalEnsemble(TypedList):
         if method is not None:
             return self._apply_method(method, **kwargs)
 
-        raise ValueError('Must supply `func` or `method`.')
+        raise ValueError("Must supply `func` or `method`.")
 
     def get_structures(self):
-        '''
+        """
         Extract all structures from containing object as a conformational ensemble.
 
         Returns
@@ -586,10 +586,10 @@ class ConformationalEnsemble(TypedList):
         :obj:`~isicle.conformers.ConformationalEnsemble`
             Conformational ensemble.
 
-        '''
+        """
 
         # Check for geom attribute
-        self._check_attributes('geom')
+        self._check_attributes("geom")
 
         # Build and return
         return build_conformational_ensemble([x.geom for x in self])
