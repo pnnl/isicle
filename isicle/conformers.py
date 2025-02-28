@@ -422,6 +422,11 @@ class ConformationalEnsemble(TypedList):
             Result of reduction operation.
 
         """
+        # Modify energy attr to match provided attr
+        if attr.startswith("_"):
+            e_attr = "_energy"
+        else:
+            e_attr = "energy"
 
         # Select reduction function
         f = _function_selector(func)
@@ -431,7 +436,7 @@ class ConformationalEnsemble(TypedList):
 
         # Check for energy attribute
         if _energy_based(f):
-            self._check_attributes("energy")
+            self._check_attributes(e_attr)
 
         # Extract (possibly nested) value attribute
         value = [getattr(x, attr) for x in self]
@@ -455,9 +460,10 @@ class ConformationalEnsemble(TypedList):
             # Special case for CCS
             if "mean" in value[0] and "std" in value[0]:
                 value = np.array([x["mean"] for x in value]).flatten()
-
+            elif "shielding" in value[0]:
+                value = np.array([x["shielding"] for x in value]).flatten()
             else:
-                value = np.array([getattr(x, attr) for x in value]).flatten()
+                value = np.array([value.get(x) for x in value]).flatten()
 
         # Not nested
         else:
@@ -467,7 +473,7 @@ class ConformationalEnsemble(TypedList):
 
         # Extract energy attribute
         if _energy_based(f):
-            energy = np.array([np.repeat(getattr(x, "energy"), pad) for x in self])
+            energy = np.array([np.repeat(getattr(x, e_attr), pad) for x in self])
             energy = energy.flatten()
 
             # Exectue energy-based method
