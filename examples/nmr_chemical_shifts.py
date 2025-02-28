@@ -55,6 +55,7 @@ shielding = isicle.conformers.ConformationalEnsemble(
     [x["geometry"] for x in dft_parsed]
 ).reduce("_shielding")
 
+# Apply scaling factor to translate tensors to shifts
 shifts = isicle.conformers.transform(
     shielding["mean"],
     m={"H": -0.9921, "C": -0.9816},
@@ -62,3 +63,6 @@ shifts = isicle.conformers.transform(
     atom=shielding["atom"],
     index=shielding["index"],
 )
+
+# Save results
+isicle.save("shifts.csv", shifts)
