@@ -16,7 +16,7 @@ class Geometry(GeometryInterface):
     """
 
     _defaults = [
-        "mol", 
+        "mol",
         "basename",
         "_energy",
         "_shielding",
@@ -27,13 +27,13 @@ class Geometry(GeometryInterface):
         "_connectivity",
         "_formal_charge",
         "_ccs",
-        ]
+    ]
     _default_value = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(dict.fromkeys(self._defaults, self._default_value))
         self.__dict__.update(kwargs)
-    
+
     @property
     def energy(self):
         """
@@ -47,7 +47,7 @@ class Geometry(GeometryInterface):
         """
 
         return self._energy
-    
+
     @property
     def orbital_energies(self):
         """
@@ -60,7 +60,7 @@ class Geometry(GeometryInterface):
 
         """
         return self._orbital_energies
-    
+
     @property
     def shielding(self):
         """
@@ -73,7 +73,7 @@ class Geometry(GeometryInterface):
 
         """
         return self.shielding
-    
+
     @property
     def spin(self):
         """
@@ -277,7 +277,7 @@ class Geometry(GeometryInterface):
             return True
         except:
             return False
-    
+
     def update_coordinates(self, other):
         """
         Update atom coordinates using another geometry as reference.
@@ -652,7 +652,7 @@ class Geometry(GeometryInterface):
 
         return isicle.qm.dft(self, backend=backend, **kwargs)
 
-    def md(self, program="xtb", **kwargs):
+    def md(self, backend="xtb", **kwargs):
         """
         Optimize geometry or generate conformers or adducts using stated forcefield.
 
@@ -669,7 +669,7 @@ class Geometry(GeometryInterface):
 
         """
 
-        return isicle.md.md(self, program=program, **kwargs)
+        return isicle.md.md(self, backend=backend, **kwargs)
 
     def to_mol(self):
         """

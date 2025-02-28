@@ -49,7 +49,7 @@ def load_xyz(path):
         Molecule representation.
 
     """
-    
+
     # # Check for charge
     # if charge is None:
     #     raise ValueError("Charge must be specified when loading XYZ files.")
@@ -252,9 +252,7 @@ def load_smiles(path, force=False):
 
     extension = os.path.splitext(path)[-1].lower()
     if "smi" in extension:
-        return _load_line_notation(
-            path, func=Chem.MolFromSmiles, force=force
-        )
+        return _load_line_notation(path, func=Chem.MolFromSmiles, force=force)
     else:
         return _load_line_notation(
             path, func=Chem.MolFromSmiles, force=force, string=True
@@ -284,9 +282,7 @@ def load_inchi(path, force=False):
             path, func=Chem.MolFromInchi, force=force, string=True
         )
     else:
-        return _load_line_notation(
-            path, func=Chem.MolFromInchi, force=force
-        )
+        return _load_line_notation(path, func=Chem.MolFromInchi, force=force)
 
 
 def load_pickle(path):
@@ -333,7 +329,7 @@ def load_joblib(path):
 
 def _check_mol_obj(mol_obj):
     """ """
-    
+
     if isinstance(mol_obj, Chem.Mol):
         return
     else:
@@ -360,8 +356,7 @@ def load_mol_obj(mol_obj):
     _check_mol_obj(mol_obj)
 
     # Initialize geometry instance
-    geom = isicle.geometry.Geometry(mol=mol_obj,
-                                    basename=Chem.MolToInchiKey(mol_obj))
+    geom = isicle.geometry.Geometry(mol=mol_obj, basename=Chem.MolToInchiKey(mol_obj))
 
     return geom
 
@@ -439,9 +434,7 @@ def save_xyz(path, geom):
 
     # Check instance type
     if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            "Must be `isicle.geometry.Geometry` to save in XYZ format."
-        )
+        raise TypeError("Must be `isicle.geometry.Geometry` to save in XYZ format.")
 
     # Write to file
     with open(path, "w") as f:
@@ -498,9 +491,7 @@ def save_mfj(path, geom):
 
     # Check instance type
     if not isinstance(geom, isicle.geometry.Geometry):
-        raise TypeError(
-            "Must be `isicle.geometry.Geometry` to save in XYZ format."
-        )
+        raise TypeError("Must be `isicle.geometry.Geometry` to save in XYZ format.")
 
     # Check for charges in global properties
     if (geom.energy is None) or (geom.charge is None):
@@ -603,6 +594,20 @@ def save_mol(path, geom):
     Chem.MolToMolFile(geom.mol, path)
 
 
+def save_csv(path, dataframe):
+    """
+    Save `pandas.DataFrame` as csv file.
+
+    Parameters
+    ----------
+    path : str
+        Path to output file.
+    dataframe : :obj:`pandas.DataFrame`
+        Dataframe of results
+    """
+    dataframe.to_csv(path)
+
+
 def save_pdb(path, geom):
     """
     Save molecule geometry as PDB file.
@@ -659,6 +664,9 @@ def save(path, data):
 
     if extension == ".pdb":
         return save_pdb(path, data)
+
+    if extension == ".csv":
+        return save_csv(path, data)
 
     if "smi" in extension:
         return save_smiles(path, data)
