@@ -879,7 +879,7 @@ class NWChemWrapper(WrapperInterface):
         outfile = os.path.join(self.temp_dir, self.geom.basename + ".out")
         logfile = os.path.join(self.temp_dir, self.geom.basename + ".log")
 
-        s = "mpirun -n {} nwchem {} > {} 2> {}".format(
+        s = "mpirun --bind-to none -n {} nwchem {} > {} 2> {}".format(
             self._processes, infile, outfile, logfile
         )
 
@@ -908,7 +908,9 @@ class NWChemWrapper(WrapperInterface):
         outfiles = sorted([x for x in outfiles if not x.endswith(".xyz")])
 
         if os.path.join(self.temp_dir, "cosmo.xyz") in geomfiles:
-            geomfiles = [i for i in geomfiles if i != os.path.join(self.temp_dir, "cosmo.xyz")]
+            geomfiles = [
+                i for i in geomfiles if i != os.path.join(self.temp_dir, "cosmo.xyz")
+            ]
             cosmo = True
 
         # Enumerate geometry files
